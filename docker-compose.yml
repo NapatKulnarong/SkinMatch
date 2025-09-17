@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend:
     build: ./backend
@@ -8,11 +6,11 @@ services:
       sh -c "python manage.py migrate &&
       python manage.py runserver 0.0.0.0:8000"
     environment:
-      - POSTRES_DB=skinmatch
-      - POSTRES_USER=skinuser
+      - POSTGRES_DB=skinmatch
+      - POSTGRES_USER=skinuser
       - POSTGRES_PASSWORD=skinpass
-      - POSTRES_HOST=db
-      - POSTRES_PORT=5432
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
     volumes:
       - ./backend:/app
     ports:
@@ -20,6 +18,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    develop:
+      watch:
+        - path: ./backend
+          target: /app
+          action: sync
+        - path: ./backend/requirements.txt
+          action: rebuild
 
   frontend:
     build: ./frontend
@@ -28,6 +33,13 @@ services:
     - "3000:3000"
     depends_on:
     - backend
+    develop:
+      watch:
+        - path: ./frontend
+          target: /app
+          action: sync
+        - path: ./frontend.package.json
+          action: rebuild
 
 
   db:
