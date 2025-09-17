@@ -1,7 +1,9 @@
 export default function AboutPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#bcdcf6]">
-      <h1 className="text-4xl font-bold text-gray-900">About Us</h1>
+    <main className="min-h-screen bg-[#bcdcf6]">
+      <section className="mx-auto max-w-[1200px] px-6 pt-28 pb-16">
+        {/* Card goes here (we'll add in step 3) */}
+      </section>
     </main>
   );
 }
