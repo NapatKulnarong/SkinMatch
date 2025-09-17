@@ -1,16 +1,30 @@
-version: "3.9"
-
 services:
   backend:
     build: ./backend
     container_name: skinmatch-backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - POSTGRES_DB=skinmatch
+      - POSTGRES_USER=skinuser
+      - POSTGRES_PASSWORD=skinpass
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    develop:
+      watch:
+        - path: ./backend
+          target: /app
+          action: sync
+        - path: ./backend/requirements.txt
+          action: rebuild
 
   frontend:
     build:
@@ -24,6 +38,13 @@ services:
     - "3000:3000"
     depends_on:
     - backend
+    develop:
+      watch:
+        - path: ./frontend
+          target: /app
+          action: sync
+        - path: ./frontend.package.json
+          action: rebuild
 
 
   db:
@@ -37,6 +58,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "skinmatch", "-U", "skinuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
