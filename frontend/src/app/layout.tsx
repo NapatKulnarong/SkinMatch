@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Quicksand } from "next/font/google";
+import { Quicksand, Caveat } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";   // ⬅️ Import your Navbar
 
@@ -8,6 +8,12 @@ const quicksand = Quicksand({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
+
+const caveat = Caveat({ subsets: ["latin"], weight: ["400", "600"] });
+
+export const fonts = {
+  hand: caveat, // use fonts.hand.className to apply
+};
 
 // app-wide metadata
 export const metadata: Metadata = {
