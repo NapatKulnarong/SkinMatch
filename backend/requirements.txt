@@ -2,3 +2,4 @@ django>=5.0
 django-ninja
 django-ninja-extra
 psycopg2-binary
+dj-database-url>=2.2.0
