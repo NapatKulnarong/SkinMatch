@@ -5,7 +5,6 @@ services:
     env: docker
     plan: free
     autoDeploy: true
-    startCommand: gunicorn apidemo.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -24,4 +23,3 @@ services:
     env: docker
     plan: free
     autoDeploy: false
-    startCommand: python manage.py migrate
