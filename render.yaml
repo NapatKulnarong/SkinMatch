@@ -18,7 +18,7 @@ services:
       - key: CSRF_TRUSTED_ORIGINS
         value: https://skinmatch-m8wc.onrender.com
 
-  - type: job
+  - type: worker
     name: migrate-db
     rootDir: backend
     env: docker
