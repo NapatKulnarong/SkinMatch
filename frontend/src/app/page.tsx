@@ -22,15 +22,20 @@ export default function HomePage() {
           className="object-cover"
         />
 
-        {/* Overlay text + CTA */}
+        {/* Overlay container for text and button */}
         <div className="absolute inset-0 z-10 flex items-center justify-end px-6 md:pr-24">
           <div className="max-w-md md:max-w-3xl text-center md:text-right">
+            {/* Heading */}
             <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900">
               SkinMatch
             </h1>
+
+            {/* Tagline */}
             <p className="mt-4 text-base md:text-2xl text-gray-700 font-semibold md:whitespace-nowrap">
               “Your skin, Your match, Your best care!”
             </p>
+
+            {/* Button */}
             <div className="mt-8 flex justify-center md:justify-end">
               <Link
                 href="/quiz"
