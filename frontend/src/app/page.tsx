@@ -3,7 +3,29 @@ import Navbar from "@/components/Navbar";     // Your custom Navbar component
 import Button from "@/components/ui/Button";  // Your custom Button component
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
 
-export default function HomePage() {
+type HomepagePayload = {
+  hero: { title: string; subtitle: string; ctaText: string };
+  highlights: { id: string; title: string; blurb: string; href: string }[];
+  featuredProducts: { id: string; name: string; price: number; imageUrl: string }[];
+};
+
+async function fetchHomepage(): Promise<HomepagePayload | null> {
+  try {
+    // Thanks to next.config.ts rewrites, this proxies to Django at :8000
+    const res = await fetch(`/api/homepage`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    return (await res.json()) as HomepagePayload;
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const data = await fetchHomepage();
+  const heroTitle = data?.hero.title ?? "SkinMatch";
+  const heroSubtitle = data?.hero.subtitle ?? "Your skin, Your match, Your best care!";
+  const ctaText = data?.hero.ctaText ?? "Find your match";
+
   return (
     // Main wrapper for the whole page
     <main className="min-h-screen bg-[#FFF6E9]">
@@ -27,13 +49,13 @@ export default function HomePage() {
           <div className="max-w-md md:max-w-3xl text-center md:text-right">
             {/* Main heading */}
             <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900">
-              SkinMatch
+              {heroTitle}
             </h1>
 
             {/* Tagline text */}
             {/* md:whitespace-nowrap = keep this one line on medium+ screens */}
             <p className="mt-4 text-base md:text-2xl text-gray-700 font-semibold md:whitespace-nowrap">
-              “Your skin, Your match, Your best care!”
+              {heroSubtitle}
             </p>
 
             {/* Button wrapper */}
@@ -52,7 +74,7 @@ export default function HomePage() {
                   focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10
                   "
               >
-                  <span>Find your match</span>
+                  <span>{ctaText}</span>
                   {/* Heroicons arrow restored */}
                   <ArrowRightIcon className="h-6 w-6" />
               </button>

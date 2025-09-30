@@ -3,8 +3,14 @@ services:
     build: ./backend
     container_name: skinmatch-backend
     command: >
-      sh -c "python manage.py migrate &&
-      python manage.py runserver 0.0.0.0:8000"
+      sh -c "
+        python manage.py migrate &&
+        export DJANGO_SUPERUSER_USERNAME=fongfufu &&
+        export DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com &&
+        export DJANGO_SUPERUSER_PASSWORD=pakorn1234 &&
+        python manage.py createsuperuser --noinput || true &&
+        python manage.py runserver 0.0.0.0:8000
+      "
     environment:
       - POSTGRES_DB=skinmatch
       - POSTGRES_USER=skinuser
@@ -27,8 +33,13 @@ services:
           action: rebuild
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - BACKEND_URL=http://backend:8000
     container_name: skinmatch-frontend
+    environment:
+      - BACKEND_URL=http://backend:8000
     ports:
     - "3000:3000"
     depends_on:

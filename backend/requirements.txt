@@ -4,3 +4,4 @@ django-ninja-extra
 psycopg[binary]==3.2.3
 dj-database-url>=2.1.0
 python-dotenv>=1.0.1
+PyJWT
