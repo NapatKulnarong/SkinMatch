@@ -5,18 +5,19 @@ services:
     command: >
       sh -c "
         python manage.py migrate &&
-        export DJANGO_SUPERUSER_USERNAME=fongfufu &&
-        export DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com &&
-        export DJANGO_SUPERUSER_PASSWORD=pakorn1234 &&
         python manage.py createsuperuser --noinput || true &&
         python manage.py runserver 0.0.0.0:8000
       "
     environment:
+      - DJANGO_SUPERUSER_USERNAME=fongfufu
+      - DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com
+      - DJANGO_SUPERUSER_PASSWORD=pakorn1234
       - POSTGRES_DB=skinmatch
       - POSTGRES_USER=skinuser
       - POSTGRES_PASSWORD=skinpass
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+      - DATABASE_URL=postgresql://skinuser:skinpass@db:5432/skinmatch
     volumes:
       - ./backend:/app
     ports:
@@ -49,7 +50,7 @@ services:
         - path: ./frontend
           target: /app
           action: sync
-        - path: ./frontend.package.json
+        - path: ./frontend/package.json
           action: rebuild
 
 
@@ -62,6 +63,7 @@ services:
       POSTGRES_PASSWORD: skinpass
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     healthcheck:
