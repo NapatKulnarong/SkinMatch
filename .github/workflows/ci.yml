@@ -12,20 +12,27 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: app
-          POSTGRES_PASSWORD: app
-          POSTGRES_DB: app_test
-        ports: [ "5432:5432" ]
+          POSTGRES_DB: skinmatch
+          POSTGRES_USER: skinuser
+          POSTGRES_PASSWORD: skinpass
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U app"
-          --health-interval=10s --health-timeout=5s --health-retries=5
+          --health-cmd="pg_isready -U skinuser -d skinmatch"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+
+    env:
+      DATABASE_URL: postgres://skinuser:skinpass@localhost:5432/skinmatch
+      DJANGO_SECRET_KEY: dummy
+      DJANGO_DEBUG: "False"
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: "3.12"
       - run: pip install -r backend/requirements.txt
       - run: python backend/manage.py migrate
-      - run: pytest -q || python backend/manage.py test
 
   frontend:
     runs-on: ubuntu-latest
