@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [ "main", "test-merge", "feature/**" ]
+    branches: [ "main", "experiment/**", "feature/**" ]
   pull_request:
-    branches: [ "main", "test-merge" ]
+    branches: [ "main", "experiment/**" ]
 
 jobs:
   backend:
