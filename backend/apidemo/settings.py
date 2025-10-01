@@ -11,34 +11,34 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import dj_database_url
+from dotenv import load_dotenv
 from pathlib import Path
-
-import datetime
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-io7gh7ge#^7zntuhr)h_v@%v!otq#^f@&18%ebr$cib0t)*ee@'
+def env_bool(name: str, default: bool = False) -> bool:
+    return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
 
-JWT_SECRET_KEY = SECRET_KEY
-JWT_ALGORITHM = 'HS256'
-JWT_ACCESS_TTL = datetime.timedelta(hours=1) # Token valid for 1 hour
+def env_csv(name: str, default: str = "") -> list[str]:
+    raw = os.getenv(name, default)
+    # split by comma, strip spaces/quotes
+    return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "backend",
-    "0.0.0.0",
-]
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
 
 # Application definition
 
@@ -86,16 +86,32 @@ WSGI_APPLICATION = 'apidemo.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': os.environ.get('POSTGRES_HOST'),
-        'PORT': os.environ.get('POSTGRES_PORT')
+db_url = os.getenv("DATABASE_URL")  # leave unset to use POSTGRES_* below
+conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+ssl_require = env_bool("DB_SSL_REQUIRE", False)
+
+if db_url:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            db_url,
+            conn_max_age=conn_max_age,
+            ssl_require=ssl_require,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "skinmatch_db"),
+            "USER": os.environ.get("POSTGRES_USER", "skinmatch_user"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+            "CONN_MAX_AGE": conn_max_age,
+            # For self-hosted TLS, add:
+            # "OPTIONS": {"sslmode": "require"} if ssl_require else {},
+        }
+    }
 
 
 # Password validation
@@ -120,12 +136,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Bangkok")
 USE_I18N = True
-
 USE_TZ = True
 
 
