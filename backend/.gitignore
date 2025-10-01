@@ -32,8 +32,7 @@ ENV/
 .Python
 
 # Migrations
-*/migrations/
-!*/migrations/__init__.py
+**/migrations/__pycache__/
 
 # Coverage reports
 htmlcov/
