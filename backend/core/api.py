@@ -36,7 +36,7 @@ class SignUpOut(Schema):
     message: str
 
 class LoginIn(Schema):
-    identifier: str
+    email : EmailStr
     password: str
 
 class tokenOut(Schema):
@@ -70,20 +70,17 @@ class UserProfileSchema(ModelSchema):
 # --------------- Auth endpoints ---------------
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
-    # accept either username or email as identifier
-    identifier = payload.identifier.strip()
-    username = identifier
-    if "@" in identifier:
-        try:
-            user_obj = User.objects.get(email__iexact=identifier)
-            username = user_obj.get_username()
-        except User.DoesNotExist:
-            return {"ok": False, "message": "Invalid credentials"}
-
-    user = authenticate(request, username=username, password=payload.password)
+    # only accept email
+    email = payload.email.strip().lower()
+    try:
+        user_obj = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return {"ok": False, "message": "Invalid credentials"}
+    
+    user = authenticate(request, username=user_obj.get_username(), password=payload.password)
     if not user:
         return {"ok": False, "message": "Invalid credentials"}
-
+    
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
 
