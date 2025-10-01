@@ -1,8 +1,8 @@
 django>=5.0
 django-ninja
 django-ninja-extra
-psycopg[binary]==3.2.3
+psycopg[binary]>=3.2
 dj-database-url>=2.1.0
 python-dotenv>=1.0.1
 email-validator>=2.0.0
-PyJWT
+PyJWT~=2.9
