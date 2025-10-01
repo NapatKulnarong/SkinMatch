@@ -1,10 +1,13 @@
+// frontend/src/app/login/page.tsx  (same file you posted)
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Mode = "intro" | "signup" | "login";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("intro");
 
   /* ----------------------------- Signup state ----------------------------- */
@@ -37,20 +40,37 @@ export default function LoginPage() {
     setLogin((f) => ({ ...f, [name]: value }));
   };
 
+  // ---- MOCK "API" helpers (remove when Django is connected)
+  function mockPersistSession(u: { name?: string; email: string; username?: string }) {
+    localStorage.setItem(
+      "sm_session",
+      JSON.stringify({
+        email: u.email,
+        name: u.name || u.username || "SkinMatch user",
+        createdAt: Date.now(),
+      })
+    );
+  }
+
   const submitSignup = (e: React.FormEvent) => {
     e.preventDefault();
     if (signup.password.length < 8)
       return alert("Password must be at least 8 characters.");
     if (signup.password !== signup.confirmPassword)
       return alert("Passwords do not match.");
+
+    // mock “success” while backend isn’t wired
     console.log("📝 SIGNUP payload:", signup);
-    alert("✅ Sign up submitted (check console).");
+    mockPersistSession({ name: `${signup.name} ${signup.surname}`.trim(), email: signup.email, username: signup.username });
+    router.push("/account"); // go to user details page
   };
 
   const submitLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // mock “success” while backend isn’t wired
     console.log("🔐 LOGIN payload:", login);
-    alert("✅ Login submitted (check console).");
+    mockPersistSession({ email: login.email });
+    router.push("/account"); // go to user details page
   };
 
   // Swap the card background here so the rounded corners stay perfect.
@@ -133,7 +153,7 @@ export default function LoginPage() {
                     name="name"
                     value={signup.name}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                     placeholder="Your name"
                   />
                 </Field>
@@ -143,7 +163,7 @@ export default function LoginPage() {
                     name="surname"
                     value={signup.surname}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                     placeholder="Your surname"
                   />
                 </Field>
@@ -155,7 +175,6 @@ export default function LoginPage() {
                     value={signup.dob}
                     onChange={onSignupChange}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
-                    placeholder="dd/mm/yyyy"
                   />
                 </Field>
 
@@ -166,9 +185,7 @@ export default function LoginPage() {
                     onChange={onSignupChange}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none text-gray-800"
                   >
-                    <option value="" disabled>
-                      Click to select
-                    </option>
+                    <option value="" disabled>Click to select</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="na">Prefer not to say</option>
@@ -180,7 +197,7 @@ export default function LoginPage() {
                     name="username"
                     value={signup.username}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                     placeholder="Pick a username"
                   />
                 </Field>
@@ -191,7 +208,7 @@ export default function LoginPage() {
                     name="email"
                     value={signup.email}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                     placeholder="you@example.com"
                   />
                 </Field>
@@ -202,7 +219,7 @@ export default function LoginPage() {
                     name="password"
                     value={signup.password}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                     placeholder="••••••••"
                   />
                 </Field>
@@ -213,7 +230,7 @@ export default function LoginPage() {
                     name="confirmPassword"
                     value={signup.confirmPassword}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                     placeholder="Re-enter password"
                   />
                 </Field>
@@ -230,7 +247,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
                 >
                   Confirm
                 </button>
@@ -289,7 +306,7 @@ export default function LoginPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
                 >
                   Confirm
                 </button>

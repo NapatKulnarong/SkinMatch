@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";  
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StepNavArrows from "../../_StepNavArrows";
 import { TOTAL_STEPS } from "../../_config";
@@ -26,15 +26,11 @@ const OPTIONS_Q3 = ["Dark circles", "Fine lines & wrinkles", "Puffiness", "None"
 const OPTIONS_Q4 = ["Normal", "Oily", "Dry", "Combination"];
 const OPTIONS_Q5 = ["Yes", "Sometimes", "No"];
 const OPTIONS_Q6 = ["Yes", "No"];
-const OPTIONS_Q7 = [
-  "Fragrance-free",
-  "Alcohol-free",
-  "Vegan",
-  "Cruelty-free",
-  "Paraben-free",
-  "No restrictions",
-];
-const OPTIONS_Q8 = ["Affordable", "Mid-range", "Premium / luxury"];
+
+// ❌ Removed the old “ingredient restrictions” (was step 7)
+
+// Budget becomes the new step 7
+const OPTIONS_Q7 = ["Affordable", "Mid-range", "Premium / luxury"];
 
 /* -------------------- Page -------------------- */
 export default function QuizStepPage({ params }: { params: { id: string } }) {
@@ -58,9 +54,9 @@ function renderCardByStep(step: number) {
           title="Do you have any secondary concerns?"
           options={OPTIONS_Q2}
           gradientFrom="#F4F6FF"
-          gradientTo="#898AC4"   // slightly bluer purple
+          gradientTo="#447D9B"
           accent="#7879aa"
-          gridCols="sm:grid-cols-2 lg:grid-cols-3" // same 3-column layout as Q1 on large screens
+          gridCols="sm:grid-cols-2 lg:grid-cols-3"
           current={step}
         />
       );
@@ -71,9 +67,9 @@ function renderCardByStep(step: number) {
           title="Do you have any eye area concerns?"
           options={OPTIONS_Q3}
           gradientFrom="#F2F8FF"
-          gradientTo="#447D9B"   // blue
+          gradientTo="#568F87"
           accent="#5288A5"
-          gridCols="grid-cols-2" // 2 × 2
+          gridCols="grid-cols-2"
           current={step}
         />
       );
@@ -84,9 +80,9 @@ function renderCardByStep(step: number) {
           title="Which best describes your skin type?"
           options={OPTIONS_Q4}
           gradientFrom="#EAFBF6"
-          gradientTo="#568F87"   // bluish green
+          gradientTo="#73946B"
           accent="#64A19D"
-          gridCols="grid-cols-2" // 2 × 2
+          gridCols="grid-cols-2"
           current={step}
         />
       );
@@ -97,9 +93,9 @@ function renderCardByStep(step: number) {
           title="Is your skin sensitive?"
           options={OPTIONS_Q5}
           gradientFrom="#F3F9EA"
-          gradientTo="#73946B"   // matcha latte green
+          gradientTo="#DDA853"
           accent="#8CB183"
-          gridCols="grid-cols-1 sm:grid-cols-3" // 3 × 1
+          gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
         />
       );
@@ -110,35 +106,23 @@ function renderCardByStep(step: number) {
           title="Are you pregnant or breastfeeding?"
           options={OPTIONS_Q6}
           gradientFrom="#FFF6D5"
-          gradientTo="#DDA853"   // warm custard yellow
+          gradientTo="#F08B51"
           accent="#E3BF6C"
-          gridCols="grid-cols-1 sm:grid-cols-2" // 2 × 1
+          gridCols="grid-cols-1 sm:grid-cols-2"
           current={step}
         />
       );
 
+    // ✅ New step 7 = Budget
     case 7:
       return (
         <QuestionCard
-          title="Do you have any ingredient restrictions?"
-          options={OPTIONS_Q7}
-          gradientFrom="#FFE7D1"
-          gradientTo="#F6A66A"   // thai tea orange
-          accent="#DC945E"
-          gridCols="grid-cols-2 sm:grid-cols-3" // 3 × 2 (stacks to 2 cols on small)
-          current={step}
-        />
-      );
-
-    case 8:
-      return (
-        <QuestionCard
           title="What’s your budget preference?"
-          options={OPTIONS_Q8}
+          options={OPTIONS_Q7}
           gradientFrom="#FFE5E9"
-          gradientTo="#B9375D"   // cherry red
+          gradientTo="#B9375D"
           accent="#BE3F62"
-          gridCols="grid-cols-1 sm:grid-cols-3" // 3 × 1
+          gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
         />
       );
@@ -155,18 +139,18 @@ function QuestionCard(props: {
   gradientFrom: string;
   gradientTo: string;
   accent: string;
-  gridCols: string; // e.g., "grid-cols-2", "grid-cols-1 sm:grid-cols-3"
+  gridCols: string;
   current: number;
 }) {
   const { title, options, gradientFrom, gradientTo, accent, gridCols, current } = props;
   const [value, setValue] = useState<string | null>(null);
-  const router = useRouter(); 
+  const router = useRouter();
 
-  // define nextHref based on current step
+  // Uses TOTAL_STEPS (set this to 7 in ../../_config)
   const nextHref =
     current >= TOTAL_STEPS ? `/quiz/step/${TOTAL_STEPS}` : `/quiz/step/${current + 1}`;
 
-  const handleSelect = (opt: string) => {                  
+  const handleSelect = (opt: string) => {
     setValue(opt);
     setTimeout(() => router.push(nextHref), 160);
   };
@@ -179,7 +163,7 @@ function QuestionCard(props: {
         style={{ backgroundImage: `linear-gradient(to bottom, ${gradientFrom}, ${gradientTo})` }}
       />
 
-      {/* ARROWS: same overlay/positioning as Q1 */}
+      {/* ARROWS */}
       <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 z-20">
         <div className="pointer-events-auto">
           <StepNavArrows side="prev" current={current} />
@@ -189,13 +173,12 @@ function QuestionCard(props: {
         </div>
       </div>
 
-      {/* CONTENT: identical sizing/centering to Q1 */}
+      {/* CONTENT */}
       <div className="relative z-10 flex flex-col p-8 sm:p-10 h-[80vh] max-h-[700px]">
         <h1 className="mt-6 text-center text-2xl sm:text-4xl font-extrabold text-gray-800 drop-shadow-[0_2px_0_rgba(0,0,0,0.2)]">
           {title}
         </h1>
 
-        {/* Options (centered in the card) */}
         <div className="flex-1 flex items-center justify-center">
           <div className={`grid gap-4 ${gridCols} place-items-center`}>
             {options.map((opt) => {
@@ -205,7 +188,6 @@ function QuestionCard(props: {
                   key={opt}
                   onClick={() => handleSelect(opt)}
                   className={[
-                    // EXACTLY the same sizing as Q1
                     "w-full sm:min-w-[280px] px-6 py-5 rounded-full text-lg font-semibold",
                     "border-2 border-black shadow-[0_6px_0_rgba(0,0,0,0.35)]",
                     selected ? "text-black" : "bg-white text-black",
@@ -223,7 +205,6 @@ function QuestionCard(props: {
           </div>
         </div>
 
-        {/* Dots (clickable) */}
         <Dots current={current} />
       </div>
     </div>
@@ -250,10 +231,13 @@ function Dots({ current }: { current: number }) {
       {/* First dot goes to /quiz (Q1) */}
       <Link
         href="/quiz"
-        className={["inline-block h-2 w-2 rounded-full", current === 1 ? "bg-white" : "bg-white/50 hover:bg-white"].join(" ")}
+        className={[
+          "inline-block h-2 w-2 rounded-full",
+          current === 1 ? "bg-white" : "bg-white/50 hover:bg-white",
+        ].join(" ")}
         aria-label="Go to step 1"
       />
-      {/* Dots 2..8 */}
+      {/* Dots 2..TOTAL_STEPS */}
       {Array.from({ length: TOTAL_STEPS - 1 }).map((_, i) => {
         const idx = i + 2;
         return (
