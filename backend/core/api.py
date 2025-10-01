@@ -1,37 +1,73 @@
 from ninja import NinjaAPI, Schema, ModelSchema
 from .models import UserProfile
 from typing import List, Optional
-from pydantic import ConfigDict
+from pydantic import ConfigDict, EmailStr, field_validator
+from datetime import datetime, date
 from .auth import create_access_token, JWTAuth
 import uuid
 from datetime import datetime
 from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.db import transaction, IntegrityError
 
 api = NinjaAPI()
 User = get_user_model()
 
+# --------------- Schemas ---------------
+
+class SignUpIn(Schema):
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+    password: str
+    confirm_password: str
+    date_of_birth: str | None = None # 'YYYY-MM-DD'
+    gender: str | None = None #'male'|'female'|'prefer_not'
+
+    @field_validator("password")
+    @classmethod
+    def strong(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+class SignUpOut(Schema):
+    ok: bool
+    message: str
+
 class LoginIn(Schema):
     identifier: str
     password: str
+
 class tokenOut(Schema):
     ok: bool
     token: Optional[str] = None
     message: str
 
 class ProfileOut(Schema):
+    """
+    Unified profile response : user core fields + profile extras
+    """
     model_config = ConfigDict(from_attributes=True)  # allow model instances
+    # profile
     u_id: uuid.UUID
-    display_name: Optional[str] = None
-    contact_email: Optional[str] = None
     is_verified: bool
     created_at: datetime
+    avatar_url: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = None
+    # user
+    username: str
+    email: Optional[str] = None
+    is_staff: bool
+    is_superuser: bool
 
 class UserProfileSchema(ModelSchema):
     class Config:
         model = UserProfile
-        model_fields = ['u_id', 'display_name', 'contact_email', 'is_verified', 'created_at']
+        model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
         
-# ------------------------------------------------------------------------------------
+# --------------- Auth endpoints ---------------
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
     # accept either username or email as identifier
@@ -51,6 +87,48 @@ def token_login(request, payload: LoginIn):
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
 
+@api.post("/auth/signup", response=SignUpOut)
+@transaction.atomic
+def signup(request, payload: SignUpIn):
+    # basic checks
+    if payload.password != payload.confirm_password:
+        return {"ok": False, "message": "Passwords do not match"}
+    
+    # enforce uniqueness in code (case-insensitive)
+    if User.objects.filter(username__iexact=payload.username).exists():
+        return {"ok": False, "message": "Username already taken"}
+    
+    if User.objects.filter(email__iexact=str(payload.email)).exists():
+        return {"ok": False, "message": "Email already in use"}
+    
+    # create user
+    try:
+        user = User.objects.create_user(
+            username=payload.username,
+            email=str(payload.email),
+            password=payload.password,
+            first_name=payload.first_name.strip(),
+            last_name=payload.last_name.strip(),
+        )
+    except IntegrityError:
+        # covers where a same-username user is created between the check and now
+        return {"ok": False, "message": "Username already taken"}
+    
+    # create/update profile
+    dob = date.fromisoformat(payload.date_of_birth) if payload.date_of_birth else None
+    gender_choice = None
+    if payload.gender and payload.gender in dict(UserProfile.Gender.choices):
+        gender_choice = payload.gender
+    
+    UserProfile.objects.get_or_create(
+        user=user,
+        defaults=dict(
+            date_of_birth=dob,
+            gender=gender_choice
+        ),
+    )
+    return {"ok": True, "message": "Signup successful"}
+
 @api.post("/auth/logout", response=tokenOut, auth=JWTAuth())
 def token_logout(request):
     # Stateless JWT: nothing to revoke on the server by default.
@@ -65,10 +143,11 @@ def me_view(request):
     # merge profile + user fields
     return {
         "u_id": profile.u_id,
-        "display_name": profile.display_name,
-        "contact_email": profile.contact_email or user.email,
         "is_verified": profile.is_verified,
         "created_at": profile.created_at,
+        "avatar_url": profile.avatar_url,
+        "date_of_birth": profile.date_of_birth,
+        "gender": profile.gender,
         "username": user.get_username(),
         "email": user.email,
         "is_staff": user.is_staff,
@@ -77,14 +156,17 @@ def me_view(request):
 
 @api.get("/users", response=List[ProfileOut], auth=JWTAuth())
 def list_users(request, limit: int = 50, offset: int = 0):
-    qs = UserProfile.objects.select_related("user").order_by("created_at")[offset:offset+limit]
+    qs = (UserProfile.objects
+          .select_related("user")
+          .order_by("created_at")[offset:offset+limit])
     return [
         {
             "u_id": p.u_id,
-            "display_name": p.display_name,
-            "contact_email": p.contact_email or p.user.email,
             "is_verified": p.is_verified,
             "created_at": p.created_at,
+            "avatar_url": p.avatar_url,
+            "date_of_birth": p.date_of_birth,
+            "gender": p.gender,
             "username": p.user.username,
             "email": p.user.email,
             "is_staff": p.user.is_staff,
@@ -92,6 +174,7 @@ def list_users(request, limit: int = 50, offset: int = 0):
         }
         for p in qs
     ]
+
 # ------------------------------------------------------------------------------------
 @api.get("/hello")
 def api_root(request):
