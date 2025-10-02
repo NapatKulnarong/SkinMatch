@@ -24,3 +24,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Make native date input text darker and more readable */
+
+/* Chrome, Edge, Safari */
+input[type="date"]::-webkit-datetime-edit {
+  color: #374151; /* Tailwind gray-700 */
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* Optional: style the placeholder hint (before user picks a date) */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #6B7280; /* Tailwind gray-500 */
+}
+
+/* Firefox fallback */
+input[type="date"] {
+  color: #374151; /* Tailwind gray-700 */
+  font-weight: 500;
+}
+
+/* Force placeholder style for all inputs */
+input::placeholder {
+  color: #6B7280; /* Tailwind gray-500 */
+  font-weight: 500;
+  opacity: 1;     /* override browser's lighter opacity */
+}
+
+/* For password inputs (some browsers ignore opacity) */
+input[type="password"]::placeholder {
+  color: #6B7280;
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* For select “placeholder” (the disabled option) */
+select option[disabled][value=""] {
+  color: #6B7280;
+  font-weight: 500;
+}
