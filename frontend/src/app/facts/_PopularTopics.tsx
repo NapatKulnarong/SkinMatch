@@ -99,7 +99,7 @@ export default function PopularTopics() {
                   "
                 >
                   Read
-                  <span aria-hidden className="text-lg">↘</span>
+                  <span aria-hidden className="text-lg">➜</span>
                 </Link>
               </div>
             </div>

@@ -1,5 +1,7 @@
 import PopularTopics from "./_PopularTopics";
 import SkinKnowledge from "./_SkinKnowledge";
+import FactCheck from "./_FactCheck";
+import TrendingSkincare from "./_TrendingSkincare";
 
 export default function FactsPage() {
   return (
@@ -8,6 +10,8 @@ export default function FactsPage() {
       <div className="pt-24" />
       <PopularTopics />
       <SkinKnowledge />
+      <FactCheck />
+      <TrendingSkincare />
     </main>
   );
 }
