@@ -22,7 +22,6 @@ const OPTIONS = [
 ];
 
 export default function QuizPage() {
-  const step = 1; // landing step is fixed at 1
   const [value, setValue] = useState<string | null>(null);
   const router = useRouter();
 

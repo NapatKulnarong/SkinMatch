@@ -269,7 +269,7 @@ export default function LoginPage() {
                   name="email"
                   value={login.email}
                   onChange={onLoginChange}
-                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                   placeholder="you@example.com"
                 />
               </Field>
@@ -280,7 +280,7 @@ export default function LoginPage() {
                   name="password"
                   value={login.password}
                   onChange={onLoginChange}
-                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none"
+                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                   placeholder="••••••••"
                 />
               </Field>
