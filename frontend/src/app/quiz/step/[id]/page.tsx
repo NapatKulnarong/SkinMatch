@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StepNavArrows from "../../_StepNavArrows";
-import { TOTAL_STEPS } from "../../_config";
+import { RESULT_LOADING_HREF, TOTAL_STEPS } from "../../_config";
 
 /* -------------------- Options per step -------------------- */
 const OPTIONS_Q2 = [
@@ -113,7 +113,6 @@ function renderCardByStep(step: number) {
         />
       );
 
-    // ✅ New step 7 = Budget
     case 7:
       return (
         <QuestionCard
@@ -121,7 +120,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q7}
           gradientFrom="#FFE5E9"
           gradientTo="#B9375D"
-          accent="#BE3F62"
+          accent="#cf708b"
           gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
         />
@@ -145,14 +144,12 @@ function QuestionCard(props: {
   const { title, options, gradientFrom, gradientTo, accent, gridCols, current } = props;
   const [value, setValue] = useState<string | null>(null);
   const router = useRouter();
-
-  // Uses TOTAL_STEPS (set this to 7 in ../../_config)
-  const nextHref =
-    current >= TOTAL_STEPS ? `/quiz/step/${TOTAL_STEPS}` : `/quiz/step/${current + 1}`;
+  const isFinalStep = current >= TOTAL_STEPS;
+  const nextHref = isFinalStep ? RESULT_LOADING_HREF : `/quiz/step/${current + 1}`;
 
   const handleSelect = (opt: string) => {
     setValue(opt);
-    setTimeout(() => router.push(nextHref), 160);
+    if (!isFinalStep) setTimeout(() => router.push(nextHref), 160);
   };
 
   return (
@@ -169,7 +166,7 @@ function QuestionCard(props: {
           <StepNavArrows side="prev" current={current} />
         </div>
         <div className="pointer-events-auto">
-          <StepNavArrows side="next" current={current} />
+          <StepNavArrows side="next" current={current} disabled={isFinalStep} />
         </div>
       </div>
 
@@ -204,6 +201,20 @@ function QuestionCard(props: {
             })}
           </div>
         </div>
+
+        {isFinalStep && (
+          <div className="mt-8 flex justify-end pr-2 sm:pr-4">
+            <button
+              type="button"
+              onClick={() => value && router.push(nextHref)}
+              disabled={!value}
+              className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-6 py-2 text-base font-semibold text-gray-900 shadow-[0_6px_0_rgba(0,0,0,0.35)] transition disabled:cursor-not-allowed disabled:opacity-60 hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]"
+            >
+              {value ? "Get your match" : "Select an option"}
+              <span aria-hidden>→</span>
+            </button>
+          </div>
+        )}
 
         <Dots current={current} />
       </div>

@@ -73,7 +73,7 @@ export default function QuizPage() {
                       className={[
                         "w-full sm:min-w-[280px] px-6 py-5 rounded-full text-lg font-semibold",
                         "border-2 border-black shadow-[0_6px_0_rgba(0,0,0,0.35)]",
-                        selected ? "bg-[#9A7CA6] text-black" : "bg-white text-black",
+                        selected ? "bg-[#be9fc7] text-black" : "bg-white text-black",
                         "transition-all duration-150 ease-out",
                         "hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)]",
                         "active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]",
