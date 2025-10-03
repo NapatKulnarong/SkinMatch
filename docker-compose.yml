@@ -8,16 +8,13 @@ services:
         python manage.py createsuperuser --noinput || true &&
         python manage.py runserver 0.0.0.0:8000
       "
-    # แนะนำให้อ่านค่าเพิ่มจาก backend/.env ด้วย
     env_file:
       - ./backend/.env
-    # (ตัวแปรด้านล่างจะ override ถ้าซ้ำกับ env_file)
     environment:
       - DJANGO_DEBUG=True
       - DJANGO_SUPERUSER_USERNAME=fongfufu
       - DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com
       - DJANGO_SUPERUSER_PASSWORD=pakorn1234
-      # ถ้าใช้ DATABASE_URL แล้ว settings.py parse ได้ ก็ไม่ต้องใส่ POSTGRES_* ซ้ำ
       - DATABASE_URL=postgresql://skinuser:skinpass@db:5432/skinmatch
       - JWT_SECRET_KEY=change-me-in-prod
       - JWT_ALGORITHM=HS256
@@ -71,7 +68,6 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      # ใช้ตัวแปรจาก environment (ต้องใช้ CMD-SHELL และ $$)
       test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
       interval: 5s
       timeout: 5s
