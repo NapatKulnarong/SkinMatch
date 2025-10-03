@@ -123,7 +123,25 @@ def signup(request, payload: SignUpIn):
         return {"ok": False, "message": "Username already taken"}
     
     # create/update profile
-    dob = date.fromisoformat(payload.date_of_birth) if payload.date_of_birth else None
+    dob = None
+    if payload.date_of_birth:
+        try:
+            dob = date.fromisoformat(payload.date_of_birth)
+        except ValueError:
+            parts = payload.date_of_birth.replace("-", "/").split("/")
+            if len(parts) != 3:
+                return {"ok": False, "message": "Date of birth must be in YYYY-MM-DD format."}
+
+            try:
+                if len(parts[0]) == 4:
+                    year, month, day = map(int, parts)
+                elif len(parts[2]) == 4:
+                    day, month, year = map(int, parts)
+                else:
+                    raise ValueError
+                dob = date(year, month, day)
+            except ValueError:
+                return {"ok": False, "message": "Date of birth must be in YYYY-MM-DD format."}
     gender_choice = None
     if payload.gender and payload.gender in dict(UserProfile.Gender.choices):
         gender_choice = payload.gender

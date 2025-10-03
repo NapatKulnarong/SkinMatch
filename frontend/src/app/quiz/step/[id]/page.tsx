@@ -55,7 +55,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q2}
           gradientFrom="#F4F6FF"
           gradientTo="#447D9B"
-          accent="#7879aa"
+          accent="#6391ab"
           gridCols="sm:grid-cols-2 lg:grid-cols-3"
           current={step}
         />
@@ -68,7 +68,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q3}
           gradientFrom="#F2F8FF"
           gradientTo="#568F87"
-          accent="#5288A5"
+          accent="#79a7a2"
           gridCols="grid-cols-2"
           current={step}
         />
@@ -81,7 +81,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q4}
           gradientFrom="#EAFBF6"
           gradientTo="#73946B"
-          accent="#64A19D"
+          accent="#8caa88"
           gridCols="grid-cols-2"
           current={step}
         />
@@ -94,7 +94,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q5}
           gradientFrom="#F3F9EA"
           gradientTo="#DDA853"
-          accent="#8CB183"
+          accent="#e3bd7b"
           gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
         />
@@ -107,7 +107,7 @@ function renderCardByStep(step: number) {
           options={OPTIONS_Q6}
           gradientFrom="#FFF6D5"
           gradientTo="#F08B51"
-          accent="#E3BF6C"
+          accent="#f5ac79"
           gridCols="grid-cols-1 sm:grid-cols-2"
           current={step}
         />
