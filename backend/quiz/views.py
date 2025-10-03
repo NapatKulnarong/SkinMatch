@@ -1,0 +1,413 @@
+from __future__ import annotations
+
+import uuid
+from typing import Iterable
+
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from ninja import Router
+from ninja.errors import HttpError
+
+from core.models import SkinProfile
+from .models import Answer, Choice, MatchPick, Question, QuizFeedback, QuizSession
+from .recommendations import recommend_products
+from .schemas import (
+    AnswerAck,
+    AnswerIn,
+    FinalizeOut,
+    HistoryItemOut,
+    FeedbackAck,
+    FeedbackIn,
+    MatchPickOut,
+    SessionDetailOut,
+    SessionOut,
+    SkinProfileOut,
+)
+
+router = Router(tags=["quiz"])
+
+
+def _get_session_for_request(session_id: uuid.UUID, request) -> QuizSession:
+    session = get_object_or_404(QuizSession, id=session_id)
+    if session.user_id:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or user.id != session.user_id:
+            raise HttpError(404, "Session not found")
+    return session
+
+
+@router.post("/start", response=SessionOut)
+def start_quiz(request):
+    user = request.user if getattr(request, "user", None) and request.user.is_authenticated else None
+    session = QuizSession.objects.create(user=user)
+    return SessionOut(id=session.id, started_at=session.started_at)
+
+
+@router.post("/feedback", response=FeedbackAck)
+def submit_feedback(request, payload: FeedbackIn):
+    session = None
+    if payload.session_id:
+        session = get_object_or_404(QuizSession, id=payload.session_id)
+    feedback = QuizFeedback.objects.create(
+        session=session,
+        contact_email=payload.contact_email or "",
+        message=payload.message.strip(),
+        metadata=payload.metadata or {},
+    )
+    return FeedbackAck(ok=bool(feedback))
+
+
+@router.post("/answer", response=AnswerAck)
+def submit_answer(request, payload: AnswerIn):
+    session = _get_session_for_request(payload.session_id, request)
+    question = get_object_or_404(Question, id=payload.question_id)
+
+    selected_choices = list(
+        Choice.objects.filter(id__in=payload.choice_ids, question=question).order_by("order")
+    )
+    if not selected_choices:
+        raise HttpError(400, "Invalid choice selection")
+
+    if not question.is_multi and len(selected_choices) != 1:
+        raise HttpError(400, "This question allows exactly one choice")
+
+    answer, created = Answer.objects.get_or_create(session=session, question=question)
+    if not created:
+        answer.choices.clear()
+    answer.choices.set(selected_choices)
+
+    return AnswerAck(status="ok", updated=not created)
+
+
+@router.post("/submit", response=FinalizeOut)
+def submit_quiz(request, session_id: uuid.UUID):
+    session = _get_session_for_request(session_id, request)
+
+    answers = (
+        session.answers.select_related("question")
+        .prefetch_related("choices")
+        .order_by("question__order")
+    )
+    if not answers.exists():
+        raise HttpError(400, "No answers recorded for this session")
+
+    answer_snapshot = _build_answer_snapshot(answers)
+    profile_payload = _map_snapshot_to_profile(answer_snapshot)
+
+    session.answer_snapshot = answer_snapshot
+    session.profile_snapshot = profile_payload
+    session.completed_at = timezone.now()
+
+    include_products = bool(session.user_id)
+    result_payload = calculate_results(session, include_products=include_products)
+    session.result_summary = result_payload
+    session.save(update_fields=[
+        "answer_snapshot",
+        "profile_snapshot",
+        "completed_at",
+        "result_summary",
+    ])
+
+    profile_out = None
+    if include_products:
+        profile = _persist_skin_profile(session, profile_payload)
+        profile_out = _serialize_profile(profile)
+
+    return FinalizeOut(
+        session_id=session.id,
+        completed_at=session.completed_at,
+        profile=profile_out,
+        result_summary=session.result_summary,
+        requires_auth=not include_products,
+    )
+
+
+@router.get("/history", response=list[HistoryItemOut])
+def quiz_history(request):
+    if not getattr(request, "user", None) or not request.user.is_authenticated:
+        raise HttpError(401, "Authentication required")
+    profiles = (
+        SkinProfile.objects.filter(user=request.user)
+        .order_by("-created_at")
+        .only(
+            "id",
+            "session_id",
+            "created_at",
+            "primary_concerns",
+            "budget",
+        )
+    )
+    return [
+        HistoryItemOut(
+            session_id=profile.session_id,
+            completed_at=profile.created_at,
+            profile_id=profile.id,
+            primary_concerns=list(profile.primary_concerns or []),
+            budget=profile.budget or None,
+        )
+        for profile in profiles
+    ]
+
+
+@router.get("/session/{session_id}", response=SessionDetailOut)
+def session_detail(request, session_id: uuid.UUID):
+    session = get_object_or_404(
+        QuizSession.objects.select_related("result_profile"), id=session_id
+    )
+    if session.user_id:
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated or user.id != session.user_id:
+            raise HttpError(404, "Session not found")
+
+    picks_qs = session.picks.select_related("product").order_by("rank")
+    picks = [
+        MatchPickOut(
+            product_id=str(pick.product_id),
+            slug=pick.product_slug,
+            brand=pick.brand,
+            product_name=pick.product_name,
+            category=pick.category,
+            rank=pick.rank,
+            score=float(pick.score),
+            price_snapshot=float(pick.price_snapshot) if pick.price_snapshot is not None else None,
+            currency=pick.currency,
+            ingredients=list(pick.ingredients or []),
+            rationale=pick.rationale or {},
+            image_url=pick.product.image_url,
+            product_url=pick.product.product_url,
+        )
+        for pick in picks_qs
+    ]
+
+    profile = (
+        _serialize_profile(session.result_profile)
+        if hasattr(session, "result_profile") and session.result_profile
+        else None
+    )
+
+    return SessionDetailOut(
+        session_id=session.id,
+        started_at=session.started_at,
+        completed_at=session.completed_at,
+        picks=picks,
+        profile=profile,
+    )
+
+
+def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
+    """Generate ranked recommendations for a completed quiz session."""
+
+    profile = session.profile_snapshot or {}
+    traits = _extract_profile_traits(profile)
+
+    recommendations: list = []
+    summary: dict = {}
+
+    if include_products:
+        recommendations, summary = recommend_products(
+            primary_concerns=traits["primary_concerns"],
+            secondary_concerns=traits["secondary_concerns"],
+            eye_area_concerns=traits["eye_area_concerns"],
+            skin_type=traits["skin_type"],
+            sensitivity=traits["sensitivity"],
+            restrictions=traits["restrictions"],
+            budget=traits["budget"],
+        )
+    else:
+        # still leverage scoring to build ingredient summary while hiding products
+        _, summary = recommend_products(
+            primary_concerns=traits["primary_concerns"],
+            secondary_concerns=traits["secondary_concerns"],
+            eye_area_concerns=traits["eye_area_concerns"],
+            skin_type=traits["skin_type"],
+            sensitivity=traits["sensitivity"],
+            restrictions=traits["restrictions"],
+            budget=traits["budget"],
+        )
+
+    session.picks.all().delete()
+
+    picks_payload: list[dict] = []
+    if include_products:
+        for rank, recommendation in enumerate(recommendations, start=1):
+            product = recommendation.product
+            MatchPick.objects.create(
+                session=session,
+                product=product,
+                product_slug=product.slug,
+                product_name=product.name,
+                brand=product.brand,
+                category=product.category,
+                rank=rank,
+                score=recommendation.score,
+                ingredients=recommendation.ingredients,
+                price_snapshot=product.price,
+                currency=product.currency,
+                rationale=recommendation.rationale,
+            )
+
+            picks_payload.append(
+                {
+                    "product_id": str(product.id),
+                    "slug": product.slug,
+                    "brand": product.brand,
+                    "product_name": product.name,
+                    "category": product.category,
+                    "rank": rank,
+                    "score": _decimal_to_float(recommendation.score),
+                    "price_snapshot": _decimal_to_float(product.price),
+                    "currency": product.currency,
+                    "image_url": product.image_url,
+                    "product_url": product.product_url,
+                    "ingredients": recommendation.ingredients,
+                    "rationale": recommendation.rationale,
+                    "brand_name": product.brand,
+                }
+            )
+
+    return {
+        "summary": {
+            **summary,
+            "generated_at": timezone.now().isoformat(),
+            "score_version": session.score_version,
+        },
+        "recommendations": picks_payload,
+    }
+
+
+def _build_answer_snapshot(answers: Iterable[Answer]) -> dict:
+    snapshot: dict[str, object] = {}
+    for answer in answers:
+        values = [choice.value for choice in answer.choices.all()]
+        key = answer.question.key
+        if answer.question.is_multi:
+            snapshot[key] = values
+        else:
+            snapshot[key] = values[0] if values else None
+    return snapshot
+
+
+def _map_snapshot_to_profile(snapshot: dict) -> dict:
+    def as_list(value) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple, set)):
+            return [str(v) for v in value if v not in (None, "none", "None")]
+        if value in ("none", "None"):
+            return []
+        return [str(value)]
+
+    profile = {
+        "primary_concerns": as_list(
+            snapshot.get("main_concern") or snapshot.get("primary_concerns")
+        ),
+        "secondary_concerns": as_list(
+            snapshot.get("secondary_concern") or snapshot.get("secondary_concerns")
+        ),
+        "eye_area_concerns": as_list(
+            snapshot.get("eye_concern")
+            or snapshot.get("eye_area_concerns")
+            or snapshot.get("eye_concerns")
+        ),
+        "skin_type": snapshot.get("skin_type"),
+        "sensitivity": snapshot.get("sensitivity"),
+        "ingredient_restrictions": as_list(snapshot.get("ingredient_restrictions")),
+        "budget": snapshot.get("budget") or snapshot.get("budget_preference"),
+    }
+
+    pregnancy_value = (
+        snapshot.get("pregnant")
+        or snapshot.get("pregnant_or_breastfeeding")
+        or snapshot.get("pregnant_breastfeeding")
+    )
+    if pregnancy_value in (True, False, None):
+        profile["pregnant_or_breastfeeding"] = pregnancy_value
+    elif isinstance(pregnancy_value, str):
+        normalized = pregnancy_value.lower().strip()
+        if normalized in {"yes", "true"}:
+            profile["pregnant_or_breastfeeding"] = True
+        elif normalized in {"no", "false"}:
+            profile["pregnant_or_breastfeeding"] = False
+        else:
+            profile["pregnant_or_breastfeeding"] = None
+    else:
+        profile["pregnant_or_breastfeeding"] = None
+
+    return profile
+
+
+def _persist_skin_profile(session: QuizSession, profile_payload: dict) -> SkinProfile:
+    if not session.user_id:
+        raise ValueError("Cannot persist skin profile for anonymous session")
+    with transaction.atomic():
+        SkinProfile.objects.filter(user=session.user, is_latest=True).update(is_latest=False)
+        profile = SkinProfile.objects.create(
+            user=session.user,
+            session=session,
+            primary_concerns=profile_payload.get("primary_concerns", []),
+            secondary_concerns=profile_payload.get("secondary_concerns", []),
+            eye_area_concerns=profile_payload.get("eye_area_concerns", []),
+            skin_type=profile_payload.get("skin_type", ""),
+            sensitivity=profile_payload.get("sensitivity", ""),
+            pregnant_or_breastfeeding=profile_payload.get("pregnant_or_breastfeeding"),
+            ingredient_restrictions=profile_payload.get("ingredient_restrictions", []),
+            budget=profile_payload.get("budget", ""),
+            answer_snapshot=session.answer_snapshot,
+            result_summary=session.result_summary,
+            score_version=session.score_version,
+            is_latest=True,
+        )
+    return profile
+
+
+def _serialize_profile(profile: SkinProfile | None) -> SkinProfileOut | None:
+    if not profile:
+        return None
+    return SkinProfileOut(
+        id=profile.id,
+        session_id=profile.session_id,
+        created_at=profile.created_at,
+        primary_concerns=list(profile.primary_concerns or []),
+        secondary_concerns=list(profile.secondary_concerns or []),
+        eye_area_concerns=list(profile.eye_area_concerns or []),
+        skin_type=profile.skin_type or None,
+        sensitivity=profile.sensitivity or None,
+        pregnant_or_breastfeeding=profile.pregnant_or_breastfeeding,
+        ingredient_restrictions=list(profile.ingredient_restrictions or []),
+        budget=profile.budget or None,
+        is_latest=profile.is_latest,
+    )
+
+
+def _extract_profile_traits(profile: dict) -> dict:
+    return {
+        "primary_concerns": _ensure_list(profile.get("primary_concerns")),
+        "secondary_concerns": _ensure_list(profile.get("secondary_concerns")),
+        "eye_area_concerns": _ensure_list(profile.get("eye_area_concerns")),
+        "skin_type": _ensure_str(profile.get("skin_type")),
+        "sensitivity": _ensure_str(profile.get("sensitivity")),
+        "restrictions": _ensure_list(profile.get("ingredient_restrictions")),
+        "budget": _ensure_str(profile.get("budget")),
+    }
+
+
+def _ensure_list(value) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item).strip() for item in value if item]
+    return [str(value).strip()]
+
+
+def _ensure_str(value) -> str | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _decimal_to_float(value):
+    if value is None:
+        return None
+    return float(value)

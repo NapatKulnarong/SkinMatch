@@ -1,0 +1,217 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Iterable, Sequence
+
+from django.db.models import Prefetch
+from django.utils.text import slugify
+
+from .models import (
+    Ingredient,
+    Product,
+    SkinConcern,
+)
+
+TraitList = Sequence[str]
+
+
+@dataclass(frozen=True)
+class Recommendation:
+    product: Product
+    score: Decimal
+    ingredients: list[str]
+    rationale: dict[str, list[str]]
+
+
+def recommend_products(
+    *,
+    primary_concerns: TraitList,
+    secondary_concerns: TraitList,
+    eye_area_concerns: TraitList,
+    skin_type: str | None,
+    sensitivity: str | None,
+    restrictions: TraitList,
+    budget: str | None,
+    limit: int = 5,
+) -> tuple[list[Recommendation], dict]:
+    """Rank products in the catalog based on quiz traits."""
+
+    normalized_budget = _slug(budget)
+    normalized_skin = _slug(skin_type)
+    normalized_sensitivity = _slug(sensitivity)
+    restriction_set = {_slug(value) for value in restrictions if value}
+
+    primary_slugs = [_slug(value) for value in primary_concerns if value]
+    secondary_slugs = [_slug(value) for value in secondary_concerns if value]
+    eye_slugs = [_slug(value) for value in eye_area_concerns if value]
+
+    concern_keys = set(primary_slugs + secondary_slugs + eye_slugs)
+    concern_map = {
+        concern.key: concern
+        for concern in SkinConcern.objects.filter(key__in=concern_keys)
+    }
+
+    qs = (
+        Product.objects.filter(is_active=True)
+        .prefetch_related(
+            Prefetch("restrictions", to_attr="prefetched_restrictions"),
+            Prefetch("skin_types", to_attr="prefetched_skin_types"),
+            Prefetch(
+                "concerns",
+                queryset=SkinConcern.objects.all(),
+                to_attr="prefetched_concerns",
+            ),
+            Prefetch(
+                "ingredients",
+                queryset=Ingredient.objects.all().order_by("productingredient__order"),
+                to_attr="prefetched_ingredients",
+            ),
+        )
+    )
+
+    ranked: list[tuple[Decimal, Product, dict[str, list[str]]]] = []
+
+    for product in qs:
+        product_score = Decimal("0")
+        rationale: dict[str, list[str]] = {}
+
+        product_concern_slugs = {concern.key for concern in getattr(product, "prefetched_concerns", [])}
+
+        pri_hits = _count_matches(primary_slugs, product_concern_slugs)
+        if pri_hits:
+            product_score += Decimal(len(pri_hits) * 40)
+            rationale["primary_concerns"] = _resolve_concern_names(pri_hits, concern_map)
+
+        sec_hits = _count_matches(secondary_slugs, product_concern_slugs)
+        if sec_hits:
+            product_score += Decimal(len(sec_hits) * 20)
+            rationale["secondary_concerns"] = _resolve_concern_names(sec_hits, concern_map)
+
+        eye_hits = _count_matches(eye_slugs, product_concern_slugs)
+        if eye_hits:
+            product_score += Decimal(len(eye_hits) * 10)
+            rationale["eye_area"] = _resolve_concern_names(eye_hits, concern_map)
+
+        if normalized_skin:
+            product_skin_types = {stype.key for stype in getattr(product, "prefetched_skin_types", [])}
+            if normalized_skin in product_skin_types:
+                product_score += Decimal("15")
+                rationale.setdefault("skin_type", []).append(normalized_skin)
+            elif product_skin_types:
+                product_score -= Decimal("5")
+
+        if normalized_sensitivity:
+            product_sensitivity_tags = {stype.key for stype in getattr(product, "prefetched_skin_types", [])}
+            if normalized_sensitivity in product_sensitivity_tags:
+                product_score += Decimal("12")
+                rationale.setdefault("sensitivity", []).append(normalized_sensitivity)
+
+        if restriction_set:
+            product_restrictions = {tag.key for tag in getattr(product, "prefetched_restrictions", [])}
+            if restriction_set - product_restrictions:
+                continue  # skip products that lack requested restrictions
+            rationale.setdefault("restrictions", []).extend(sorted(restriction_set))
+
+        if normalized_budget:
+            product_budget = _slug(product.currency)
+            if product.currency == "USD":
+                budget_band = _budget_band(product.price)
+            else:
+                budget_band = "mid"
+
+            if budget_band == normalized_budget:
+                product_score += Decimal("8")
+                rationale.setdefault("budget", []).append(budget_band)
+            elif budget_band == "affordable" and normalized_budget in {"mid", "premium"}:
+                product_score += Decimal("2")
+            elif budget_band == "premium" and normalized_budget == "mid":
+                product_score -= Decimal("3")
+
+        if product_score <= 0:
+            continue
+
+        ranked.append((product_score, product, rationale))
+
+    ranked.sort(key=lambda item: (item[0], -float(item[1].price or 0)), reverse=True)
+
+    recommendations: list[Recommendation] = []
+    for product_score, product, rationale in ranked[:limit]:
+        ingredients = [ingredient.common_name for ingredient in getattr(product, "prefetched_ingredients", [])]
+        recommendations.append(
+            Recommendation(
+                product=product,
+                score=product_score.quantize(Decimal("0.001")),
+                ingredients=ingredients,
+                rationale=rationale,
+            )
+        )
+
+    summary = _build_summary(primary_slugs, recommendations, concern_map)
+    return recommendations, summary
+
+
+def _slug(value: str | None) -> str:
+    if not value:
+        return ""
+    return slugify(value)
+
+
+def _count_matches(values: Iterable[str], haystack: set[str]) -> set[str]:
+    matches: set[str] = set()
+    for value in values:
+        if value in haystack:
+            matches.add(value)
+    return matches
+
+
+def _resolve_concern_names(concern_slugs: Iterable[str], concern_map: dict[str, SkinConcern]) -> list[str]:
+    names: list[str] = []
+    for slug in concern_slugs:
+        concern = concern_map.get(slug)
+        if concern:
+            names.append(concern.name)
+        else:
+            names.append(slug.replace("-", " ").title())
+    return names
+
+
+def _budget_band(price: Decimal | None) -> str:
+    if price is None:
+        return "mid"
+    if price < Decimal("20"):
+        return "affordable"
+    if price < Decimal("45"):
+        return "mid"
+    return "premium"
+
+
+def _build_summary(
+    primary_concerns: TraitList,
+    recommendations: list[Recommendation],
+    concern_map: dict[str, SkinConcern],
+) -> dict:
+    category_counts: dict[str, int] = {}
+    ingredient_frequency: dict[str, int] = {}
+
+    for recommendation in recommendations:
+        category_counts[recommendation.product.category] = (
+            category_counts.get(recommendation.product.category, 0) + 1
+        )
+        for ingredient in recommendation.ingredients:
+            ingredient_frequency[ingredient] = ingredient_frequency.get(ingredient, 0) + 1
+
+    top_ingredients = [
+        name
+        for name, _ in sorted(
+            ingredient_frequency.items(), key=lambda item: item[1], reverse=True
+        )[:5]
+    ]
+
+    primary_labels = _resolve_concern_names(primary_concerns, concern_map)
+
+    return {
+        "primary_concerns": primary_labels,
+        "top_ingredients": top_ingredients,
+        "category_breakdown": category_counts,
+    }
