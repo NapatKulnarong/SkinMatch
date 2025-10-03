@@ -83,6 +83,7 @@ class Product(models.Model):
         KRW = "KRW", "KRW"
         JPY = "JPY", "JPY"
         EUR = "EUR", "EUR"
+        THB = "THB", "THB"
 
     class Origin(models.TextChoices):
         SOUTH_KOREA = "KR", "South Korea"
@@ -91,6 +92,8 @@ class Product(models.Model):
         FRANCE = "FR", "France"
         UNITED_KINGDOM = "GB", "United Kingdom"
         CANADA = "CA", "Canada"
+        THAI = "TH", "Thailand"
+        CHINA = "CH", "China"
         OTHER = "OT", "Other"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
