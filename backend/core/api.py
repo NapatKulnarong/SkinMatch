@@ -1,7 +1,18 @@
 from ninja import NinjaAPI, Schema, ModelSchema
 from .models import UserProfile
 from typing import List, Optional
-from pydantic import ConfigDict, EmailStr, field_validator
+from pydantic import ConfigDict, field_validator
+try:
+    from pydantic import EmailStr as _EmailStr
+except ImportError:  # pragma: no cover - fallback for limited environments
+    EmailStr = str  # type: ignore
+else:
+    try:
+        import email_validator  # noqa: F401
+    except ImportError:  # pragma: no cover - fallback when email-validator missing
+        EmailStr = str  # type: ignore
+    else:
+        EmailStr = _EmailStr  # type: ignore
 from datetime import datetime, date
 from .auth import create_access_token, JWTAuth
 import uuid
@@ -128,8 +139,8 @@ def signup(request, payload: SignUpIn):
 
 @api.post("/auth/logout", response=tokenOut, auth=JWTAuth())
 def token_logout(request):
-    # Stateless JWT: nothing to revoke on the server by default.
-    # Client should delete stored token.
+    # Stateless JWT: nothing to revoke on the server by default
+    # Client should delete stored token
     return {"ok": True, "token": None, "message": "Logged out (token discarded client-side)"}
 
 @api.get("/auth/me", response=ProfileOut, auth=JWTAuth())
