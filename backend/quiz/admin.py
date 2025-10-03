@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    Ingredient,
     MatchPick,
     Product,
     ProductConcern,
@@ -8,10 +9,9 @@ from .models import (
     ProductSkinType,
     QuizFeedback,
     QuizSession,
+    RestrictionTag,
     SkinConcern,
     SkinTypeTag,
-    RestrictionTag,
-    Ingredient,
 )
 
 
@@ -31,14 +31,36 @@ class QuizFeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at",)
 
 
+class ProductIngredientInline(admin.TabularInline):
+    model = ProductIngredient
+    extra = 1
+    autocomplete_fields = ("ingredient",)
+    fields = ("ingredient", "order", "highlight")
+
+
+class ProductConcernInline(admin.TabularInline):
+    model = ProductConcern
+    extra = 1
+    autocomplete_fields = ("concern",)
+    fields = ("concern", "weight")
+
+
+class ProductSkinTypeInline(admin.TabularInline):
+    model = ProductSkinType
+    extra = 1
+    autocomplete_fields = ("skin_type",)
+    fields = ("skin_type", "compatibility")
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ("name", "brand", "category", "origin_country", "price", "currency", "is_active")
     search_fields = ("name", "brand", "slug")
     list_filter = ("category", "origin_country", "is_active")
     prepopulated_fields = {"slug": ("brand", "name")}
-    filter_horizontal = ("restrictions",)
+    autocomplete_fields = ("restrictions",)
     readonly_fields = ("created_at", "updated_at")
+    inlines = [ProductIngredientInline, ProductConcernInline, ProductSkinTypeInline]
 
 
 @admin.register(Ingredient)
@@ -70,18 +92,21 @@ class ProductIngredientAdmin(admin.ModelAdmin):
     list_display = ("product", "ingredient", "order", "highlight")
     list_filter = ("highlight",)
     search_fields = ("product__name", "ingredient__common_name")
+    autocomplete_fields = ("product", "ingredient")
 
 
 @admin.register(ProductConcern)
 class ProductConcernAdmin(admin.ModelAdmin):
     list_display = ("product", "concern", "weight")
     search_fields = ("product__name", "concern__name")
+    autocomplete_fields = ("product", "concern")
 
 
 @admin.register(ProductSkinType)
 class ProductSkinTypeAdmin(admin.ModelAdmin):
     list_display = ("product", "skin_type", "compatibility")
     search_fields = ("product__name", "skin_type__name")
+    autocomplete_fields = ("product", "skin_type")
 
 
 @admin.register(MatchPick)
