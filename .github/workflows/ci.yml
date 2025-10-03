@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+    branches: [ "main", "experiment/**", "feature/**" ]
+  pull_request:
+    branches: [ "main", "experiment/**" ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: skinmatch
+          POSTGRES_USER: skinuser
+          POSTGRES_PASSWORD: skinpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U skinuser -d skinmatch"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+
+    env:
+      DATABASE_URL: postgres://skinuser:skinpass@localhost:5432/skinmatch
+      DJANGO_SECRET_KEY: dummy
+      DJANGO_DEBUG: "False"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements.txt
+      - run: python backend/manage.py migrate
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm test --if-present
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
