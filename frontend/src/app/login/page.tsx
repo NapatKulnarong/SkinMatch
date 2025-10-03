@@ -1,79 +1,170 @@
-// frontend/src/app/login/page.tsx  (same file you posted)
+// frontend/src/app/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchProfile, login as loginRequest, signup as signupRequest } from "@/lib/api.auth";
+import { clearSession, saveProfile, setAuthToken } from "@/lib/auth-storage";
 
 type Mode = "intro" | "signup" | "login";
+
+type SignupState = {
+  name: string;
+  surname: string;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  dob: string;
+  gender: string;
+};
+
+type LoginState = {
+  email: string;
+  password: string;
+};
+
+const initialSignup: SignupState = {
+  name: "",
+  surname: "",
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  dob: "",
+  gender: "",
+};
+
+const initialLogin: LoginState = {
+  email: "",
+  password: "",
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("intro");
+  const [signup, setSignup] = useState<SignupState>(initialSignup);
+  const [login, setLogin] = useState<LoginState>(initialLogin);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  /* ----------------------------- Signup state ----------------------------- */
-  const [signup, setSignup] = useState({
-    name: "",
-    surname: "",
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    dob: "",
-    gender: "",
-  });
-
-  /* ------------------------------ Login state ----------------------------- */
-  const [login, setLogin] = useState({
-    email: "",
-    password: "",
-  });
+  const changeMode = (next: Mode) => {
+    setMode(next);
+    setSignupError(null);
+    setLoginError(null);
+  };
 
   const onSignupChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setSignup((f) => ({ ...f, [name]: value }));
+    setSignup((prev) => ({ ...prev, [name]: value }));
   };
 
   const onLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setLogin((f) => ({ ...f, [name]: value }));
+    setLogin((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ---- MOCK "API" helpers (remove when Django is connected)
-  function mockPersistSession(u: { name?: string; email: string; username?: string }) {
-    localStorage.setItem(
-      "sm_session",
-      JSON.stringify({
-        email: u.email,
-        name: u.name || u.username || "SkinMatch user",
-        createdAt: Date.now(),
-      })
-    );
-  }
+ const handleSignup = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSignupError(null);
 
-  const submitSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (signup.password.length < 8)
-      return alert("Password must be at least 8 characters.");
-    if (signup.password !== signup.confirmPassword)
-      return alert("Passwords do not match.");
+    if (signup.password.length < 8) {
+      setSignupError("Password must be at least 8 characters.");
+      return;
+    }
+    if (signup.password !== signup.confirmPassword) {
+      setSignupError("Passwords do not match.");
+      return;
+    }
 
-    // mock “success” while backend isn’t wired
-    console.log("📝 SIGNUP payload:", signup);
-    mockPersistSession({ name: `${signup.name} ${signup.surname}`.trim(), email: signup.email, username: signup.username });
-    router.push("/account"); // go to user details page
+    let formattedDob: string | undefined;
+    if (signup.dob) {
+      const isoMatch = signup.dob.match(/^\d{4}-\d{2}-\d{2}$/);
+      const slashMatch = signup.dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (isoMatch) {
+        formattedDob = signup.dob;
+      } else if (slashMatch) {
+        // convert DD/MM/YYYY -> YYYY-MM-DD
+        const [, day, month, year] = slashMatch;
+        formattedDob = `${year}-${month}-${day}`;
+      } else {
+        setSignupError("Date of birth must be in YYYY-MM-DD format.");
+        return;
+      }
+    }
+
+    setSignupLoading(true);
+    try {
+      await signupRequest({
+        first_name: signup.name.trim(),
+        last_name: signup.surname.trim(),
+        username: signup.username.trim(),
+        email: signup.email.trim().toLowerCase(),
+        password: signup.password,
+        confirm_password: signup.confirmPassword,
+        date_of_birth: formattedDob,
+        gender: signup.gender || undefined,
+      });
+
+      const loginResponse = await loginRequest({
+        email: signup.email.trim().toLowerCase(),
+        password: signup.password,
+      });
+      const token = loginResponse.token!;
+      setAuthToken(token);
+
+      try {
+        const profile = await fetchProfile(token);
+        saveProfile(profile);
+      } catch (profileError) {
+        console.warn("Unable to load profile after signup", profileError);
+      }
+
+      router.push("/account");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Signup failed. Please try again.";
+      setSignupError(message);
+    } finally {
+      setSignupLoading(false);
+    }
   };
 
-  const submitLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // mock “success” while backend isn’t wired
-    console.log("🔐 LOGIN payload:", login);
-    mockPersistSession({ email: login.email });
-    router.push("/account"); // go to user details page
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoginError(null);
+    setLoginLoading(true);
+    clearSession();
+
+    try {
+      const loginResponse = await loginRequest({
+        email: login.email.trim().toLowerCase(),
+        password: login.password,
+      });
+      const token = loginResponse.token!;
+      setAuthToken(token);
+
+      try {
+        const profile = await fetchProfile(token);
+        saveProfile(profile);
+      } catch (profileError) {
+        console.warn("Unable to load profile", profileError);
+      }
+
+      router.push("/account");
+    } catch (error: unknown) {
+      clearSession();
+      const message = error instanceof Error ? error.message : "Login failed. Please try again.";
+      setLoginError(message);
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
-  // Swap the card background here so the rounded corners stay perfect.
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
@@ -115,13 +206,8 @@ export default function LoginPage() {
             <div className="bg-[#B6A6D8] p-6">
               <button
                 type="button"
-                onClick={() => setMode("signup")}
-                className="mt-1 w-full inline-flex items-center justify-center gap-3
-                           rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg 
-                           font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all 
-                           duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] 
-                           active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
-                           focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                onClick={() => changeMode("signup")}
+                className="mt-1 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
                 <span>Sign up</span>
               </button>
@@ -130,7 +216,7 @@ export default function LoginPage() {
                 Already have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setMode("login")}
+                  onClick={() => changeMode("login")}
                   className="font-semibold text-[#3B2F4A] hover:underline"
                 >
                   Login
@@ -146,7 +232,7 @@ export default function LoginPage() {
               Create your account
             </h2>
 
-            <form onSubmit={submitSignup} className="mt-4 space-y-4">
+            <form onSubmit={handleSignup} className="mt-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Name">
                   <input
@@ -185,10 +271,12 @@ export default function LoginPage() {
                     onChange={onSignupChange}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none text-gray-800"
                   >
-                    <option value="" disabled>Click to select</option>
+                    <option value="" disabled>
+                      Click to select
+                    </option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="na">Prefer not to say</option>
+                    <option value="prefer_not">Prefer not to say</option>
                   </select>
                 </Field>
 
@@ -236,10 +324,14 @@ export default function LoginPage() {
                 </Field>
               </div>
 
+              {signupError && (
+                <p className="text-sm font-semibold text-red-700">{signupError}</p>
+              )}
+
               <div className="pt-2 flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setMode("intro")}
+                  onClick={() => changeMode("intro")}
                   className="text-sm font-semibold text-[#2C2533] hover:underline"
                 >
                   ← Back
@@ -247,9 +339,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                  disabled={signupLoading}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Confirm
+                  {signupLoading ? "Creating account..." : "Confirm"}
                 </button>
               </div>
             </form>
@@ -258,11 +351,9 @@ export default function LoginPage() {
 
         {mode === "login" && (
           <div className="p-8">
-            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
-              Welcome back
-            </h2>
+            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
-            <form onSubmit={submitLogin} className="mt-4 space-y-6">
+            <form onSubmit={handleLogin} className="mt-4 space-y-6">
               <Field label="Email" colSpan={2}>
                 <input
                   type="email"
@@ -285,10 +376,14 @@ export default function LoginPage() {
                 />
               </Field>
 
+              {loginError && (
+                <p className="text-sm font-semibold text-red-700">{loginError}</p>
+              )}
+
               <div className="flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setMode("intro")}
+                  onClick={() => changeMode("intro")}
                   className="text-sm font-semibold text-[#2C2533] hover:underline"
                 >
                   ← Back
@@ -296,7 +391,7 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => alert("Pretend we start a reset flow 🙂")}
+                  onClick={() => alert("Password reset flow coming soon!")}
                   className="text-sm font-semibold text-[#6B5D83] hover:underline"
                 >
                   Forgot Password?
@@ -306,9 +401,10 @@ export default function LoginPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                  disabled={loginLoading}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Confirm
+                  {loginLoading ? "Logging in..." : "Login"}
                 </button>
               </div>
             </form>
@@ -318,8 +414,6 @@ export default function LoginPage() {
     </main>
   );
 }
-
-/* -------------------------------- Helpers -------------------------------- */
 
 function Field({
   label,
