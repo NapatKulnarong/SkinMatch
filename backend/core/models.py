@@ -134,4 +134,4 @@ class SkinProfile(models.Model):
     def __str__(self):
         part = self.primary_concerns[:1] if isinstance(self.primary_concerns, list) else []
         concern = part[0] if part else "profile"
-        return f"{self.user} – {concern} ({self.created_at:%Y-%m-%d})"
+        return f"{self.user} – {concern} ({self.created_at:%d/%m/%Y})"
