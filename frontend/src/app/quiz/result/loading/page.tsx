@@ -1,8 +1,11 @@
 // src/app/quiz/result/loading/page.tsx
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { TOTAL_STEPS } from "../../_config";
 import StepNavArrows from "../../_StepNavArrows";
+import { useQuiz } from "../../_QuizContext";
 
 const tips = [
   "Reading your answers to understand your skin goals",
@@ -11,6 +14,17 @@ const tips = [
 ];
 
 export default function QuizLoadingPage() {
+  const router = useRouter();
+  const { answers } = useQuiz();
+  const hasDetails = Boolean(answers.primaryConcern);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.replace(hasDetails ? "/quiz/result" : "/quiz");
+    }, 1400);
+    return () => clearTimeout(timeout);
+  }, [router, hasDetails]);
+
   return (
     <main className="min-h-screen bg-[#FFF6E9] flex items-center justify-center">
       <section className="w-full max-w-[1200px] px-4">
@@ -26,8 +40,8 @@ export default function QuizLoadingPage() {
 
           <div className="relative z-10 flex flex-col items-center justify-center gap-8 p-10 sm:p-12 h-[80vh] max-h-[700px] text-center">
             <div className="relative h-24 w-24">
-              <div className="absolute inset-4 rounded-full border-5 border-[#3C3D37]/40" />
-              <div className="absolute inset-4 rounded-full border-5 border-[#3C3D37] border-t-transparent animate-spin" />
+              <div className="absolute inset-4 rounded-full border-[5px] border-[#3C3D37]/40" />
+              <div className="absolute inset-4 rounded-full border-[5px] border-[#3C3D37] border-t-transparent animate-spin" />
             </div>
 
             <div className="space-y-3">
@@ -42,7 +56,7 @@ export default function QuizLoadingPage() {
             <ul className="space-y-2 font-medium text-[#3C3D37] text-sm sm:text-base">
               {tips.map((tip) => (
                 <li key={tip} className="flex items-center justify-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#3C3D37] e/70" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3C3D37]/70" aria-hidden />
                   {tip}
                 </li>
               ))}

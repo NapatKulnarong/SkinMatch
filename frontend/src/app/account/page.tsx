@@ -48,7 +48,7 @@ export default function AccountPage() {
 
   // Default avatar logic: use user's avatar_url if present; otherwise a local placeholder
   const avatarSrc = useMemo(() => {
-    const url = (profile as any)?.avatar_url?.toString()?.trim();
+    const url = profile?.avatar_url?.trim();
     if (url) return url; // If you allow remote URLs, ensure next.config.js allows that domain
     return "/img/avatar_placeholder.png"; // <-- put your default image here
   }, [profile]);

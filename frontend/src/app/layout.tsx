@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Quicksand, Caveat } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";   // ⬅️ Import your Navbar
+import Navbar from "@/components/Navbar"; // ⬅️ Import your Navbar
+import { NavWidthProvider } from "@/components/NavWidthContext";
 
 // import the Quicksand font with the weights you need
 const quicksand = Quicksand({
@@ -31,8 +32,10 @@ export default function RootLayout({
       {/* apply the font to the whole body */}
       <body className={quicksand.className}>
         {/* Navbar appears on every page */}
-        <Navbar />
-        {children}
+        <NavWidthProvider>
+          <Navbar />
+          {children}
+        </NavWidthProvider>
       </body>
     </html>
   );

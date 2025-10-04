@@ -4,10 +4,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavWidthSetter } from "./NavWidthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement | null>(null);
+  const setNavWidth = useNavWidthSetter();
 
   // same look/size as your Button (flat)
   const pillBase =
@@ -39,10 +42,41 @@ export default function Navbar() {
       if (stored) setUsername(stored);
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const node = headerRef.current;
+    if (!node) return;
+
+    const updateWidth = () => {
+      const width = node.getBoundingClientRect().width;
+      setNavWidth(Math.round(width));
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(() => updateWidth());
+      observer.observe(node);
+      return () => {
+        observer.disconnect();
+        setNavWidth(null);
+      };
+    }
+
+    const handleResize = () => updateWidth();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      setNavWidth(null);
+    };
+  }, [setNavWidth]);
   const loginLabel = username && username.trim() !== "" ? username : "Login / Sign Up";
 
   return (
-    <header className="absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-20">
+    <header
+      ref={headerRef}
+      className="absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-20"
+    >
       {/* Logo on the left (unchanged) */}
       <div className="flex items-center space-x-2">
         <Image src="/logo.png" alt="SkinMatch Logo" width={130} height={130} />
