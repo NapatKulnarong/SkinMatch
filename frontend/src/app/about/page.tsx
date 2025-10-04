@@ -81,7 +81,7 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#bcdcf6]">
       {/* Intro Letter */}
-      <section className="px-6 pt-28 pb-14">
+      <section className="px-6 pt-32 pb-14">
         <div
           className="relative w-full rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)]"
           style={{
