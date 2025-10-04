@@ -59,3 +59,79 @@ class UserProfile(models.Model):
     def full_name(self):
         n = f"{self.user.first_name} {self.user.last_name}".strip()
         return n or self.user.username
+    
+
+class SkinProfile(models.Model):
+    """Stores an immutable snapshot of a quiz result for a user."""
+
+    class SkinType(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        OILY = "oily", "Oily"
+        DRY = "dry", "Dry"
+        COMBINATION = "combination", "Combination"
+
+    class Sensitivity(models.TextChoices):
+        YES = "yes", "Yes"
+        SOMETIMES = "sometimes", "Sometimes"
+        NO = "no", "No"
+
+    class Budget(models.TextChoices):
+        AFFORDABLE = "affordable", "Affordable"
+        MID_RANGE = "mid", "Mid-range"
+        PREMIUM = "premium", "Premium / luxury"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="skin_profiles",
+        db_index=True,
+    )
+    session = models.OneToOneField(
+        "quiz.QuizSession",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="result_profile",
+    )
+
+    primary_concerns = models.JSONField(default=list, blank=True)
+    secondary_concerns = models.JSONField(default=list, blank=True)
+    eye_area_concerns = models.JSONField(default=list, blank=True)
+    skin_type = models.CharField(
+        max_length=20,
+        choices=SkinType.choices,
+        blank=True,
+    )
+    sensitivity = models.CharField(
+        max_length=12,
+        choices=Sensitivity.choices,
+        blank=True,
+    )
+    pregnant_or_breastfeeding = models.BooleanField(null=True, blank=True)
+    ingredient_restrictions = models.JSONField(default=list, blank=True)
+    budget = models.CharField(
+        max_length=12,
+        choices=Budget.choices,
+        blank=True,
+    )
+
+    answer_snapshot = models.JSONField(default=dict, blank=True)
+    result_summary = models.JSONField(default=dict, blank=True)
+    score_version = models.CharField(max_length=20, default="v1")
+    is_latest = models.BooleanField(default=True, db_index=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["user", "is_latest"]),
+        ]
+
+    def __str__(self):
+        part = self.primary_concerns[:1] if isinstance(self.primary_concerns, list) else []
+        concern = part[0] if part else "profile"
+        return f"{self.user} – {concern} ({self.created_at:%Y-%m-%d})"

@@ -1,5 +1,13 @@
 # core/auth.py
-import jwt
+from __future__ import annotations
+
+try:
+    import jwt
+except ImportError as exc:  # pragma: no cover - dependency guard
+    jwt = None  # type: ignore[assignment]
+    _jwt_import_error = exc
+else:
+    _jwt_import_error = None
 from datetime import datetime, timedelta, timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -14,6 +22,8 @@ def create_access_token(user: User) -> str:
     """
     Create a signed JWT access token with user_id and exp.
     """
+    if jwt is None:  # pragma: no cover - runtime guard
+        raise RuntimeError("PyJWT is not installed. Please add 'PyJWT' to your environment.") from _jwt_import_error
     payload = {
         "sub": str(user.id),
         "user_id": user.id,
@@ -25,6 +35,8 @@ def create_access_token(user: User) -> str:
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 def decode_token(token: str) -> dict | None:
+    if jwt is None:  # pragma: no cover - runtime guard
+        raise RuntimeError("PyJWT is not installed. Please add 'PyJWT' to your environment.") from _jwt_import_error
     try:
         return jwt.decode(
             token,
