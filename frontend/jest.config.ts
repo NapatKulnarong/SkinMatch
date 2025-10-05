@@ -1,22 +1,20 @@
-import nextJest from 'next/jest';
+import nextJest from 'next/jest.js';
 
-const createJestConfig = nextJest({ dir: './' });
+const createJestConfig = nextJest({
+  dir: './', 
+});
 
-const custom = {
+
+const customJestConfig = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(msw|@mswjs|strict-event-emitter|headers-polyfill|until-async|is-node-process)/)',
+  ],
 };
 
-export default createJestConfig({
-    testEnvironment: 'jsdom',
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-    moduleNameMapper: {
-      '^@/(.*)$': '<rootDir>/src/$1',
-    },
-    transformIgnorePatterns: [
-      'node_modules/(?!(@mswjs/interceptors|msw|until-async|headers-polyfill|strict-event-emitter|is-node-process)/)',
-    ],
-  });
+export default createJestConfig(customJestConfig);
