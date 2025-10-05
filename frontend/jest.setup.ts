@@ -5,5 +5,5 @@ import fetchMock from 'jest-fetch-mock';
 fetchMock.enableMocks();
 
 import { TextEncoder, TextDecoder } from 'util';
-(global as any).TextEncoder = TextEncoder;
-(global as any).TextDecoder = TextDecoder as unknown as typeof globalThis.TextDecoder;
+Object.defineProperty(global, 'TextEncoder', { value: TextEncoder });
+Object.defineProperty(global, 'TextDecoder', { value: TextDecoder });
