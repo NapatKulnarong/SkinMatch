@@ -34,6 +34,11 @@ services:
           action: sync
         - path: ./backend/requirements.txt
           action: rebuild
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
