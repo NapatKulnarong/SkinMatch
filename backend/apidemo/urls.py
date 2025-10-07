@@ -15,6 +15,7 @@ from core.api import api
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
+    path("", include("core.urls"))
 ]
 
 # Serve static files during development (DEBUG=True)
