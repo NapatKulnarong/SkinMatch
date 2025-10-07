@@ -45,9 +45,3 @@ htmlcov/
 # MyPy
 .mypy_cache/
 .dmypy.json
-
-# Google OAuth credentials
-OAuth_Client_ID_SkinMatch.json
-**/OAuth_Client_ID_SkinMatch.json
-google-oauth*.json
-*.secret.json
