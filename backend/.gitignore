@@ -46,4 +46,8 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 
-# Ninja API
+# Google OAuth credentials
+OAuth_Client_ID_SkinMatch.json
+**/OAuth_Client_ID_SkinMatch.json
+google-oauth*.json
+*.secret.json
