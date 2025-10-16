@@ -1,13 +1,13 @@
 // src/app/quiz/step/[id]/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StepNavArrows from "../../_StepNavArrows";
 import { RESULT_LOADING_HREF, TOTAL_STEPS } from "../../_config";
+import { QuizAnswerKey, useQuizAnswer } from "../../_QuizContext";
 
-/* -------------------- Options per step -------------------- */
 const OPTIONS_Q2 = [
   "Acne & breakouts",
   "Fine lines & wrinkles",
@@ -26,13 +26,8 @@ const OPTIONS_Q3 = ["Dark circles", "Fine lines & wrinkles", "Puffiness", "None"
 const OPTIONS_Q4 = ["Normal", "Oily", "Dry", "Combination"];
 const OPTIONS_Q5 = ["Yes", "Sometimes", "No"];
 const OPTIONS_Q6 = ["Yes", "No"];
-
-// ❌ Removed the old “ingredient restrictions” (was step 7)
-
-// Budget becomes the new step 7
 const OPTIONS_Q7 = ["Affordable", "Mid-range", "Premium / luxury"];
 
-/* -------------------- Page -------------------- */
 export default function QuizStepPage({ params }: { params: { id: string } }) {
   const step = useMemo(() => Number(params.id) || 2, [params.id]);
 
@@ -45,7 +40,6 @@ export default function QuizStepPage({ params }: { params: { id: string } }) {
   );
 }
 
-/* -------------------- Step switcher -------------------- */
 function renderCardByStep(step: number) {
   switch (step) {
     case 2:
@@ -58,9 +52,9 @@ function renderCardByStep(step: number) {
           accent="#6391ab"
           gridCols="sm:grid-cols-2 lg:grid-cols-3"
           current={step}
+          answerKey="secondaryConcern"
         />
       );
-
     case 3:
       return (
         <QuestionCard
@@ -71,9 +65,9 @@ function renderCardByStep(step: number) {
           accent="#79a7a2"
           gridCols="grid-cols-2"
           current={step}
+          answerKey="eyeConcern"
         />
       );
-
     case 4:
       return (
         <QuestionCard
@@ -84,9 +78,9 @@ function renderCardByStep(step: number) {
           accent="#8caa88"
           gridCols="grid-cols-2"
           current={step}
+          answerKey="skinType"
         />
       );
-
     case 5:
       return (
         <QuestionCard
@@ -97,9 +91,9 @@ function renderCardByStep(step: number) {
           accent="#e3bd7b"
           gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
+          answerKey="sensitivity"
         />
       );
-
     case 6:
       return (
         <QuestionCard
@@ -110,9 +104,9 @@ function renderCardByStep(step: number) {
           accent="#f5ac79"
           gridCols="grid-cols-1 sm:grid-cols-2"
           current={step}
+          answerKey="pregnancy"
         />
       );
-
     case 7:
       return (
         <QuestionCard
@@ -123,16 +117,15 @@ function renderCardByStep(step: number) {
           accent="#cf708b"
           gridCols="grid-cols-1 sm:grid-cols-3"
           current={step}
+          answerKey="budget"
         />
       );
-
     default:
       return <PlaceholderCard current={step} />;
   }
 }
 
-/* -------------------- Reusable Cards -------------------- */
-function QuestionCard(props: {
+type QuestionCardProps = {
   title: string;
   options: string[];
   gradientFrom: string;
@@ -140,10 +133,14 @@ function QuestionCard(props: {
   accent: string;
   gridCols: string;
   current: number;
-}) {
-  const { title, options, gradientFrom, gradientTo, accent, gridCols, current } = props;
-  const [value, setValue] = useState<string | null>(null);
+  answerKey: QuizAnswerKey;
+};
+
+function QuestionCard(props: QuestionCardProps) {
+  const { title, options, gradientFrom, gradientTo, accent, gridCols, current, answerKey } = props;
   const router = useRouter();
+  const { value, setValue } = useQuizAnswer(answerKey);
+
   const isFinalStep = current >= TOTAL_STEPS;
   const nextHref = isFinalStep ? RESULT_LOADING_HREF : `/quiz/step/${current + 1}`;
 
@@ -154,13 +151,11 @@ function QuestionCard(props: {
 
   return (
     <div className="relative rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] overflow-hidden">
-      {/* FULL-BLEED GRADIENT LAYER */}
       <div
         className="absolute inset-0"
         style={{ backgroundImage: `linear-gradient(to bottom, ${gradientFrom}, ${gradientTo})` }}
       />
 
-      {/* ARROWS */}
       <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 z-20">
         <div className="pointer-events-auto">
           <StepNavArrows side="prev" current={current} />
@@ -170,7 +165,6 @@ function QuestionCard(props: {
         </div>
       </div>
 
-      {/* CONTENT */}
       <div className="relative z-10 flex flex-col p-8 sm:p-10 h-[80vh] max-h-[700px]">
         <h1 className="mt-6 text-center text-2xl sm:text-4xl font-extrabold text-gray-800 drop-shadow-[0_2px_0_rgba(0,0,0,0.2)]">
           {title}
@@ -235,11 +229,9 @@ function PlaceholderCard({ current }: { current: number }) {
   );
 }
 
-/* -------------------- Dots (navigation) -------------------- */
 function Dots({ current }: { current: number }) {
   return (
     <div className="mt-auto flex items-center justify-center gap-2 pb-1">
-      {/* First dot goes to /quiz (Q1) */}
       <Link
         href="/quiz"
         className={[
@@ -248,7 +240,6 @@ function Dots({ current }: { current: number }) {
         ].join(" ")}
         aria-label="Go to step 1"
       />
-      {/* Dots 2..TOTAL_STEPS */}
       {Array.from({ length: TOTAL_STEPS - 1 }).map((_, i) => {
         const idx = i + 2;
         return (

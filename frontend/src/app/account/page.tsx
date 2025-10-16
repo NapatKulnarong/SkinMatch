@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchProfile } from "@/lib/api.auth";
 import {
@@ -46,6 +46,13 @@ export default function AccountPage() {
   const displayName = profile?.username ?? "SkinMatch Member";
   const displayEmail = profile?.email ?? "hello@skinmatch.app";
 
+  // Default avatar logic: use user's avatar_url if present; otherwise a local placeholder
+  const avatarSrc = useMemo(() => {
+    const url = profile?.avatar_url?.trim();
+    if (url) return url; // If you allow remote URLs, ensure next.config.js allows that domain
+    return "/img/avatar_placeholder.png"; // <-- put your default image here
+  }, [profile]);
+
   const handleLogout = () => {
     clearSession();
     router.push("/login");
@@ -53,7 +60,7 @@ export default function AccountPage() {
 
   return (
     <main className="min-h-screen bg-[#d3cbe0]">
-      <div className="pt-40" />
+      <div className="pt-32" />
 
       <section className="max-w-10xl mx-auto px-6 md:px-8 pb-10">
         {loading && (
@@ -65,12 +72,14 @@ export default function AccountPage() {
           <p className="mb-6 text-center text-sm font-semibold text-red-700">{error}</p>
         )}
 
-        <div className="grid grid-cols-12 gap-6">
+        {/* Equal-height first row via auto-rows-fr, and make children h-full */}
+        <div className="grid grid-cols-12 gap-6 auto-rows-fr items-stretch">
+          {/* LEFT PROFILE CARD */}
           <aside className="col-span-12 md:col-span-3">
-            <div className="rounded-2xl border-2 border-black bg-white p-4 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+            <div className="h-full rounded-2xl border-2 border-black bg-white p-4 shadow-[6px_8px_0_rgba(0,0,0,0.25)] flex flex-col">
               <div className="relative rounded-xl border-2 border-black overflow-hidden">
                 <Image
-                  src="/img/member_3.png"
+                  src={avatarSrc}
                   alt={displayName}
                   width={600}
                   height={760}
@@ -104,10 +113,12 @@ export default function AccountPage() {
             </div>
           </aside>
 
+          {/* RIGHT: MATCH HISTORY (same height as profile card) */}
           <div className="col-span-12 md:col-span-9">
-            <Panel title="Match History" />
+            <Panel title="Match History" full />
           </div>
 
+          {/* SECOND ROW */}
           <div className="col-span-12 md:col-span-8">
             <Panel title="Match History" tall />
           </div>
@@ -121,13 +132,22 @@ export default function AccountPage() {
   );
 }
 
-function Panel({ title, tall = false }: { title: string; tall?: boolean }) {
+function Panel({
+  title,
+  tall = false,
+  full = false,
+}: {
+  title: string;
+  tall?: boolean;
+  full?: boolean;
+}) {
+  const heightClass = full ? "h-full" : tall ? "h-[420px]" : "h-[220px]";
   return (
     <div
       className={[
         "relative rounded-2xl border-2 border-black bg-white",
         "shadow-[6px_8px_0_rgba(0,0,0,0.25)]",
-        tall ? "h-[420px]" : "h-[220px]",
+        heightClass,
       ].join(" ")}
     >
       <span
