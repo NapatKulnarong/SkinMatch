@@ -42,7 +42,7 @@ jobs:
         run: python backend/manage.py migrate
 
       - name: Run unit tests
-        working-directory: backend
+        working-directory: ./backend
         env:
           DJANGO_SETTINGS_MODULE: apidemo.settings
         run: pytest backend -q --disable-warnings --maxfail=1
