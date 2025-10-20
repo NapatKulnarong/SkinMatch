@@ -41,11 +41,8 @@ jobs:
       - name: Run migrations
         run: python backend/manage.py migrate
 
-      - name: Run unit tests
-        working-directory: ./backend
-        env:
-          DJANGO_SETTINGS_MODULE: apidemo.settings
-        run: pytest backend -q --disable-warnings --maxfail=1
+      - name: Run unit tests 
+        run: python backend/manage.py test core -v 2
 
       - name: Security scan (Bandit)
         run: bandit -r backend -q || true
