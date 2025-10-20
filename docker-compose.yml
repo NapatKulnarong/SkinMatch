@@ -1,25 +1,31 @@
+version: "3.9"
+
 services:
   backend:
     build: ./backend
     container_name: skinmatch-backend
     command: >
-      sh -c "
+      bash -lc "
+        python -c 'import time, socket;
+        host=\"db\"; port=5432;
+        s=socket.socket();
+        [(_:=s.connect((host,port))) or s.close() or None for _ in [0]]' || true &&
         python manage.py migrate &&
-        python manage.py createsuperuser --noinput || true &&
+        python manage.py shell -c
+        \"from django.contrib.auth import get_user_model;
+        import os;
+        U=get_user_model();
+        u=os.getenv('DJANGO_SUPERUSER_USERNAME');
+        e=os.getenv('DJANGO_SUPERUSER_EMAIL');
+        p=os.getenv('DJANGO_SUPERUSER_PASSWORD');
+        (U.objects.filter(username=u).exists() or U.objects.create_superuser(u,e,p))\" &&
         python manage.py runserver 0.0.0.0:8000
       "
     env_file:
       - ./backend/.env
     environment:
       - DJANGO_DEBUG=True
-      - DJANGO_SUPERUSER_USERNAME=fongfufu
-      - DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com
-      - DJANGO_SUPERUSER_PASSWORD=pakorn1234
-      - DATABASE_URL=postgresql://skinuser:skinpass@db:5432/skinmatch
-      - JWT_SECRET_KEY=change-me-in-prod
-      - JWT_ALGORITHM=HS256
-      - JWT_ACCESS_TTL_MIN=15
-      - JWT_REFRESH_TTL_DAYS=7
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     volumes:
       - ./backend:/app
     ports:
@@ -35,7 +41,7 @@ services:
         - path: ./backend/requirements.txt
           action: rebuild
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,10 +50,10 @@ services:
     build:
       context: ./frontend
       args:
-        - BACKEND_URL=http://backend:8000
+        - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
     container_name: skinmatch-frontend
     environment:
-      - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
     ports:
       - "3000:3000"
     depends_on:
@@ -76,14 +82,14 @@ services:
       test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: skinmatch-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     depends_on:

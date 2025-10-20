@@ -10,7 +10,6 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
-
 from core.api import api
 
 def health_check(request):
