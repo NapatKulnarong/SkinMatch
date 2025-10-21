@@ -10,3 +10,4 @@ django-cors-headers==4.4.0
 whitenoise==6.7.0
 google-auth>=2.32.0,<3.0
 requests>=2.32.0,<3.0
+django-allauth>=0.61.0,<0.62.0

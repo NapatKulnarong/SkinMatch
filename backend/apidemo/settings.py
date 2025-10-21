@@ -44,6 +44,7 @@ CORS_ALLOW_CREDENTIALS = True
 _raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
 GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
 GOOGLE_OAUTH_CLIENT_ID = GOOGLE_OAUTH_CLIENT_IDS[0] if GOOGLE_OAUTH_CLIENT_IDS else ""
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", os.getenv("GOOGLE_CLIENT_SECRET", ""))
 
 
 # Application definition
@@ -59,6 +60,10 @@ INSTALLED_APPS = [
 
     # 3rd-party
     "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 
     # Your apps
     "core.apps.CoreConfig",
@@ -71,6 +76,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -161,8 +167,28 @@ JWT_REFRESH_TTL = timedelta(days=int(os.getenv("JWT_REFRESH_TTL_DAYS", "7")))
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.accounts.auth_backends.AuthenticationBackend"
+    "allauth.account.auth_backends.AuthenticationBackend",
 )
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECR_URL = "/"
+
+SITE_ID = int(os.getenv("SITE_ID", "1"))
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = os.getenv("ACCOUNT_EMAIL_VERIFICATION", "optional")
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": os.getenv("ACCOUNT_RATE_LIMIT_LOGIN_FAILED", "5/5m"),
+}
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"prompt": "select_account"},
+    }
+}
