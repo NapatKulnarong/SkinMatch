@@ -28,6 +28,7 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(null=True, blank=True) # dd/mm/yyyy
     gender = models.CharField(max_length=20, choices=Gender.choices, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
+    google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
 
     #audit
     created_at = models.DateTimeField(auto_now_add=True)
@@ -134,4 +135,4 @@ class SkinProfile(models.Model):
     def __str__(self):
         part = self.primary_concerns[:1] if isinstance(self.primary_concerns, list) else []
         concern = part[0] if part else "profile"
-        return f"{self.user} – {concern} ({self.created_at:%Y-%m-%d})"
+        return f"{self.user} – {concern} ({self.created_at:%d/%m/%Y})"

@@ -8,17 +8,12 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 from pathlib import Path
-from datetime import timedelta
 
-# -------------------------------------------------------------------
-# Base setup
-# -------------------------------------------------------------------
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-# -------------------------------------------------------------------
 # Utility helpers
-# -------------------------------------------------------------------
 def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
 
@@ -26,60 +21,66 @@ def env_csv(name: str, default: str = "") -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
 
-# -------------------------------------------------------------------
-# Core settings
-# -------------------------------------------------------------------
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-unsafe")
-DEBUG = env_bool("DJANGO_DEBUG", False)
+# SECURITY WARNING: keep the secret key used in production secret
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
 
-ALLOWED_HOSTS = env_csv(
+# SECURITY WARNING: don't run with debug turned on in production
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
-    "localhost,127.0.0.1,backend,frontend"
-)
+    "localhost,127.0.0.1,backend"
+).split(",")
 
-# -------------------------------------------------------------------
-# CSRF / CORS configuration
-# -------------------------------------------------------------------
-CSRF_TRUSTED_ORIGINS = env_csv(
-    "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:3000,http://frontend:3000"
-)
-
-CORS_ALLOWED_ORIGINS = env_csv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://frontend:3000"
-)
+# CSRF / CORS
+CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = [
+    os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
+    "http://localhost:3000",
+    "http://frontend:3000",  # Docker service name
+]
 CORS_ALLOW_CREDENTIALS = True
 
-# -------------------------------------------------------------------
+_raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
+GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
+GOOGLE_OAUTH_CLIENT_ID = GOOGLE_OAUTH_CLIENT_IDS[0] if GOOGLE_OAUTH_CLIENT_IDS else ""
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", os.getenv("GOOGLE_CLIENT_SECRET", ""))
+
+
 # Application definition
-# -------------------------------------------------------------------
 INSTALLED_APPS = [
-    "quiz",
+    'quiz',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
 
     # 3rd-party
     "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 
-    # Local apps
+    # Your apps
     "core.apps.CoreConfig",
 ]
+SITE_ID = 1
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # must be near the top
+    "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
-    # "whitenoise.middleware.WhiteNoiseMiddleware",  # enable for production static files
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "apidemo.urls"
@@ -87,7 +88,7 @@ ROOT_URLCONF = "apidemo.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -101,10 +102,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "apidemo.wsgi.application"
 
-# -------------------------------------------------------------------
 # Database
-# -------------------------------------------------------------------
-db_url = os.getenv("DATABASE_URL")  # leave unset to use POSTGRES_* below
+db_url = os.getenv("DATABASE_URL") 
 conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "60"))
 ssl_require = env_bool("DB_SSL_REQUIRE", False)
 
@@ -120,18 +119,16 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB", "skinmatch_db"),
-            "USER": os.getenv("POSTGRES_USER", "skinmatch_user"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
-            "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
-            "PORT": os.getenv("POSTGRES_PORT", "5432"),
+            "NAME": os.environ.get("POSTGRES_DB", "skinmatch_db"),
+            "USER": os.environ.get("POSTGRES_USER", "skinmatch_user"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
             "CONN_MAX_AGE": conn_max_age,
         }
     }
 
-# -------------------------------------------------------------------
 # Password validation
-# -------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -139,61 +136,61 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# -------------------------------------------------------------------
 # Internationalization
-# -------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Bangkok")
 USE_I18N = True
 USE_TZ = True
 
-# -------------------------------------------------------------------
 # Static files
-# -------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# STATICFILES_DIRS = [BASE_DIR / "static"]  # Uncomment if you have local /static assets
+# Use this only if you have your own assets in a project /static folder
+# STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# WhiteNoise staticfiles storage (prod only)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# -------------------------------------------------------------------
-# JWT Configuration
-# -------------------------------------------------------------------
+# --- JWT config ---
+from datetime import timedelta
+
+# Signing key (use a dedicated secret in prod)
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
+
+# Algorithm to sign tokens
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+
+# Token lifetimes
 JWT_ACCESS_TTL = timedelta(minutes=int(os.getenv("JWT_ACCESS_TTL_MIN", "15")))
 JWT_REFRESH_TTL = timedelta(days=int(os.getenv("JWT_REFRESH_TTL_DAYS", "7")))
 
-# -------------------------------------------------------------------
-# Secure defaults for production
-# -------------------------------------------------------------------
-if not DEBUG:
-    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)  # enable behind HTTPS
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_REFERRER_POLICY = "same-origin"
-    if env_bool("USE_SECURE_PROXY_HEADER", False):
-        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
 
-# -------------------------------------------------------------------
-# Minimal logging (helpful for debugging DisallowedHost/CORS)
-# -------------------------------------------------------------------
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "root": {"handlers": ["console"], "level": "INFO"},
-    "loggers": {
-        "django.security.DisallowedHost": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": False,
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECR_URL = "/"
+
+SITE_ID = int(os.getenv("SITE_ID", "1"))
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = os.getenv("ACCOUNT_EMAIL_VERIFICATION", "optional")
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": os.getenv("ACCOUNT_RATE_LIMIT_LOGIN_FAILED", "5/5m"),
+}
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
         },
-        "django.request": {
-            "handlers": ["console"],
-            "level": "WARNING",
-            "propagate": True,
-        },
-    },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"prompt": "select_account"},
+    }
 }
