@@ -4,23 +4,7 @@ services:
   backend:
     build: ./backend
     container_name: skinmatch-backend
-    command: >
-      bash -lc "
-        python -c 'import time, socket;
-        host=\"db\"; port=5432;
-        s=socket.socket();
-        [(_:=s.connect((host,port))) or s.close() or None for _ in [0]]' || true &&
-        python manage.py migrate &&
-        python manage.py shell -c
-        \"from django.contrib.auth import get_user_model;
-        import os;
-        U=get_user_model();
-        u=os.getenv('DJANGO_SUPERUSER_USERNAME');
-        e=os.getenv('DJANGO_SUPERUSER_EMAIL');
-        p=os.getenv('DJANGO_SUPERUSER_PASSWORD');
-        (U.objects.filter(username=u).exists() or U.objects.create_superuser(u,e,p))\" &&
-        python manage.py runserver 0.0.0.0:8000
-      "
+    command: bash /app/entrypoint.sh
     env_file:
       - ./backend/.env
     environment:
