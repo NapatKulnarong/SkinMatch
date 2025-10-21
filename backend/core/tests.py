@@ -1,3 +1,5 @@
+# backend/core/tests_integration_auth.py
+
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.contrib.auth import get_user_model
@@ -28,6 +30,12 @@ class EmailAuthTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        # Ensure a Site exists matching settings.SITE_ID (CI sets SITE_ID=2)
+        Site.objects.update_or_create(
+            id=settings.SITE_ID,
+            defaults={"domain": "testserver", "name": "testserver"},
+        )
+
         cls.User = get_user_model()
         cls.email = "user@example.com"
         cls.password = "secretpass123"
@@ -64,7 +72,7 @@ class EmailAuthTest(TestCase):
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_signup_creates_user_and_emailaddress(self):
-        """Signup endpoint creates a new user and verified EmailAddress record"""
+        """Signup endpoint creates a new user and EmailAddress record"""
         url = reverse("account_signup")
         new_email = "new@example.com"
         payload = {
@@ -72,7 +80,6 @@ class EmailAuthTest(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-
         # Add username if your project requires it
         if getattr(settings, "ACCOUNT_USERNAME_REQUIRED", True):
             payload["username"] = "newuser"
@@ -92,9 +99,13 @@ class GoogleLoginDBTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        # Ensure a Site exists matching settings.SITE_ID (CI sets SITE_ID=2)
+        cls.site, _ = Site.objects.update_or_create(
+            id=settings.SITE_ID,
+            defaults={"domain": "testserver", "name": "testserver"},
+        )
+
         cls.User = get_user_model()
-        # Use the current Site (CI sets SITE_ID=2 in env)
-        cls.site = Site.objects.get_current()
 
         # Create a dummy Google SocialApp linked to this Site
         cls.app = SocialApp.objects.create(
