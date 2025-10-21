@@ -12,6 +12,5 @@ google-auth>=2.32.0,<3.0
 requests>=2.32.0,<3.0
 pytest
 pytest-django
-django-allauth>=0.63
 cryptography>=42
-
+django-allauth>=0.61.0,<0.62.0
