@@ -211,9 +211,9 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignup}
-                className="w-full inline-flex items-left justify-left gap-3 rounded-[10px] border-2 border-black bg-white pl-36 px-4 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
-                <GoogleIcon className=" block h-5 w-5 flex-shrink-0" />
+                <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
                 <span className="leading-none">Sign up with Google</span>
               </button>
 
