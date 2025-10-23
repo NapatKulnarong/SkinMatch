@@ -1,10 +1,51 @@
 // frontend/src/app/login/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { fetchProfile, login as loginRequest, signup as signupRequest } from "@/lib/api.auth";
+import Script from "next/script";
+import { fetchProfile, login as loginRequest, signup as signupRequest, loginWithGoogle } from "@/lib/api.auth";
 import { clearSession, saveProfile, setAuthToken } from "@/lib/auth-storage";
+
+type GoogleCredentialResponse = {
+  credential: string;
+  select_by?: string;
+  clientId?: string;
+};
+
+type GooglePromptMomentNotification = {
+  isNotDisplayed(): boolean;
+  isSkippedMoment(): boolean;
+  getNotDisplayedReason?(): string;
+  getSkippedReason?(): string;
+};
+
+type GoogleInitializeConfig = {
+  client_id: string;
+  callback: (response: GoogleCredentialResponse) => void;
+  ux_mode?: "popup" | "redirect";
+  use_fedcm_for_prompt?: boolean;
+};
+
+type GoogleID = {
+  initialize(config: GoogleInitializeConfig): void;
+  prompt(listener?: (notification: GooglePromptMomentNotification) => void): void;
+  disableAutoSelect?(): void;
+};
+
+type GoogleAccounts = {
+  id?: GoogleID;
+};
+
+type GoogleObject = {
+  accounts?: GoogleAccounts;
+};
+
+declare global {
+  interface Window {
+    google?: GoogleObject;
+  }
+}
 
 type Mode = "intro" | "signup" | "login";
 
@@ -49,11 +90,140 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const googleInitialized = useRef(false);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const changeMode = (next: Mode) => {
     setMode(next);
     setSignupError(null);
     setLoginError(null);
+    setGoogleError(null);
+  };
+
+  const handleGoogleCredential = useCallback(
+    async (credentialResponse: GoogleCredentialResponse | undefined) => {
+      const credential = credentialResponse?.credential;
+      if (!credential) {
+        setGoogleLoading(false);
+        setGoogleError("Unable to retrieve Google credentials. Please try again.");
+        return;
+      }
+
+      setSignupError(null);
+      setLoginError(null);
+      setGoogleError(null);
+      setGoogleLoading(true);
+      clearSession();
+
+      try {
+        const { token } = await loginWithGoogle(credential);
+        if (!token) {
+          throw new Error("Google login response missing token");
+        }
+        setAuthToken(token);
+
+        try {
+          const profile = await fetchProfile(token);
+          saveProfile(profile);
+        } catch (profileError) {
+          console.warn("Unable to load profile after Google login", profileError);
+        }
+
+        router.push("/account");
+      } catch (error: unknown) {
+        clearSession();
+        const message =
+          error instanceof Error ? error.message : "Google login failed. Please try again.";
+        setGoogleError(message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [router]
+  );
+
+  const initializeGoogle = useCallback(() => {
+    if (googleInitialized.current) return;
+    if (typeof window === "undefined") return;
+
+    if (!googleClientId) {
+      setGoogleError("Google Sign-In is not configured.");
+      return;
+    }
+
+    const google = window.google;
+    if (!google?.accounts?.id) {
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      ux_mode: "popup",
+      use_fedcm_for_prompt: false,
+    });
+    if (typeof google.accounts.id.disableAutoSelect === "function") {
+      google.accounts.id.disableAutoSelect();
+    }
+    googleInitialized.current = true;
+    setGoogleReady(true);
+  }, [googleClientId, handleGoogleCredential]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      console.debug("Login page origin", window.location.origin);
+    }
+    if (typeof window === "undefined") return;
+    if (googleInitialized.current) return;
+    if (!googleClientId) return;
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+    }
+  }, [googleClientId, initializeGoogle]);
+
+  const handleGoogleScriptLoad = useCallback(() => {
+    initializeGoogle();
+  }, [initializeGoogle]);
+
+  const handleGoogleSignup = () => {
+    if (googleLoading) return;
+    if (!googleClientId) {
+      setGoogleError("Google Sign-In is not configured.");
+      return;
+    }
+
+    const google = window.google;
+    if (!google?.accounts?.id || !googleInitialized.current) {
+      setGoogleError("Google Sign-In is still loading. Please try again in a moment.");
+      initializeGoogle();
+      return;
+    }
+
+    setGoogleError(null);
+    google.accounts.id.prompt((notification?: GooglePromptMomentNotification) => {
+      if (!notification) return;
+      if (notification.isNotDisplayed?.()) {
+        const reason = notification.getNotDisplayedReason?.();
+        console.debug("Google Sign-In prompt not displayed", reason);
+        const reasonMessages: Record<string, string> = {
+          popup_closed_by_user: "Google Sign-In popup was closed before completing. Please try again.",
+          popup_blocked_by_browser: "Google Sign-In popup was blocked by the browser. Please disable the blocker and retry.",
+          third_party_cookies_blocked: "Google Sign-In needs third-party cookies. Please enable them and try again.",
+          browser_not_supported: "This browser does not support Google Sign-In popups. Try a different browser.",
+          unknown_reason: "Google Sign-In popup could not open. Please try again.",
+        };
+        const message = reason ? reasonMessages[reason] ?? `Google Sign-In popup failed (${reason}). Please try again.` : reasonMessages.unknown_reason;
+        setGoogleError(message);
+      } else if (notification.isSkippedMoment?.()) {
+        const reason = notification.getSkippedReason?.();
+        console.debug("Google Sign-In prompt skipped", reason);
+        const message = reason === "user_cancelled" ? "Google Sign-In was cancelled. Please try again." : "Google Sign-In was skipped. Please try again.";
+        setGoogleError(message);
+      }
+    });
   };
 
   const onSignupChange = (
@@ -169,6 +339,11 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={handleGoogleScriptLoad}
+      />
       <div
         className={[
           "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
@@ -206,10 +381,28 @@ export default function LoginPage() {
             <div className="bg-[#B6A6D8] p-6">
               <button
                 type="button"
-                onClick={() => changeMode("signup")}
-                className="mt-1 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                onClick={handleGoogleSignup}
+                disabled={!googleReady || googleLoading}
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span>Sign up</span>
+                <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
+                <span className="leading-none">
+                  {googleLoading ? "Signing in..." : "Sign up with Google"}
+                </span>
+              </button>
+              {googleError && (
+                <p className="mt-3 text-center text-sm font-semibold text-red-700">
+                  {googleError}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => changeMode("signup")}
+                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+              >
+                <MailIcon className="block h-6 w-6 flex-shrink-0" />
+                <span className="leading-none">Sign up with Email</span>
               </button>
 
               <p className="mt-6 text-center text-sm text-gray-800">
@@ -433,5 +626,39 @@ function Field({
       </label>
       {children}
     </div>
+  );
+}
+
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.78-.07-1.53-.2-2.27H12v4.3h6.48c-.28 1.44-1.12 2.66-2.38 3.47v2.88h3.84c2.24-2.06 3.55-5.1 3.55-8.38z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.84-2.88c-1.07.72-2.45 1.15-4.11 1.15-3.16 0-5.83-2.13-6.78-5H1.26v3.05C4.23 21.53 7.83 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.22 14.35c-.24-.72-.38-1.49-.38-2.35s.14-1.63.38-2.35V6.6H1.26A11.96 11.96 0 0 0 0 12c0 1.9.45 3.69 1.26 5.4l3.96-3.05z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.74c1.76 0 3.34.6 4.58 1.78l3.43-3.43C17.95 1.09 15.23 0 12 0 7.83 0 4.23 2.47 1.26 6.6l3.96 3.05c.95-2.87 3.62-5 6.78-5z"
+      />
+    </svg>
+  );
+}
+
+function MailIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fill="currentColor"
+        d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 2v.35l9 5.4 9-5.4V7H3zm18 10V9.32l-8.37 5.02a1 1 0 0 1-1.26 0L3 9.32V17h18z"
+      />
+    </svg>
   );
 }

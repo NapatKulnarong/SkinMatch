@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import PageContainer from "@/components/PageContainer";
 
 type Topic = {
   id: string;
@@ -42,7 +43,7 @@ export default function PopularTopics() {
   if (!current) return null;
 
   return (
-    <section className="px-6 pt-16">
+    <PageContainer as="section" className="pt-16">
       {/* Card wrapper must be relative so the badge can anchor to its corner */}
       <div className="relative">
         {/* Corner badge that sits on the card’s top-left corner */}
@@ -120,6 +121,6 @@ export default function PopularTopics() {
           />
         ))}
       </div>
-    </section>
+    </PageContainer>
   );
 }
