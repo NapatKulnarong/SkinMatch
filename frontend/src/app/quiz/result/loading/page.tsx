@@ -26,7 +26,7 @@ export default function QuizLoadingPage() {
   }, [router, hasDetails]);
 
   return (
-    <main className="min-h-screen bg-[#FFF6E9] flex items-center justify-center">
+    <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
       <section className="w-full max-w-[1200px] px-4">
         <div className="relative rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-[#D9CAB3] to-[#C5A880]" />

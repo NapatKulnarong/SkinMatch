@@ -1,10 +1,51 @@
 // frontend/src/app/login/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { fetchProfile, login as loginRequest, signup as signupRequest } from "@/lib/api.auth";
+import Script from "next/script";
+import { fetchProfile, login as loginRequest, signup as signupRequest, loginWithGoogle } from "@/lib/api.auth";
 import { clearSession, saveProfile, setAuthToken } from "@/lib/auth-storage";
+
+type GoogleCredentialResponse = {
+  credential: string;
+  select_by?: string;
+  clientId?: string;
+};
+
+type GooglePromptMomentNotification = {
+  isNotDisplayed(): boolean;
+  isSkippedMoment(): boolean;
+  getNotDisplayedReason?(): string;
+  getSkippedReason?(): string;
+};
+
+type GoogleInitializeConfig = {
+  client_id: string;
+  callback: (response: GoogleCredentialResponse) => void;
+  ux_mode?: "popup" | "redirect";
+  use_fedcm_for_prompt?: boolean;
+};
+
+type GoogleID = {
+  initialize(config: GoogleInitializeConfig): void;
+  prompt(listener?: (notification: GooglePromptMomentNotification) => void): void;
+  disableAutoSelect?(): void;
+};
+
+type GoogleAccounts = {
+  id?: GoogleID;
+};
+
+type GoogleObject = {
+  accounts?: GoogleAccounts;
+};
+
+declare global {
+  interface Window {
+    google?: GoogleObject;
+  }
+}
 
 type Mode = "intro" | "signup" | "login";
 
@@ -49,15 +90,140 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const googleInitialized = useRef(false);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const changeMode = (next: Mode) => {
     setMode(next);
     setSignupError(null);
     setLoginError(null);
+    setGoogleError(null);
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credentialResponse: GoogleCredentialResponse | undefined) => {
+      const credential = credentialResponse?.credential;
+      if (!credential) {
+        setGoogleLoading(false);
+        setGoogleError("Unable to retrieve Google credentials. Please try again.");
+        return;
+      }
+
+      setSignupError(null);
+      setLoginError(null);
+      setGoogleError(null);
+      setGoogleLoading(true);
+      clearSession();
+
+      try {
+        const { token } = await loginWithGoogle(credential);
+        if (!token) {
+          throw new Error("Google login response missing token");
+        }
+        setAuthToken(token);
+
+        try {
+          const profile = await fetchProfile(token);
+          saveProfile(profile);
+        } catch (profileError) {
+          console.warn("Unable to load profile after Google login", profileError);
+        }
+
+        router.push("/account");
+      } catch (error: unknown) {
+        clearSession();
+        const message =
+          error instanceof Error ? error.message : "Google login failed. Please try again.";
+        setGoogleError(message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [router]
+  );
+
+  const initializeGoogle = useCallback(() => {
+    if (googleInitialized.current) return;
+    if (typeof window === "undefined") return;
+
+    if (!googleClientId) {
+      setGoogleError("Google Sign-In is not configured.");
+      return;
+    }
+
+    const google = window.google;
+    if (!google?.accounts?.id) {
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      ux_mode: "popup",
+      use_fedcm_for_prompt: false,
+    });
+    if (typeof google.accounts.id.disableAutoSelect === "function") {
+      google.accounts.id.disableAutoSelect();
+    }
+    googleInitialized.current = true;
+    setGoogleReady(true);
+  }, [googleClientId, handleGoogleCredential]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      console.debug("Login page origin", window.location.origin);
+    }
+    if (typeof window === "undefined") return;
+    if (googleInitialized.current) return;
+    if (!googleClientId) return;
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+    }
+  }, [googleClientId, initializeGoogle]);
+
+  const handleGoogleScriptLoad = useCallback(() => {
+    initializeGoogle();
+  }, [initializeGoogle]);
+
   const handleGoogleSignup = () => {
-    alert("Google sign up coming soon!");
+    if (googleLoading) return;
+    if (!googleClientId) {
+      setGoogleError("Google Sign-In is not configured.");
+      return;
+    }
+
+    const google = window.google;
+    if (!google?.accounts?.id || !googleInitialized.current) {
+      setGoogleError("Google Sign-In is still loading. Please try again in a moment.");
+      initializeGoogle();
+      return;
+    }
+
+    setGoogleError(null);
+    google.accounts.id.prompt((notification?: GooglePromptMomentNotification) => {
+      if (!notification) return;
+      if (notification.isNotDisplayed?.()) {
+        const reason = notification.getNotDisplayedReason?.();
+        console.debug("Google Sign-In prompt not displayed", reason);
+        const reasonMessages: Record<string, string> = {
+          popup_closed_by_user: "Google Sign-In popup was closed before completing. Please try again.",
+          popup_blocked_by_browser: "Google Sign-In popup was blocked by the browser. Please disable the blocker and retry.",
+          third_party_cookies_blocked: "Google Sign-In needs third-party cookies. Please enable them and try again.",
+          browser_not_supported: "This browser does not support Google Sign-In popups. Try a different browser.",
+          unknown_reason: "Google Sign-In popup could not open. Please try again.",
+        };
+        const message = reason ? reasonMessages[reason] ?? `Google Sign-In popup failed (${reason}). Please try again.` : reasonMessages.unknown_reason;
+        setGoogleError(message);
+      } else if (notification.isSkippedMoment?.()) {
+        const reason = notification.getSkippedReason?.();
+        console.debug("Google Sign-In prompt skipped", reason);
+        const message = reason === "user_cancelled" ? "Google Sign-In was cancelled. Please try again." : "Google Sign-In was skipped. Please try again.";
+        setGoogleError(message);
+      }
+    });
   };
 
   const onSignupChange = (
@@ -173,6 +339,11 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={handleGoogleScriptLoad}
+      />
       <div
         className={[
           "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
@@ -211,11 +382,19 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignup}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                disabled={!googleReady || googleLoading}
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
-                <span className="leading-none">Sign up with Google</span>
+                <span className="leading-none">
+                  {googleLoading ? "Signing in..." : "Sign up with Google"}
+                </span>
               </button>
+              {googleError && (
+                <p className="mt-3 text-center text-sm font-semibold text-red-700">
+                  {googleError}
+                </p>
+              )}
 
               <button
                 type="button"

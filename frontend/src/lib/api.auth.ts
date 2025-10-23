@@ -64,6 +64,17 @@ export async function login(payload: LoginPayload) {
   return data;
 }
 
+export async function loginWithGoogle(idToken: string) {
+  const res = await fetch(`${API_BASE}/auth/oauth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const data = await handleJson<{ ok: boolean; message: string; token?: string }>(res);
+  if (!data.ok || !data.token) throw new Error(data.message || "Google login failed");
+  return data;
+}
+
 export async function fetchProfile(token: string): Promise<StoredProfile> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "GET",
