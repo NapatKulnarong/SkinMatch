@@ -21,6 +21,7 @@ else:
         EmailStr = _EmailStr  # type: ignore
 from datetime import datetime, date
 from .auth import create_access_token, JWTAuth
+from .google_auth import authenticate_google_id_token
 import uuid
 from datetime import datetime
 from django.conf import settings
@@ -28,9 +29,6 @@ from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction, IntegrityError
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
-from django.utils.text import slugify
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token as google_id_token
 
 api = NinjaAPI()
 User = get_user_model()
@@ -152,78 +150,14 @@ def token_login(request, payload: LoginIn):
     return {"ok": True, "token": token, "message": "Login successful"}
 
 
-def _generate_unique_username(base: str) -> str:
-    candidate = slugify(base) or "user"
-    original = candidate
-    suffix = 1
-    while User.objects.filter(username__iexact=candidate).exists():
-        candidate = f"{original}-{suffix}"
-        suffix += 1
-    return candidate
-
-
 @api.post("/auth/oauth/google", response=tokenOut)
 def google_login(request, payload: GoogleLoginIn):
-    allowed_client_ids = [cid for cid in getattr(settings, "GOOGLE_OAUTH_CLIENT_IDS", []) if cid]
-    if not allowed_client_ids:
-        single = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
-        if single:
-            allowed_client_ids.append(single)
-
-    if not allowed_client_ids:
-        return {"ok": False, "message": "Google login is not configured"}
-
     try:
-        idinfo = google_id_token.verify_oauth2_token(
-            payload.id_token,
-            google_requests.Request(),
-            audience=allowed_client_ids,
-        )
-    except ValueError:
-        return {"ok": False, "message": "Invalid Google token"}
-
-    sub = idinfo.get("sub")
-    email = (idinfo.get("email") or "").lower()
-    if not sub or not email:
-        return {"ok": False, "message": "Google account payload missing required fields"}
-
-    user = None
-
-    # Prefer matching by stored google_sub
-    try:
-        profile = UserProfile.objects.select_related("user").get(google_sub=sub)
-        user = profile.user
-    except UserProfile.DoesNotExist:
-        user = User.objects.filter(email__iexact=email).first()
-
-    created = False
-    if not user:
-        base_username = idinfo.get("name") or email.split("@")[0]
-        username = _generate_unique_username(base_username)
-        password = User.objects.make_random_password()
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            first_name=idinfo.get("given_name", ""),
-            last_name=idinfo.get("family_name", ""),
-        )
-        created = True
-
-    # Ensure profile exists and is linked to Google sub
-    profile, _ = UserProfile.objects.get_or_create(user=user)
-    if not profile.google_sub:
-        profile.google_sub = sub
-    if idinfo.get("email_verified") and not profile.is_verified:
-        profile.is_verified = True
-    profile.save()
-
-    if not user.email:
-        user.email = email
-        user.save(update_fields=["email"])
+        user, created, message = authenticate_google_id_token(payload.id_token)
+    except ValueError as exc:
+        return {"ok": False, "message": str(exc)}
 
     token = create_access_token(user)
-    message = "Account created via Google" if created else "Login successful"
     return {"ok": True, "token": token, "message": message}
 
 @api.post("/auth/signup", response=SignUpOut)
