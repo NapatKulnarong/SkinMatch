@@ -3,11 +3,14 @@ from datetime import datetime
 from typing import List, Optional
 
 from ninja import Schema
+from pydantic import field_validator
 
 
 class SessionOut(Schema):
     id: uuid.UUID
     started_at: datetime
+    average_rating: Optional[float] = None
+    review_count: int = 0
 
 
 class AnswerIn(Schema):
@@ -19,6 +22,47 @@ class AnswerIn(Schema):
 class AnswerAck(Schema):
     status: str
     updated: bool = False
+
+
+class ReviewCreateIn(Schema):
+    rating: Optional[int] = None
+    comment: str
+    is_public: Optional[bool] = True
+
+    @field_validator("rating")
+    @classmethod
+    def _rating_range(cls, value):
+        if value is None:
+            return value
+        if not 1 <= value <= 5:
+            raise ValueError("Rating must be between 1 and 5")
+        return value
+    
+    @field_validator("comment")
+    @classmethod
+    def _comment_not_blank(cls, value: str) -> str:
+        cleaned = (value or "").strip()
+        if not cleaned:
+            raise ValueError("Comment cannot be blank")
+        return cleaned
+    
+
+class ReviewOut(Schema):
+    id: uuid.UUID
+    product_id: uuid.UUID
+    user_id: str
+    user_display_name: str
+    avatar_url: Optional[str] = None
+    rating: Optional[int] = None
+    comment: str
+    is_public: bool
+    is_owner: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReviewAck(Schema):
+    ok: bool
 
 
 class SkinProfileOut(Schema):
@@ -66,6 +110,8 @@ class MatchPickOut(Schema):
     rationale: dict
     image_url: Optional[str] = None
     product_url: Optional[str] = None
+    average_rating: Optional[float] = None
+    review_count: int = 0
 
 
 class SessionDetailOut(Schema):
@@ -84,4 +130,45 @@ class FeedbackIn(Schema):
 
 
 class FeedbackAck(Schema):
+    ok: bool
+
+
+class ReviewCreateIn(Schema):
+    rating: Optional[int] = None
+    comment: str
+    is_public: Optional[bool] = True
+
+    @field_validator("rating")
+    @classmethod
+    def _rating_range(cls, value):
+        if value is None:
+            return value
+        if not 1 <= value <= 5:
+            raise ValueError("Rating must be between 1 and 5")
+        return value
+
+    @field_validator("comment")
+    @classmethod
+    def _comment_not_blank(cls, value: str) -> str:
+        cleaned = (value or "").strip()
+        if not cleaned:
+            raise ValueError("Comment cannot be blank")
+        return cleaned
+
+
+class ReviewOut(Schema):
+    id: uuid.UUID
+    product_id: uuid.UUID
+    user_id: str
+    user_display_name: str
+    avatar_url: Optional[str] = None
+    rating: Optional[int] = None
+    comment: str
+    is_public: bool
+    is_owner: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReviewAck(Schema):
     ok: bool
