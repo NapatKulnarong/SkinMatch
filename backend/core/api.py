@@ -129,7 +129,6 @@ def _generate_unique_username(base: str) -> str:
         suffix += 1
     return candidate
 
-
 @api.post("/auth/oauth/google", response=tokenOut)
 def google_login(request, payload: GoogleLoginIn):
     allowed_client_ids = [cid for cid in getattr(settings, "GOOGLE_OAUTH_CLIENT_IDS", []) if cid]
