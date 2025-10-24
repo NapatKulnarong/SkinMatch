@@ -4,10 +4,14 @@ services:
   backend:
     build: ./backend
     container_name: skinmatch-backend
-    command: bash /app/entrypoint.sh
+    entrypoint:
+      - /bin/bash
+      - /app/docker-entrypoint.sh
+
     env_file:
       - ./backend/.env
     environment:
+      - DJANGO_SETTINGS_MODULE=apidemo.settings
       - DJANGO_DEBUG=True
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     volumes:
@@ -35,9 +39,13 @@ services:
       context: ./frontend
       args:
         - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+        - BACKEND_URL=http://backend:8000
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: skinmatch-frontend
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     ports:
       - "3000:3000"
     depends_on:

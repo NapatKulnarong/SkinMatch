@@ -45,6 +45,14 @@ _raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLI
 GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
 GOOGLE_OAUTH_CLIENT_ID = GOOGLE_OAUTH_CLIENT_IDS[0] if GOOGLE_OAUTH_CLIENT_IDS else ""
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", os.getenv("GOOGLE_CLIENT_SECRET", ""))
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback"),
+)
+FRONTEND_LOGIN_REDIRECT_URL = os.getenv(
+    "FRONTEND_LOGIN_REDIRECT_URL",
+    "http://localhost:3000/account" 
+)
 
 
 # Application definition

@@ -45,3 +45,9 @@ mock_api.py
 /mock/
 *.mock.json
 
+# macOS Finder cache
+.DS_Store
+
+# local database
+db/
+
