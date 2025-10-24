@@ -184,7 +184,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECR_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 
 SITE_ID = int(os.getenv("SITE_ID", "1"))
 ACCOUNT_LOGIN_METHODS = {"email", "username"}

@@ -1,4 +1,3 @@
-# backend/apidemo/settings_test.py
 from .settings import *
 
 DATABASES = {
