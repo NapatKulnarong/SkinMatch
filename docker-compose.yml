@@ -1,25 +1,19 @@
+version: "3.9"
+
 services:
   backend:
     build: ./backend
     container_name: skinmatch-backend
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py createsuperuser --noinput || true &&
-        python manage.py runserver 0.0.0.0:8000
-      "
+    entrypoint:
+      - /bin/bash
+      - /app/docker-entrypoint.sh
+
     env_file:
       - ./backend/.env
     environment:
+      - DJANGO_SETTINGS_MODULE=apidemo.settings
       - DJANGO_DEBUG=True
-      - DJANGO_SUPERUSER_USERNAME=fongfufu
-      - DJANGO_SUPERUSER_EMAIL=fongfufu@gmail.com
-      - DJANGO_SUPERUSER_PASSWORD=pakorn1234
-      - DATABASE_URL=postgresql://skinuser:skinpass@db:5432/skinmatch
-      - JWT_SECRET_KEY=change-me-in-prod
-      - JWT_ALGORITHM=HS256
-      - JWT_ACCESS_TTL_MIN=15
-      - JWT_REFRESH_TTL_DAYS=7
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     volumes:
       - ./backend:/app
     ports:
@@ -35,7 +29,7 @@ services:
         - path: ./backend/requirements.txt
           action: rebuild
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,10 +38,14 @@ services:
     build:
       context: ./frontend
       args:
+        - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
         - BACKEND_URL=http://backend:8000
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: skinmatch-frontend
     environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
       - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     ports:
       - "3000:3000"
     depends_on:
@@ -76,14 +74,14 @@ services:
       test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: skinmatch-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     depends_on:

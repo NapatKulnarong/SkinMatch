@@ -21,10 +21,10 @@ def env_csv(name: str, default: str = "") -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.environ.get(
@@ -41,6 +41,20 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+_raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
+GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
+GOOGLE_OAUTH_CLIENT_ID = GOOGLE_OAUTH_CLIENT_IDS[0] if GOOGLE_OAUTH_CLIENT_IDS else ""
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", os.getenv("GOOGLE_CLIENT_SECRET", ""))
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback"),
+)
+FRONTEND_LOGIN_REDIRECT_URL = os.getenv(
+    "FRONTEND_LOGIN_REDIRECT_URL",
+    "http://localhost:3000/account" 
+)
+
+
 # Application definition
 INSTALLED_APPS = [
     'quiz',
@@ -50,25 +64,31 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
 
     # 3rd-party
     "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 
     # Your apps
     "core.apps.CoreConfig",
 ]
+SITE_ID = 1
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",          # must be near the top
+    "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
-    # Uncomment the next line if you want WhiteNoise in production
-    # "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "apidemo.urls"
@@ -76,7 +96,7 @@ ROOT_URLCONF = "apidemo.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -91,7 +111,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "apidemo.wsgi.application"
 
 # Database
-db_url = os.getenv("DATABASE_URL")  # leave unset to use POSTGRES_* below
+db_url = os.getenv("DATABASE_URL") 
 conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "60"))
 ssl_require = env_bool("DB_SSL_REQUIRE", False)
 
@@ -136,6 +156,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Use this only if you have your own assets in a project /static folder
 # STATICFILES_DIRS = [BASE_DIR / "static"]
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # WhiteNoise staticfiles storage (prod only)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -154,3 +177,31 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 # Token lifetimes
 JWT_ACCESS_TTL = timedelta(minutes=int(os.getenv("JWT_ACCESS_TTL_MIN", "15")))
 JWT_REFRESH_TTL = timedelta(days=int(os.getenv("JWT_REFRESH_TTL_DAYS", "7")))
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+
+SITE_ID = int(os.getenv("SITE_ID", "1"))
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = os.getenv("ACCOUNT_EMAIL_VERIFICATION", "optional")
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": os.getenv("ACCOUNT_RATE_LIMIT_LOGIN_FAILED", "5/5m"),
+}
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"prompt": "select_account"},
+    }
+}

@@ -1,5 +1,4 @@
-import type { QuizAnswers } from "../_QuizContext"; 
-
+import { QuizAnswers } from "../_QuizContext";
 
 type IngredientRecommendation = {
   ingredient: string;

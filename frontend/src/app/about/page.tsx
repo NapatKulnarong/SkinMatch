@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { EnvelopeIcon } from "@heroicons/react/24/solid";
 import { FaGithub, FaInstagram } from "react-icons/fa";
+import PageContainer from "@/components/PageContainer";
 
 type Member = {
   id: number;
@@ -81,7 +82,7 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#bcdcf6]">
       {/* Intro Letter */}
-      <section className="px-6 pt-32 pb-14">
+      <PageContainer as="section" className="pt-32 pb-14">
         <div
           className="relative w-full rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)]"
           style={{
@@ -118,10 +119,10 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
-      </section>
+      </PageContainer>
 
       {/* Team Grid */}
-      <section className="px-6 pb-16">
+      <PageContainer as="section" className="pb-16">
         <h3 className="text-center text-2xl sm:text-3xl font-extrabold text-[#3B2F4A] mb-8">
           Meet Our Team
         </h3>
@@ -131,7 +132,7 @@ export default function AboutPage() {
             <TeamCard key={m.id} member={m} />
           ))}
         </div>
-      </section>
+      </PageContainer>
     </main>
   );
 }

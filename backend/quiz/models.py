@@ -1,8 +1,10 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Avg, Count
 from django.utils import timezone
 
 
@@ -148,6 +150,65 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return f"{self.brand} {self.name}"
+    
+
+class ProductReview(models.Model):
+    """User-generated review tied to a product in their routine."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="reviews"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="product_reviews",
+    )
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Optional 1-5 star rating.",
+    )
+    comment = models.TextField()
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering = ("-created_at",)
+        unique_together = ("product", "user")
+        indexes = [
+            models.Index(fields=["product", "created_at"]),
+            models.Index(fields=["user", "created_at"]),
+        ]
+    def __str__(self) -> str:
+        return f"Review by {self.user} on {self.product}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.recompute_product_stats(self.product_id)
+
+    def delete(self, *args, **kwargs):
+        product_id = self.product_id
+        super().delete(*args, **kwargs)
+        self.recompute_product_stats(product_id)
+        
+    @classmethod
+    def recompute_product_stats(cls, product_id):
+        stats = cls.objects.filter(
+            product_id=product_id, is_public=True, rating__isnull=False
+        ).aggregate(avg=Avg("rating"), count=Count("id"))
+        avg_value = stats.get("avg")
+        review_count = stats.get("count", 0) or 0
+        if avg_value is None:
+            rating_value = None
+        else:
+            rating_value = Decimal(str(avg_value)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        Product.objects.filter(id=product_id).update(
+            rating=rating_value,
+            review_count=review_count,
+        )
 
 
 class ProductIngredient(models.Model):

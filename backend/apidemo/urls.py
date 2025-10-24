@@ -10,8 +10,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
-
 from core.api import api
+from core.views import GoogleOAuthCallbackView
 
 def health_check(request):
     return JsonResponse({"status": "ok"})
@@ -19,9 +19,13 @@ def health_check(request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api.urls),
-    path("healthz/", health_check)
+    path("api/auth/google/callback", GoogleOAuthCallbackView.as_view(), name="google_oauth_callback"),
+    path("healthz/", health_check),
+    path("accounts/", include("allauth.urls")),
+    path("", include("core.urls")),
 ]
 
-# Serve static files during development (DEBUG=True)
+# Serve static and media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

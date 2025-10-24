@@ -45,5 +45,3 @@ htmlcov/
 # MyPy
 .mypy_cache/
 .dmypy.json
-
-# Ninja API

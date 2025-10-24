@@ -4,13 +4,23 @@ import uuid
 from typing import Iterable
 
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 
 from core.models import SkinProfile
-from .models import Answer, Choice, MatchPick, Question, QuizFeedback, QuizSession
+from .models import (
+    Answer,
+    Choice,
+    MatchPick,
+    Product,
+    ProductReview,
+    Question,
+    QuizFeedback,
+    QuizSession,
+)
 from .recommendations import recommend_products
 from .schemas import (
     AnswerAck,
@@ -20,6 +30,9 @@ from .schemas import (
     FeedbackAck,
     FeedbackIn,
     MatchPickOut,
+    ReviewAck,
+    ReviewCreateIn,
+    ReviewOut,
     SessionDetailOut,
     SessionOut,
     SkinProfileOut,
@@ -176,6 +189,8 @@ def session_detail(request, session_id: uuid.UUID):
             rationale=pick.rationale or {},
             image_url=pick.product.image_url,
             product_url=pick.product.product_url,
+            average_rating=_decimal_to_float(pick.product.rating),
+            review_count=pick.product.review_count,
         )
         for pick in picks_qs
     ]
@@ -193,6 +208,68 @@ def session_detail(request, session_id: uuid.UUID):
         picks=picks,
         profile=profile,
     )
+
+
+@router.get("/products/{product_id}/reviews", response=list[ReviewOut])
+def list_product_reviews(request, product_id: uuid.UUID, limit: int = 20):
+    product = get_object_or_404(Product, id=product_id, is_active=True)
+    user = request.user if getattr(request, "user", None) and request.user.is_authenticated else None
+
+    limit = max(1, min(limit, 100))
+    base_qs = ProductReview.objects.filter(product=product)
+
+    if user:
+        review_qs = base_qs.filter(Q(is_public=True) | Q(user=user))
+    else:
+        review_qs = base_qs.filter(is_public=True)
+
+    reviews = (
+        review_qs.select_related("user", "user__profile")
+        .order_by("-created_at")
+        [:limit]
+    )
+
+    return [_serialize_review(review, user) for review in reviews]
+
+
+@router.post("/products/{product_id}/reviews", response=ReviewOut)
+def upsert_product_review(request, product_id: uuid.UUID, payload: ReviewCreateIn):
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        raise HttpError(401, "Authentication required")
+
+    product = get_object_or_404(Product, id=product_id, is_active=True)
+
+    review, created = ProductReview.objects.get_or_create(
+        product=product,
+        user=user,
+        defaults={
+            "rating": payload.rating,
+            "comment": payload.comment,
+            "is_public": payload.is_public if payload.is_public is not None else True,
+        },
+    )
+
+    if not created:
+        review.comment = payload.comment
+        review.rating = payload.rating
+        if payload.is_public is not None:
+            review.is_public = payload.is_public
+        review.save()
+
+    return _serialize_review(review, user)
+
+
+@router.delete("/products/{product_id}/reviews", response=ReviewAck)
+def delete_product_review(request, product_id: uuid.UUID):
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        raise HttpError(401, "Authentication required")
+
+    product = get_object_or_404(Product, id=product_id, is_active=True)
+    review = get_object_or_404(ProductReview, product=product, user=user)
+    review.delete()
+    return ReviewAck(ok=True)
 
 
 def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
@@ -263,6 +340,8 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
                     "ingredients": recommendation.ingredients,
                     "rationale": recommendation.rationale,
                     "brand_name": product.brand,
+                    "average_rating": _decimal_to_float(product.rating),
+                    "review_count": product.review_count,
                 }
             )
 
@@ -411,3 +490,28 @@ def _decimal_to_float(value):
     if value is None:
         return None
     return float(value)
+
+
+def _serialize_review(review: ProductReview, current_user) -> ReviewOut:
+    user = review.user
+    profile = getattr(user, "profile", None)
+    display_name = (user.get_full_name() or "").strip() or user.get_username()
+    is_owner = bool(
+        current_user
+        and getattr(current_user, "is_authenticated", False)
+        and user.id == current_user.id
+    )
+
+    return ReviewOut(
+        id=review.id,
+        product_id=review.product_id,
+        user_id=str(user.id),
+        user_display_name=display_name,
+        avatar_url=getattr(profile, "avatar_url", None),
+        rating=review.rating,
+        comment=review.comment,
+        is_public=review.is_public,
+        is_owner=is_owner,
+        created_at=review.created_at,
+        updated_at=review.updated_at,
+    )
