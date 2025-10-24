@@ -1,3 +1,4 @@
+import os
 from ninja import NinjaAPI, Schema, ModelSchema
 from .models import UserProfile
 from typing import List, Optional
@@ -20,8 +21,13 @@ from datetime import datetime
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.db import transaction, IntegrityError
 
+import google.generativeai as genai
+
+
 api = NinjaAPI()
 User = get_user_model()
+
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --------------- Schemas ---------------
 
@@ -77,8 +83,43 @@ class UserProfileSchema(ModelSchema):
     class Config:
         model = UserProfile
         model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
-        
+
+class GenIn(Schema):
+    prompt: str
+    model: Optional[str] = "gemini-2.5-flash"
+
+class GenOut(Schema):
+    response: str
+
+CANDIDATES = [
+    "gemini-2.5-flash",       # current flash (usually free)
+    "gemini-flash-latest",    # alias to current flash
+    "gemini-2.0-flash",       # older flash
+    "gemini-2.0-flash-001",   # older flash variant
+]
+
+def generate_text(prompt: str, temperature: float = 0.2) -> str:
+    last_err = None
+    for name in CANDIDATES:
+        try:
+            model = genai.GenerativeModel(name)
+            resp = model.generate_content(
+                prompt,
+                generation_config={"temperature": temperature},
+            )
+            return (resp.text or "").strip()
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
+
 # --------------- Auth endpoints ---------------
+
+@api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
+def genai_generate(request, payload: GenIn):
+    response_text = generate_text(payload.prompt)
+    return {"response": response_text}
+
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
     # only accept email
@@ -200,69 +241,9 @@ def list_users(request, limit: int = 50, offset: int = 0):
         }
         for p in qs
     ]
-
 # ------------------------------------------------------------------------------------
 @api.get("/hello")
 def api_root(request):
     print(request)
     return {"message": "Welcome to the API!"}
-
-# @api.get("/users", response=List[UserProfileSchema])
-# def list_users(request):
-#     profiles = UserProfile.objects.select_related("user").all()
-#     return [
-#         {
-#             "u_id": p.u_id,
-#             "username": p.user.username,
-#             "email": p.user.email,
-#             "display_name": p.display_name,
-#             "contact_email": p.contact_email,
-#             "is_verified": p.is_verified,
-#             "created_at": p.created_at,
-#         }
-#         for p in profiles
-#     ]
-
-# @api.post("/auth/login")
-# def login_view(request, payload: LoginIn):
-#     # STEP 1: figure out if identifier is email or username
-#     username = payload.identifier
-#     if "@" in username:
-#         try:
-#             user_obj = User.objects.get(email__iexact=username)
-#             username = user_obj.username   # convert email -> username
-#         except User.DoesNotExist:
-#             return {"ok": False, "message": "Invalid credentials"}
-
-#     # STEP 2: check credentials
-#     user = authenticate(request, username=username, password=payload.password)
-#     if not user:
-#         return {"ok": False, "message": "Invalid credentials"}
-
-#     # STEP 3: create session
-#     login(request, user)
-
-#     # STEP 4: return profile info
-#     profile, _ = UserProfile.objects.get_or_create(user=user)
-#     return {
-#         "ok": True,
-#         "message": "Logged in",
-#         "user": {
-#             "u_id": str(profile.u_id),
-#             "display_name": profile.display_name,
-#             "contact_email": profile.contact_email,
-#             "is_verified": profile.is_verified,
-#         }
-#     }
-
-# @api.post("/auth/logout")
-# def logout_view(request):
-#     if request.user.is_authenticated:
-#         logout(request)
-#         return {"ok": True, "message": "Logged out"}
-#     return {"ok": True, "message": "Already logged out"}
-
-# @api.get("/auth/me", response=ProfileOut, auth=JWTAuth())
-# def me_view(request):
-#     profile, _ = UserProfile.objects.get_or_create(user=request.auth)
-#     return profile
+# ------------------------------------------------------------------------------------
