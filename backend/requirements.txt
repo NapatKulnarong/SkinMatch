@@ -14,3 +14,6 @@ pytest
 pytest-django
 cryptography>=42
 django-allauth>=0.61.0,<0.62.0
+gunicorn>=22.0.0,<23.0.0
+uvicorn[standard]>=0.30.0,<0.31.0
+Pillow>=10.4.0,<11.0.0

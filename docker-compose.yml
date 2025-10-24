@@ -37,10 +37,12 @@ services:
       context: ./frontend
       args:
         - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+        - BACKEND_URL=http://backend:8000
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: skinmatch-frontend
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:8000
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     ports:
       - "3000:3000"

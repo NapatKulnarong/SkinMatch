@@ -1,8 +1,7 @@
-// frontend/src/app/login/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchProfile, login as loginRequest, signup as signupRequest } from "@/lib/api.auth";
 import { clearSession, saveProfile, setAuthToken } from "@/lib/auth-storage";
 
@@ -41,7 +40,24 @@ const initialLogin: LoginState = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
+          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+            <p className="text-lg font-semibold text-[#3B2F4A]">Loading sign-in…</p>
+          </div>
+        </main>
+      }
+    >
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("intro");
   const [signup, setSignup] = useState<SignupState>(initialSignup);
   const [login, setLogin] = useState<LoginState>(initialLogin);
@@ -51,6 +67,68 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Debug: log all URL parameters
+    const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
+    console.log("🔍 URL Search Params:", {
+      token: searchParams.get("token"),
+      error: searchParams.get("error"),
+      provider: searchParams.get("provider"),
+      status: searchParams.get("status"),
+      allParams,
+    });
+
+    const tokenParam = searchParams.get("token");
+    const error = searchParams.get("error");
+
+    if (error) {
+      console.error("❌ OAuth Error:", error);
+      const errorMessages: { [key: string]: string } = {
+        "missing_code": "Authentication failed: No authorization code received",
+        "server_not_configured": "Server configuration error",
+        "token_exchange_failed": "Failed to exchange code for token",
+        "missing_id_token": "No ID token received from Google",
+        "invalid_token": "Invalid Google token",
+        "google_error": "Google authentication failed"
+      };
+      setGoogleError(errorMessages[error] || `Authentication failed: ${error}`);
+      return;
+    }
+
+    if (tokenParam) {
+      console.log("✅ Token received, processing authentication...");
+      setGoogleLoading(true);
+      setGoogleError(null);
+      
+      try {
+        setAuthToken(tokenParam);
+        console.log("🔐 Token stored, fetching profile...");
+
+        fetchProfile(tokenParam)
+          .then((profile) => {
+            console.log("👤 Profile fetched:", profile);
+            saveProfile(profile);
+            console.log("🔄 Redirecting to /account...");
+            // Use replace instead of push to avoid adding to history
+            router.replace("/account");
+          })
+          .catch((profileError) => {
+            console.warn("⚠️ Unable to load profile after Google login", profileError);
+            // Still redirect to account even if profile fails
+            console.log("🔄 Redirecting to /account (profile load failed)...");
+            router.replace("/account");
+          })
+          .finally(() => {
+            setGoogleLoading(false);
+          });
+      } catch (error) {
+        console.error("❌ Error processing token:", error);
+        setGoogleError("Failed to process authentication");
+        setGoogleLoading(false);
+      }
+    }
+  }, [searchParams, router]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -68,7 +146,10 @@ export default function LoginPage() {
       return;
     }
 
-    const redirectUri = "http://localhost:8000/api/auth/google/callback";
+    console.log("🚀 Starting Google OAuth flow...");
+    
+    // Update this to match your actual Django endpoint
+    const redirectUri = 'http://localhost:8000/api/auth/google/callback'; 
     const scope = 'email profile';
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -79,6 +160,7 @@ export default function LoginPage() {
       `&access_type=offline` +
       `&prompt=consent`;
     
+    console.log("🔗 Redirecting to Google:", authUrl);
     setGoogleLoading(true);
     window.location.href = authUrl;
   };
@@ -243,9 +325,14 @@ export default function LoginPage() {
                 </span>
               </button>
               {googleError && (
-                <p className="mt-3 text-center text-sm font-semibold text-red-700">
-                  {googleError}
-                </p>
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-center text-sm font-semibold text-red-700">
+                    {googleError}
+                  </p>
+                  <p className="text-center text-xs text-red-600 mt-1">
+                    Check browser console for details
+                  </p>
+                </div>
               )}
 
               <button
@@ -271,6 +358,7 @@ export default function LoginPage() {
           </>
         )}
 
+        {/* Rest of your signup and login forms remain the same */}
         {mode === "signup" && (
           <div className="p-8">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
