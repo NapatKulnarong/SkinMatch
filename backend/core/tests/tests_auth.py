@@ -1,5 +1,3 @@
-# backend/core/tests_integration_auth.py
-
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.contrib.auth import get_user_model
