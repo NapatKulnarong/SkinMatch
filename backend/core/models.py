@@ -3,8 +3,11 @@ from datetime import date
 from typing import Optional
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
+from django.utils import timezone
 
 # Create your models here.
 class UserProfile(models.Model):
@@ -28,6 +31,7 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(null=True, blank=True) # dd/mm/yyyy
     gender = models.CharField(max_length=20, choices=Gender.choices, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
+    google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
 
     #audit
     created_at = models.DateTimeField(auto_now_add=True)
@@ -134,4 +138,116 @@ class SkinProfile(models.Model):
     def __str__(self):
         part = self.primary_concerns[:1] if isinstance(self.primary_concerns, list) else []
         concern = part[0] if part else "profile"
-        return f"{self.user} – {concern} ({self.created_at:%Y-%m-%d})"
+        return f"{self.user} – {concern} ({self.created_at:%d/%m/%Y})"
+
+
+class SkinFactTopic(models.Model):
+    """Curated educational content surfaced on the Skin Facts page."""
+
+    class Section(models.TextChoices):
+        KNOWLEDGE = "knowledge", "Skin Knowledge"
+        TRENDING = "trending", "Trending Skincare"
+        FACT_CHECK = "fact_check", "Fact Check"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=140, unique=True)
+    title = models.CharField(max_length=180)
+    subtitle = models.CharField(max_length=220, blank=True)
+    excerpt = models.CharField(max_length=240, blank=True)
+    section = models.CharField(max_length=20, choices=Section.choices)
+    hero_image = models.ImageField(
+        upload_to="facts/hero/",
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        blank=True,
+    )
+    hero_image_alt = models.CharField(max_length=160, blank=True)
+    is_published = models.BooleanField(default=True, db_index=True)
+    view_count = models.PositiveIntegerField(default=0, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["section", "is_published"]),
+            models.Index(fields=["view_count"]),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+    def increment_view_count(self):
+        type(self).objects.filter(pk=self.pk).update(view_count=F("view_count") + 1)
+        self.refresh_from_db(fields=["view_count"])
+
+
+class SkinFactContentBlock(models.Model):
+    """Structured content block (text or image) rendered within a Skin Fact topic."""
+
+    class BlockType(models.TextChoices):
+        PARAGRAPH = "paragraph", "Paragraph"
+        IMAGE = "image", "Image"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    topic = models.ForeignKey(
+        SkinFactTopic, on_delete=models.CASCADE, related_name="content_blocks"
+    )
+    order = models.PositiveIntegerField(default=0)
+    block_type = models.CharField(max_length=20, choices=BlockType.choices)
+    heading = models.CharField(max_length=180, blank=True)
+    text = models.TextField(blank=True)
+    image = models.ImageField(
+        upload_to="facts/blocks/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+    )
+    image_alt = models.CharField(max_length=160, blank=True)
+
+    class Meta:
+        ordering = ("order",)
+
+    def __str__(self) -> str:
+        return f"{self.block_type} block for {self.topic}"
+
+    def clean(self):
+        super().clean()
+        if self.block_type == self.BlockType.PARAGRAPH:
+            if not (self.text or "").strip():
+                raise ValidationError("Paragraph blocks require text content.")
+        if self.block_type == self.BlockType.IMAGE and not self.image:
+            raise ValidationError("Image blocks require an uploaded image.")
+
+
+class SkinFactView(models.Model):
+    """Tracks which topics a user has opened to power personalised popular topics."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    topic = models.ForeignKey(
+        SkinFactTopic, on_delete=models.CASCADE, related_name="views"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="skin_fact_views",
+        null=True,
+        blank=True,
+    )
+    anonymous_key = models.CharField(
+        max_length=64, blank=True, help_text="Best-effort identifier for anonymous sessions."
+    )
+    viewed_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "viewed_at"]),
+            models.Index(fields=["topic", "viewed_at"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            SkinFactTopic.objects.filter(id=self.topic_id).update(
+                view_count=F("view_count") + 1
+            )

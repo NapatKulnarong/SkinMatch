@@ -17,7 +17,7 @@ export default function QuizResultPage() {
 
   if (!answers.primaryConcern) {
     return (
-      <main className="min-h-screen bg-[#FFF6E9] flex items-center justify-center">
+      <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
         <section className="mx-auto w-full px-6 text-center space-y-6" style={fallbackStyle}>
           <h1 className="text-3xl font-extrabold text-[#3C3D37]">Let&apos;s build your skin profile</h1>
           <p className="text-base text-[#3C3D37]/80">

@@ -1,8 +1,14 @@
 import os
 from ninja import NinjaAPI, Schema, ModelSchema
-from .models import UserProfile
+from ninja.errors import HttpError
+from .models import (
+    UserProfile,
+    SkinFactContentBlock,
+    SkinFactTopic,
+    SkinFactView,
+)
 from typing import List, Optional
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 try:
     from pydantic import EmailStr as _EmailStr
 except ImportError:  # pragma: no cover - fallback for limited environments
@@ -16,10 +22,14 @@ else:
         EmailStr = _EmailStr  # type: ignore
 from datetime import datetime, date
 from .auth import create_access_token, JWTAuth
+from .google_auth import authenticate_google_id_token
 import uuid
 from datetime import datetime
-from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction, IntegrityError
+from django.db.models import Case, Count, IntegerField, Max, Q, When
+from django.shortcuts import get_object_or_404
 
 import google.generativeai as genai
 
@@ -53,13 +63,29 @@ class SignUpOut(Schema):
     message: str
 
 class LoginIn(Schema):
-    email : EmailStr
+    identifier: Optional[str] = None
+    email: Optional[str] = None
     password: str
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def ensure_identifier(cls, values):
+        identifier = (values.identifier or values.email or "").strip()
+        if not identifier:
+            raise ValueError("Identifier (email or username) is required")
+        values.identifier = identifier
+        return values
 
 class tokenOut(Schema):
     ok: bool
     token: Optional[str] = None
     message: str
+
+
+class GoogleLoginIn(Schema):
+    id_token: str
+
 
 class ProfileOut(Schema):
     """
@@ -78,6 +104,7 @@ class ProfileOut(Schema):
     email: Optional[str] = None
     is_staff: bool
     is_superuser: bool
+
 
 class UserProfileSchema(ModelSchema):
     class Config:
@@ -112,8 +139,8 @@ def generate_text(prompt: str, temperature: float = 0.2) -> str:
             last_err = e
             continue
     raise last_err
-
 # --------------- Auth endpoints ---------------
+
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
@@ -122,19 +149,31 @@ def genai_generate(request, payload: GenIn):
 
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
-    # only accept email
-    email = payload.email.strip().lower()
-    try:
-        user_obj = User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
+    identifier = payload.identifier
+    user_obj = (
+        User.objects.filter(Q(username__iexact=identifier) | Q(email__iexact=identifier))
+        .select_related("profile")
+        .first()
+    )
+    if not user_obj:
         return {"ok": False, "message": "Invalid credentials"}
-    
+
     user = authenticate(request, username=user_obj.get_username(), password=payload.password)
     if not user:
         return {"ok": False, "message": "Invalid credentials"}
     
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
+
+@api.post("/auth/oauth/google", response=tokenOut)
+def google_login(request, payload: GoogleLoginIn):
+    try:
+        user, created, message = authenticate_google_id_token(payload.id_token)
+    except ValueError as exc:
+        return {"ok": False, "message": str(exc)}
+
+    token = create_access_token(user)
+    return {"ok": True, "token": token, "message": message}
 
 @api.post("/auth/signup", response=SignUpOut)
 @transaction.atomic
@@ -241,9 +280,154 @@ def list_users(request, limit: int = 50, offset: int = 0):
         }
         for p in qs
     ]
-# ------------------------------------------------------------------------------------
+
 @api.get("/hello")
 def api_root(request):
-    print(request)
     return {"message": "Welcome to the API!"}
+
+# ------------------------------------------------------------------------------------
+
+class FactTopicSummary(Schema):
+    id: uuid.UUID
+    slug: str
+    title: str
+    subtitle: Optional[str] = None
+    excerpt: Optional[str] = None
+    section: str
+    hero_image_url: Optional[str] = None
+    hero_image_alt: Optional[str] = None
+    view_count: int
+
+
+class FactContentBlockOut(Schema):
+    order: int
+    block_type: str
+    heading: Optional[str] = None
+    text: Optional[str] = None
+    image_url: Optional[str] = None
+    image_alt: Optional[str] = None
+
+
+class FactTopicDetailOut(FactTopicSummary):
+    content_blocks: List[FactContentBlockOut]
+    updated_at: datetime
+
+@api.get("/facts/topics/popular", response=List[FactTopicSummary])
+def popular_facts(request, limit: int = 5):
+    limit = max(1, min(limit, 10))
+    base_qs = SkinFactTopic.objects.filter(is_published=True)
+    topics: List[SkinFactTopic] = []
+
+    user = getattr(request, "user", None)
+    if user and user.is_authenticated:
+        viewed = (
+            SkinFactView.objects.filter(user=user, topic__is_published=True)
+            .values("topic_id")
+            .annotate(total=Count("id"), last_view=Max("viewed_at"))
+            .order_by("-total", "-last_view")[:limit]
+        )
+        topic_id_order = [row["topic_id"] for row in viewed]
+        if topic_id_order:
+            order_case = Case(
+                *[When(id=topic_id, then=position) for position, topic_id in enumerate(topic_id_order)],
+                output_field=IntegerField(),
+            )
+            topics = list(
+                base_qs.filter(id__in=topic_id_order).order_by(order_case)
+            )
+
+    if len(topics) < limit:
+        fallback = (
+            base_qs.exclude(id__in=[topic.id for topic in topics])
+            .order_by("-view_count", "-updated_at")[: limit - len(topics)]
+        )
+        topics.extend(list(fallback))
+
+    return [_serialize_fact_topic_summary(topic, request) for topic in topics]
+
+
+@api.get("/facts/topics/section/{section}", response=List[FactTopicSummary])
+def facts_by_section(request, section: str, limit: int = 12, offset: int = 0):
+    valid_sections = {choice.value for choice in SkinFactTopic.Section}
+    section_key = section.lower()
+    if section_key not in valid_sections:
+        raise HttpError(404, "Unknown section")
+
+    limit = max(1, min(limit, 50))
+    qs = (
+        SkinFactTopic.objects.filter(section=section_key, is_published=True)
+        .order_by("-updated_at", "-created_at")
+    )
+    topics = qs[offset : offset + limit]
+    return [_serialize_fact_topic_summary(topic, request) for topic in topics]
+
+
+@api.get("/facts/topics/{slug}", response=FactTopicDetailOut)
+def fact_topic_detail(request, slug: str):
+    topic = get_object_or_404(
+        SkinFactTopic.objects.prefetch_related("content_blocks").filter(is_published=True),
+        slug=slug,
+    )
+
+    user = getattr(request, "user", None)
+    anon_key = request.headers.get("X-Client-ID") or request.META.get("REMOTE_ADDR", "")
+    SkinFactView.objects.create(
+        topic=topic,
+        user=user if user and user.is_authenticated else None,
+        anonymous_key=(anon_key or "")[:64],
+    )
+    topic.refresh_from_db(fields=["view_count", "updated_at"])
+
+    blocks = [_serialize_fact_block(block, request) for block in topic.content_blocks.all()]
+    return FactTopicDetailOut(
+        id=topic.id,
+        slug=topic.slug,
+        title=topic.title,
+        subtitle=topic.subtitle or None,
+        excerpt=topic.excerpt or None,
+        section=topic.section,
+        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_alt=topic.hero_image_alt or None,
+        view_count=topic.view_count,
+        updated_at=topic.updated_at,
+        content_blocks=blocks,
+    )
+
+
+def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSummary:
+    return FactTopicSummary(
+        id=topic.id,
+        slug=topic.slug,
+        title=topic.title,
+        subtitle=topic.subtitle or None,
+        excerpt=topic.excerpt or None,
+        section=topic.section,
+        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_alt=topic.hero_image_alt or None,
+        view_count=topic.view_count,
+    )
+
+
+def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
+    return FactContentBlockOut(
+        order=block.order,
+        block_type=block.block_type,
+        heading=block.heading or None,
+        text=block.text or None,
+        image_url=_resolve_media_url(request, block.image),
+        image_alt=block.image_alt or None,
+    )
+
+
+def _resolve_media_url(request, image_field) -> Optional[str]:
+    if not image_field:
+        return None
+    try:
+        url = image_field.url
+    except ValueError:
+        return None
+    if request:
+        return request.build_absolute_uri(url)
+    return url
+
 # ------------------------------------------------------------------------------------

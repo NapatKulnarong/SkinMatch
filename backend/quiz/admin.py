@@ -4,6 +4,7 @@ from .models import (
     Ingredient,
     MatchPick,
     Product,
+    ProductReview,
     ProductConcern,
     ProductIngredient,
     ProductSkinType,
@@ -61,6 +62,15 @@ class ProductAdmin(admin.ModelAdmin):
     autocomplete_fields = ("restrictions",)
     readonly_fields = ("created_at", "updated_at")
     inlines = [ProductIngredientInline, ProductConcernInline, ProductSkinTypeInline]
+
+
+@admin.register(ProductReview)
+class ProductReviewAdmin(admin.ModelAdmin):
+    list_display = ("product", "user", "rating", "is_public", "created_at")
+    list_filter = ("is_public", "rating", "created_at")
+    search_fields = ("product__name", "product__brand", "user__username", "user__email", "comment")
+    autocomplete_fields = ("product", "user")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Ingredient)

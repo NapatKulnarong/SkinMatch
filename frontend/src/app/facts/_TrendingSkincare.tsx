@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import PageContainer from "@/components/PageContainer";
 
 type TrendingProduct = {
   slug: string;
@@ -66,7 +67,7 @@ export default function TrendingSkincare() {
   const toggle = () => setShowAll((prev) => !prev);
 
   return (
-    <section className="px-6 pt-16">
+    <PageContainer as="section" className="pt-16">
       <div className="relative">
         <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
@@ -120,6 +121,6 @@ export default function TrendingSkincare() {
           </div>
         )}
       </div>
-    </section>
+    </PageContainer>
   );
 }
