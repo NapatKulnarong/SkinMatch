@@ -36,6 +36,17 @@ class SkinFactModelTest(TestCase):
         topic.refresh_from_db()
         self.assertEqual(topic.view_count, 1)
 
+    def test_topic_increment_multiple_times(self):
+        topic = SkinFactTopic.objects.create(
+            slug="spf50multi",
+            title="SPF 50 Multi Increment",
+            section=SkinFactTopic.Section.KNOWLEDGE,
+        )
+        topic.increment_view_count()
+        topic.increment_view_count()
+        topic.refresh_from_db()
+        self.assertEqual(topic.view_count, 2)
+
     def test_view_auto_increments_topic(self):
         topic = SkinFactTopic.objects.create(
             slug="vitc", title="Vitamin C", section=SkinFactTopic.Section.FACT_CHECK

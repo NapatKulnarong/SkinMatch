@@ -10,6 +10,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      - DJANGO_SETTINGS_MODULE=apidemo.settings
       - DJANGO_DEBUG=True
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     volumes:

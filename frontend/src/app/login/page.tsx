@@ -54,6 +54,26 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+export function buildGoogleAuthUrl(clientId: string) {
+  const redirectUri = "http://localhost:8000/api/auth/google/callback";
+  const scope = "email profile";
+
+  return (
+    "https://accounts.google.com/o/oauth2/v2/auth?" +
+    `client_id=${clientId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent(scope)}` +
+    `&access_type=offline` +
+    `&prompt=consent`
+  );
+}
+
+
+export function redirectTo(url: string) {
+  window.location.assign(url);
+}
+
 
 function LoginContent() {
   const router = useRouter();
@@ -139,31 +159,19 @@ function LoginContent() {
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
-    
+  
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) {
       setGoogleError("Google Sign-In is not configured.");
       return;
     }
-
-    console.log("🚀 Starting Google OAuth flow...");
-    
-    // Update this to match your actual Django endpoint
-    const redirectUri = 'http://localhost:8000/api/auth/google/callback'; 
-    const scope = 'email profile';
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&access_type=offline` +
-      `&prompt=consent`;
-    
-    console.log("🔗 Redirecting to Google:", authUrl);
+  
+    const authUrl = buildGoogleAuthUrl(clientId);
+  
     setGoogleLoading(true);
-    window.location.href = authUrl;
+    redirectTo(authUrl);
   };
+  
 
   const onSignupChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -314,6 +322,7 @@ function LoginContent() {
 
             <div className="bg-[#B6A6D8] p-6">
               <button
+                data-testid="signup-google"
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
@@ -336,6 +345,7 @@ function LoginContent() {
               )}
 
               <button
+                data-testid="signup-email"
                 type="button"
                 onClick={() => changeMode("signup")}
                 className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
@@ -347,6 +357,7 @@ function LoginContent() {
               <p className="mt-6 text-center text-sm text-gray-800">
                 Already have an account?{" "}
                 <button
+                  data-testid="go-login"
                   type="button"
                   onClick={() => changeMode("login")}
                   className="font-semibold text-[#3B2F4A] hover:underline"
@@ -360,7 +371,7 @@ function LoginContent() {
 
         {/* Rest of your signup and login forms remain the same */}
         {mode === "signup" && (
-          <div className="p-8">
+          <div className="p-8" data-testid="signup-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
               Create your account
             </h2>
@@ -483,7 +494,7 @@ function LoginContent() {
         )}
 
         {mode === "login" && (
-          <div className="p-8">
+          <div className="p-8" data-testid="login-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
             <form onSubmit={handleLogin} className="mt-4 space-y-6">
