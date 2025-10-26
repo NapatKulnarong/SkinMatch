@@ -9,13 +9,38 @@ const resolveBackendTarget = () => {
 };
 
 const nextConfig: NextConfig = {
-  // Proxy API requests from Next.js to Django
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/media/**',
+      },
+    ],
+  },
   async rewrites() {
     const target = resolveBackendTarget();
     return [
       {
         source: "/api/:path*",
         destination: `${target}/api/:path*`,
+      },
+      // Add this to proxy media files
+      {
+        source: "/media/:path*",
+        destination: `${target}/media/:path*`,
+      },
+      // If you're also serving static files from Django
+      {
+        source: "/static/:path*",
+        destination: `${target}/static/:path*`,
       },
     ];
   },

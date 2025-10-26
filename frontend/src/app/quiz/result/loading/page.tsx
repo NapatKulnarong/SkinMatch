@@ -15,15 +15,36 @@ const tips = [
 
 export default function QuizLoadingPage() {
   const router = useRouter();
-  const { answers } = useQuiz();
-  const hasDetails = Boolean(answers.primaryConcern);
+  const { answers, finalize } = useQuiz();
+  const hasDetails = Boolean(answers.primaryConcern?.label);
 
   useEffect(() => {
+    if (!hasDetails) {
+      router.replace("/quiz");
+      return;
+    }
+
+    let cancelled = false;
     const timeout = setTimeout(() => {
-      router.replace(hasDetails ? "/quiz/result" : "/quiz");
+      if (!cancelled) {
+        router.replace("/quiz/result");
+      }
     }, 1400);
-    return () => clearTimeout(timeout);
-  }, [router, hasDetails]);
+
+    finalize()
+      .catch(() => null)
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeout);
+          router.replace("/quiz/result");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [finalize, router, hasDetails]);
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">

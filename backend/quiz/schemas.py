@@ -24,6 +24,22 @@ class AnswerAck(Schema):
     updated: bool = False
 
 
+class ChoiceOut(Schema):
+    id: uuid.UUID
+    label: str
+    value: str
+    order: int
+
+
+class QuestionOut(Schema):
+    id: uuid.UUID
+    key: str
+    text: str
+    is_multi: bool
+    order: int
+    choices: List[ChoiceOut]
+
+
 class ReviewCreateIn(Schema):
     rating: Optional[int] = None
     comment: str
@@ -130,45 +146,4 @@ class FeedbackIn(Schema):
 
 
 class FeedbackAck(Schema):
-    ok: bool
-
-
-class ReviewCreateIn(Schema):
-    rating: Optional[int] = None
-    comment: str
-    is_public: Optional[bool] = True
-
-    @field_validator("rating")
-    @classmethod
-    def _rating_range(cls, value):
-        if value is None:
-            return value
-        if not 1 <= value <= 5:
-            raise ValueError("Rating must be between 1 and 5")
-        return value
-
-    @field_validator("comment")
-    @classmethod
-    def _comment_not_blank(cls, value: str) -> str:
-        cleaned = (value or "").strip()
-        if not cleaned:
-            raise ValueError("Comment cannot be blank")
-        return cleaned
-
-
-class ReviewOut(Schema):
-    id: uuid.UUID
-    product_id: uuid.UUID
-    user_id: str
-    user_display_name: str
-    avatar_url: Optional[str] = None
-    rating: Optional[int] = None
-    comment: str
-    is_public: bool
-    is_owner: bool
-    created_at: datetime
-    updated_at: datetime
-
-
-class ReviewAck(Schema):
     ok: bool

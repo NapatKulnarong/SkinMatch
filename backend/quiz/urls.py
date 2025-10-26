@@ -6,5 +6,5 @@ urlpatterns = [
     path("answer/", views.submit_answer, name="submit_answer"),
     path("submit/", views.submit_quiz, name="submit_quiz"),
     path("history/", views.quiz_history, name="quiz_history"),
-    path("sessio/<uuid:session_id>/", views.session_detail, name="session_detail"),
+    path("session/<uuid:session_id>/", views.session_detail, name="session_detail"),
 ]
