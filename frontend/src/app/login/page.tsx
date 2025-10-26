@@ -2,8 +2,19 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchProfile, login as loginRequest, signup as signupRequest } from "@/lib/api.auth";
-import { clearSession, saveProfile, setAuthToken } from "@/lib/auth-storage";
+import {
+  fetchProfile,
+  login as loginRequest,
+  signup as signupRequest,
+  createAdminSession,
+} from "@/lib/api.auth";
+import {
+  clearSession,
+  saveProfile,
+  setAuthToken,
+  type StoredProfile,
+} from "@/lib/auth-storage";
+import { redirectTo } from "./redirect";
 
 type Mode = "intro" | "signup" | "login";
 
@@ -19,7 +30,7 @@ type SignupState = {
 };
 
 type LoginState = {
-  email: string;
+  identifier: string;
   password: string;
 };
 
@@ -35,7 +46,7 @@ const initialSignup: SignupState = {
 };
 
 const initialLogin: LoginState = {
-  email: "",
+  identifier: "",
   password: "",
 };
 
@@ -75,9 +86,7 @@ export function buildGoogleAuthUrl(clientId: string) {
   );
 }
 
-export function redirectTo(url: string) {
-  window.location.assign(url);
-}
+export { redirectTo } from "./redirect";
 
 function LoginContent() {
   const router = useRouter();
@@ -93,7 +102,6 @@ function LoginContent() {
   const [googleError, setGoogleError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Debug: log all URL parameters
     const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
     console.log("🔍 URL Search Params:", {
       token: searchParams.get("token"),
@@ -107,7 +115,7 @@ function LoginContent() {
     const error = searchParams.get("error");
 
     if (error) {
-      console.error("❌ OAuth Error:", error);
+      console.error("OAuth Error:", error);
       const errorMessages: { [key: string]: string } = {
         "missing_code": "Authentication failed: No authorization code received",
         "server_not_configured": "Server configuration error",
@@ -121,33 +129,31 @@ function LoginContent() {
     }
 
     if (tokenParam) {
-      console.log("✅ Token received, processing authentication...");
+      console.log("Token received, processing authentication...");
       setGoogleLoading(true);
       setGoogleError(null);
       
       try {
         setAuthToken(tokenParam);
-        console.log("🔐 Token stored, fetching profile...");
+        console.log("Token stored, fetching profile...");
 
         fetchProfile(tokenParam)
           .then((profile) => {
-            console.log("👤 Profile fetched:", profile);
+            console.log("Profile fetched:", profile);
             saveProfile(profile);
-            console.log("🔄 Redirecting to /account...");
-            // Use replace instead of push to avoid adding to history
+            console.log("Redirecting to /account...");
             router.replace("/account");
           })
           .catch((profileError) => {
-            console.warn("⚠️ Unable to load profile after Google login", profileError);
-            // Still redirect to account even if profile fails
-            console.log("🔄 Redirecting to /account (profile load failed)...");
+            console.warn("Unable to load profile after Google login", profileError);
+            console.log("Redirecting to /account (profile load failed)...");
             router.replace("/account");
           })
           .finally(() => {
             setGoogleLoading(false);
           });
       } catch (error) {
-        console.error("❌ Error processing token:", error);
+        console.error("Error processing token:", error);
         setGoogleError("Failed to process authentication");
         setGoogleLoading(false);
       }
@@ -169,9 +175,21 @@ function LoginContent() {
       setGoogleError("Google Sign-In is not configured.");
       return;
     }
-  
-    const authUrl = buildGoogleAuthUrl(clientId);
-  
+
+    console.log("Starting Google OAuth flow...");
+    
+    const redirectUri = 'http://localhost:8000/api/auth/google/callback'; 
+    const scope = 'email profile';
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&access_type=offline` +
+      `&prompt=consent`;
+    
+    console.log("🔗 Redirecting to Google:", authUrl);
     setGoogleLoading(true);
     redirectTo(authUrl);
   };
@@ -207,13 +225,12 @@ function LoginContent() {
       const isoMatch = signup.dob.match(/^\d{4}-\d{2}-\d{2}$/);
       const slashMatch = signup.dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
 
-    if (isoMatch) {
-      formattedDob = signup.dob;
-    } else if (slashMatch) {
-      // convert DD/MM/YYYY -> YYYY-MM-DD
-      const [, day, month, year] = slashMatch;
-      formattedDob = `${year}-${month}-${day}`;
-    } else {
+      if (isoMatch) {
+        formattedDob = signup.dob;
+      } else if (slashMatch) {
+        const [, day, month, year] = slashMatch;
+        formattedDob = `${year}-${month}-${day}`;
+      } else {
         setSignupError("Date of birth must be in YYYY-MM-DD format.");
         return;
       }
@@ -257,7 +274,7 @@ function LoginContent() {
       });
 
       const loginResponse = await loginRequest({
-        email: signup.email.trim().toLowerCase(),
+        identifier: signup.email.trim().toLowerCase(),
         password: signup.password,
       });
       const token = loginResponse.token!;
@@ -286,20 +303,48 @@ function LoginContent() {
     clearSession();
 
     try {
+      const identifier = login.identifier.trim();
+      
       const loginResponse = await loginRequest({
-        email: login.email.trim().toLowerCase(),
+        identifier: identifier,
         password: login.password,
       });
-      const token = loginResponse.token!;
+      if (!loginResponse?.token) {
+        throw new Error(loginResponse?.message || "Login failed. Please try again.");
+      }
+
+      const token = loginResponse.token;
       setAuthToken(token);
 
+      let fetchedProfile: StoredProfile | null = null;
       try {
-        const profile = await fetchProfile(token);
-        saveProfile(profile);
+        fetchedProfile = await fetchProfile(token);
+        saveProfile(fetchedProfile);
       } catch (profileError) {
         console.warn("Unable to load profile", profileError);
       }
 
+      // Check if user is staff and redirect to admin
+      if (fetchedProfile?.is_staff) {
+        try {
+          const adminSession = await createAdminSession(token, fetchedProfile);
+          if (adminSession?.redirect_url) {
+            console.log("🔄 Redirecting to admin:", adminSession.redirect_url);
+            redirectTo(adminSession.redirect_url);
+            return;
+          }
+
+          console.warn("Admin session response missing redirect_url", adminSession);
+          setLoginError("Unable to start admin session. Please try again.");
+          return;
+        } catch (adminError) {
+          console.error("Unable to establish admin session", adminError);
+          setLoginError("Unable to start admin session. Please try again.");
+          return;
+        }
+      }
+
+      // Regular user - go to account page
       router.push("/account");
     } catch (error: unknown) {
       clearSession();
@@ -397,7 +442,6 @@ function LoginContent() {
           </>
         )}
 
-        {/* Rest of your signup and login forms remain the same */}
         {mode === "signup" && (
           <div className="p-8" data-testid="signup-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
@@ -529,14 +573,14 @@ function LoginContent() {
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
             <form onSubmit={handleLogin} className="mt-4 space-y-6">
-              <Field label="Email" colSpan={2}>
+              <Field label="Email or Username" colSpan={2}>
                 <input
-                  type="email"
-                  name="email"
-                  value={login.email}
+                  type="text"
+                  name="identifier"
+                  value={login.identifier}
                   onChange={onLoginChange}
                   className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
-                  placeholder="you@example.com"
+                  placeholder="you@example.com or yourusername"
                 />
               </Field>
 

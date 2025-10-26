@@ -1,108 +1,186 @@
-jest.mock("next/navigation", () => {
-  const params = new URLSearchParams(); // no token, no error in test env
-
-  return {
-    useRouter: () => ({
-      push: jest.fn(),
-      replace: jest.fn(),
-    }),
-    useSearchParams: () => params,
-  };
-});
-
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act } from "react";
 import LoginPage from "../page";
 
-// helper: render page and go to signup mode
-function renderAtSignup() {
-  const utils = render(<LoginPage />);
-  // click "Sign up with Email" to switch mode to signup
-  const emailBtn = screen.getByTestId("signup-email");
-  fireEvent.click(emailBtn);
-  return utils;
-}
+// Mock next/navigation before imports
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  })),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+  usePathname: jest.fn(() => "/login"),
+}));
 
-describe("Signup validation", () => {
-  test("shows error if password is less than 8 characters", async () => {
-    renderAtSignup();
-
-    const passwordInput = screen.getByPlaceholderText("••••••••");
-    const confirmInput = screen.getByPlaceholderText("Re-enter password");
-    const confirmButton = screen.getByRole("button", { name: /Confirm/i });
-
-    fireEvent.change(passwordInput, { target: { value: "short" } }); // 5 chars
-    fireEvent.change(confirmInput, { target: { value: "short" } });
-    fireEvent.click(confirmButton);
-
-    expect(
-      await screen.findByText(/Password must be at least 8 characters/i)
-    ).toBeInTheDocument();
+describe("LoginPage - Signup Validation", () => {
+  // Suppress console logs during tests
+  beforeAll(() => {
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  test("shows error if passwords do not match", async () => {
-    renderAtSignup();
-
-    const passwordInput = screen.getByPlaceholderText("••••••••");
-    const confirmInput = screen.getByPlaceholderText("Re-enter password");
-    const confirmButton = screen.getByRole("button", { name: /Confirm/i });
-
-    fireEvent.change(passwordInput, { target: { value: "abcdefgh" } }); // valid length
-    fireEvent.change(confirmInput, { target: { value: "abcdefgx" } }); // mismatch
-    fireEvent.click(confirmButton);
-
-    expect(
-      await screen.findByText(/Passwords do not match/i)
-    ).toBeInTheDocument();
+  afterAll(() => {
+    (console.log as jest.Mock).mockRestore();
+    (console.error as jest.Mock).mockRestore();
+    (console.warn as jest.Mock).mockRestore();
   });
 
-  test("shows error if user is younger than 13", async () => {
-    const { container } = renderAtSignup();
+  // Helper: render page and navigate to signup mode
+  const renderSignupForm = async () => {
+    const utils = render(<LoginPage />);
+    const signupEmailButton = screen.getByTestId("signup-email");
+    
+    await act(async () => {
+      fireEvent.click(signupEmailButton);
+    });
+    
+    return utils;
+  };
 
-    const dobInput = container.querySelector(
-      'input[name="dob"]'
-    ) as HTMLInputElement;
-    const passwordInput = screen.getByPlaceholderText("••••••••");
-    const confirmInput = screen.getByPlaceholderText("Re-enter password");
-    const confirmButton = screen.getByRole("button", { name: /Confirm/i });
-
-    // pick a date that makes the user ~10 years old (too young)
-    fireEvent.change(dobInput, { target: { value: "2015-10-25" } });
-    fireEvent.change(passwordInput, { target: { value: "abcdefgh" } });
-    fireEvent.change(confirmInput, { target: { value: "abcdefgh" } });
-    fireEvent.click(confirmButton);
-
-    expect(
-      await screen.findByText(/You must be at least 13 years old/i)
-    ).toBeInTheDocument();
+  // Helper: get common form elements
+  const getFormElements = () => ({
+    passwordInput: screen.getByPlaceholderText("••••••••"),
+    confirmInput: screen.getByPlaceholderText("Re-enter password"),
+    confirmButton: screen.getByRole("button", { name: /confirm/i }),
+    dobInput: document.querySelector('input[name="dob"]') as HTMLInputElement,
   });
 
-  test("submits without showing validation error when data is valid (password ok, dob ok, age >= 13)", async () => {
-    const { container } = renderAtSignup();
+  // Helper: fill form with valid data
+  const fillValidForm = async (overrides?: {
+    password?: string;
+    confirmPassword?: string;
+    dob?: string;
+  }) => {
+    const { passwordInput, confirmInput, dobInput } = getFormElements();
+    
+    const defaults = {
+      password: "validPassword123",
+      confirmPassword: "validPassword123",
+      dob: "2010-05-10",
+    };
+    
+    const values = { ...defaults, ...overrides };
 
-    const dobInput = container.querySelector(
-      'input[name="dob"]'
-    ) as HTMLInputElement;
-    const passwordInput = screen.getByPlaceholderText("••••••••");
-    const confirmInput = screen.getByPlaceholderText("Re-enter password");
-    const confirmButton = screen.getByRole("button", { name: /Confirm/i });
+    await act(async () => {
+      if (dobInput) {
+        fireEvent.change(dobInput, { target: { value: values.dob } });
+      }
+      fireEvent.change(passwordInput, { target: { value: values.password } });
+      fireEvent.change(confirmInput, { target: { value: values.confirmPassword } });
+    });
+  };
 
-    // set DOB ~15 years ago so user is older than 13
-    fireEvent.change(dobInput, { target: { value: "2010-05-10" } });
-    fireEvent.change(passwordInput, { target: { value: "abcdefgh" } });
-    fireEvent.change(confirmInput, { target: { value: "abcdefgh" } });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    fireEvent.click(confirmButton);
+  describe("Password validation", () => {
+    it("should show error when password is less than 8 characters", async () => {
+      await renderSignupForm();
+      await fillValidForm({ password: "short", confirmPassword: "short" });
 
-    // we expect no validation error messages
-    expect(
-      screen.queryByText(/Password must be at least 8 characters/i)
-    ).toBeNull();
-    expect(
-      screen.queryByText(/Passwords do not match/i)
-    ).toBeNull();
-    expect(
-      screen.queryByText(/You must be at least 13 years old/i)
-    ).toBeNull();
+      const { confirmButton } = getFormElements();
+      
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/password must be at least 8 characters/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should show error when passwords do not match", async () => {
+      await renderSignupForm();
+      await fillValidForm({ 
+        password: "validPassword123", 
+        confirmPassword: "differentPass123" 
+      });
+
+      const { confirmButton } = getFormElements();
+      
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/passwords do not match/i)
+        ).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Age validation", () => {
+    it("should show error when user is younger than 13 years old", async () => {
+      await renderSignupForm();
+      await fillValidForm({ dob: "2015-10-25" });
+
+      const { confirmButton } = getFormElements();
+      
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/you must be at least 13 years old/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should accept user who is exactly 13 years old", async () => {
+      await renderSignupForm();
+      const thirteenYearsAgo = new Date();
+      thirteenYearsAgo.setFullYear(thirteenYearsAgo.getFullYear() - 13);
+      const dobString = thirteenYearsAgo.toISOString().split("T")[0];
+      
+      await fillValidForm({ dob: dobString });
+
+      const { confirmButton } = getFormElements();
+      
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/you must be at least 13 years old/i)
+        ).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Successful submission", () => {
+    it("should not show any validation errors with valid data", async () => {
+      await renderSignupForm();
+      await fillValidForm();
+
+      const { confirmButton } = getFormElements();
+      
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/password must be at least 8 characters/i)
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/passwords do not match/i)
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/you must be at least 13 years old/i)
+        ).not.toBeInTheDocument();
+      });
+    });
   });
 });

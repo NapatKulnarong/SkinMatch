@@ -12,7 +12,7 @@ export type SignupPayload = {
 };
 
 export type LoginPayload = {
-  email: string;
+  identifier: string;
   password: string;
 };
 
@@ -75,6 +75,29 @@ export async function loginWithGoogle(idToken: string) {
   return data;
 }
 
+export async function createAdminSession(token: string, profile: StoredProfile) {
+  // Check if user has staff privileges using the already fetched profile
+  if (!profile.is_staff) {
+    throw new Error("User does not have staff privileges");
+  }
+  
+  // Return the admin URL for redirection
+  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  
+  let adminUrl = `${backendBase}/admin/`;
+  
+  // Replace any Docker internal URLs with localhost for browser access
+  if (adminUrl.includes('backend:8000')) {
+    adminUrl = adminUrl.replace('backend:8000', 'localhost:8000');
+  }
+  
+  return {
+    ok: true,
+    message: "Admin session available",
+    redirect_url: adminUrl
+  };
+}
+
 export async function fetchProfile(token: string): Promise<StoredProfile> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "GET",
@@ -83,4 +106,17 @@ export async function fetchProfile(token: string): Promise<StoredProfile> {
     },
   });
   return handleJson<StoredProfile>(res);
+}
+
+export async function logout(token: string) {
+  const res = await fetch(`${API_BASE}/auth/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const data = await handleJson<{ ok: boolean; message: string }>(res);
+  if (!data.ok) throw new Error(data.message || "Logout failed");
+  return data;
 }
