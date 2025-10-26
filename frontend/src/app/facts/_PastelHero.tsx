@@ -1,55 +1,49 @@
-"use client";
-
-/* eslint-disable @next/next/no-img-element */
+// app/facts/_PastelHero.tsx
+import Image from "next/image";
 
 type PastelHeroProps = {
-  cover: string;
+  cover: string; // heroImageUrl or fallback
   title: string;
   subtitle?: string | null;
-  coverAlt?: string | null;
 };
 
-export function PastelHero({ cover, title, subtitle, coverAlt }: PastelHeroProps) {
+export default function PastelHero({ cover, title, subtitle }: PastelHeroProps) {
   return (
-    <section className="mx-auto w-full max-w-4xl">
-      <div
-        className="
-          relative
-          h-[180px] md:h-[200px]
-          w-full
-          overflow-hidden
-          rounded-[12px] md:rounded-[10px]
-          border-2 border-black
-          bg-neutral-800 text-white
-          shadow-[6px_8px_0_rgba(0,0,0,0.25)]
-        "
-      >
-        {/* background image */}
-        {cover ? (
-          <>
-            <img
-              src={cover}
-              alt={coverAlt || title}
-              className="
-                absolute inset-0
-                h-full w-full
-                object-cover
-              "
-            />
-            <div className="absolute inset-0 bg-black/40" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-600 to-neutral-300" />
-        )}
+    <section
+      className="
+        mx-auto
+        max-w-4xl
+        w-full
+        rounded-[16px]
+        border-2 border-black
+        shadow-[8px_10px_0_rgba(0,0,0,0.4)]
+        bg-gradient-to-br from-[#5f5f5f] to-[#cfcfcf]
+        overflow-hidden
+        mb-8
+      "
+    >
+      <div className="relative w-full min-h-[260px] md:min-h-[300px]">
+        {/* hero image */}
+        <Image
+          src={cover}
+          alt={subtitle || title}
+          fill
+          unoptimized={cover.startsWith("http")}
+          className="object-cover object-center opacity-80"
+          sizes="(max-width: 768px) 100vw, 800px"
+        />
 
-        {/* text overlay */}
-        <div className="relative z-10 flex h-full w-full flex-col justify-center p-4 md:p-6">
-          <h1 className="text-2xl md:text-3xl font-extrabold leading-tight text-white drop-shadow">
+        {/* gradient overlay so text is readable */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+
+        {/* text block */}
+        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+          <h1 className="text-white font-extrabold text-2xl leading-snug md:text-3xl md:leading-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.7)]">
             {title}
           </h1>
 
           {subtitle ? (
-            <p className="mt-2 max-w-2xl text-sm md:text-base text-white/90 drop-shadow">
+            <p className="text-white/90 text-base md:text-lg font-medium mt-3 max-w-[46ch] drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
               {subtitle}
             </p>
           ) : null}
