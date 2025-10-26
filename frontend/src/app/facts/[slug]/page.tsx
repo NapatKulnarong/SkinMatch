@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import PastelHero from "../_PastelHero";
 import { fetchFactTopicDetail, fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactContentBlock, FactTopicSummary } from "@/lib/types";
+import ArticleBlock from "@/components/facts/ArticleBlock";
 
 const FALLBACK_COVER = "/img/facts_img/sheet_mask.jpg";
 
@@ -42,7 +43,7 @@ export default async function FactTopicPage({ params }: Params) {
             md:p-8
           "
         >
-          {topic.contentBlocks.map((block, idx) => (
+          {topic.contentBlocks.map((block: FactContentBlock, idx: number) => (
             <ArticleBlock
               key={idx}
               block={block}
@@ -87,7 +88,9 @@ export default async function FactTopicPage({ params }: Params) {
                       src={item.heroImageUrl ?? FALLBACK_COVER}
                       alt={item.heroImageAlt ?? item.title}
                       fill
-                      unoptimized={Boolean(item.heroImageUrl?.startsWith("http"))}
+                      unoptimized={Boolean(
+                        item.heroImageUrl?.startsWith("http")
+                      )}
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 600px"
                     />
@@ -110,63 +113,6 @@ export default async function FactTopicPage({ params }: Params) {
         ) : null}
       </div>
     </main>
-  );
-}
-
-/* ─────────────────────────────
-   ARTICLE BLOCK RENDERER
-   (Heading, paragraph, optional image)
-────────────────────────────── */
-function ArticleBlock({
-  block,
-  isLast,
-}: {
-  block: FactContentBlock;
-  isLast: boolean;
-}) {
-  const paragraphs = (block.text ?? "")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  return (
-    <section className={isLast ? "" : "mb-10"}>
-      {block.heading ? (
-        <h2 className="text-base md:text-lg font-extrabold text-gray-900 mb-3">
-          {block.heading}
-        </h2>
-      ) : null}
-
-      {paragraphs.map((para, i) => (
-        <p
-          key={i}
-          className="text-gray-800 leading-relaxed text-sm md:text-base mb-4"
-        >
-          {para}
-        </p>
-      ))}
-
-      {block.imageUrl ? (
-        <figure className="my-6">
-          <img
-            src={block.imageUrl}
-            alt={block.imageAlt ?? block.heading ?? ""}
-            className="
-              w-full h-auto
-              rounded-[12px]
-              border-2 border-black
-              shadow-[6px_8px_0_rgba(0,0,0,0.25)]
-              bg-white
-            "
-          />
-          {block.imageAlt ? (
-            <figcaption className="mt-2 text-center text-xs text-gray-600">
-              {block.imageAlt}
-            </figcaption>
-          ) : null}
-        </figure>
-      ) : null}
-    </section>
   );
 }
 
