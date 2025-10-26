@@ -21,7 +21,7 @@ export default async function FactTopicPage({ params }: Params) {
 
   return (
     <main className="bg-[#dbe9ea] min-h-screen pb-16">
-      <div className="mx-auto w-full max-w-5xl px-4 pt-8 md:pt-10">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-32 md:pt-32">
         {/* HERO CARD */}
         <PastelHero
           cover={cover}
