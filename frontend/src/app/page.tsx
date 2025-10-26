@@ -41,17 +41,15 @@ export default function HomePage() {
                 </div>
               </div>
 
-            <div className="order-2 md:order-1">
-              <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-[28px] border-2 border-black bg-[#f7cba3] shadow-[4px_6px_0_rgba(0,0,0,0.25)] md:max-w-none">
-                <Image
-                  src="/hero.jpg"
-                  alt="Person smiling with skincare cream on cheeks"
-                  fill
-                  priority
-                  className="object-cover object-center"
-                  sizes="(max-width: 768px) 80vw, (max-width: 1024px) 40vw, 520px"
-                />
-              </div>
+            <div className="order-2 flex justify-center md:order-1">
+              <Image
+                src="/img/mascot/matchy_01.png"
+                alt="Matchy the SkinMatch mascot giving a friendly wave"
+                width={360}
+                height={270}
+                priority
+                className="h-auto w-full max-w-sm"
+              />
             </div>
           </div>
         </section>

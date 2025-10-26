@@ -5,155 +5,65 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StepNavArrows from "../../_StepNavArrows";
-import { RESULT_LOADING_HREF, TOTAL_STEPS } from "../../_config";
-import { QuizAnswerKey, useQuizAnswer } from "../../_QuizContext";
+import { RESULT_LOADING_HREF, TOTAL_STEPS, getStepMeta, type StepMeta } from "../../_config";
+import { useQuizAnswer } from "../../_QuizContext";
+import type { QuizChoice } from "../../_QuizContext";
 
-const OPTIONS_Q2 = [
-  "Acne & breakouts",
-  "Fine lines & wrinkles",
-  "Uneven skin texture",
-  "Blackheads",
-  "Hyperpigmentation",
-  "Acne scars",
-  "Dull skin",
-  "Damaged skin barrier",
-  "Redness",
-  "Excess oil",
-  "Dehydrated skin",
-];
-
-const OPTIONS_Q3 = ["Dark circles", "Fine lines & wrinkles", "Puffiness", "None"];
-const OPTIONS_Q4 = ["Normal", "Oily", "Dry", "Combination"];
-const OPTIONS_Q5 = ["Yes", "Sometimes", "No"];
-const OPTIONS_Q6 = ["Yes", "No"];
-const OPTIONS_Q7 = ["Affordable", "Mid-range", "Premium / luxury"];
+const buildFallbackChoices = (meta: StepMeta): QuizChoice[] =>
+  meta.fallbackChoices.map((choice, index) => ({
+    id: `${choice.value}-${index}`,
+    label: choice.label,
+    value: choice.value,
+    order: index + 1,
+  }));
 
 export default function QuizStepPage({ params }: { params: { id: string } }) {
-  const step = useMemo(() => Number(params.id) || 2, [params.id]);
+  const step = useMemo(() => {
+    const parsed = Number(params.id);
+    if (Number.isNaN(parsed) || parsed < 1) return 1;
+    return Math.min(parsed, TOTAL_STEPS);
+  }, [params.id]);
+
+  const meta = getStepMeta(step);
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
       <section className="w-full max-w-[1200px] px-4">
-        {renderCardByStep(step)}
+        {meta ? <QuestionCard meta={meta} current={step} /> : <PlaceholderCard current={step} />}
       </section>
     </main>
   );
 }
 
-function renderCardByStep(step: number) {
-  switch (step) {
-    case 2:
-      return (
-        <QuestionCard
-          title="Do you have any secondary concerns?"
-          options={OPTIONS_Q2}
-          gradientFrom="#F4F6FF"
-          gradientTo="#447D9B"
-          accent="#6391ab"
-          gridCols="sm:grid-cols-2 lg:grid-cols-3"
-          current={step}
-          answerKey="secondaryConcern"
-        />
-      );
-    case 3:
-      return (
-        <QuestionCard
-          title="Do you have any eye area concerns?"
-          options={OPTIONS_Q3}
-          gradientFrom="#F2F8FF"
-          gradientTo="#568F87"
-          accent="#79a7a2"
-          gridCols="grid-cols-2"
-          current={step}
-          answerKey="eyeConcern"
-        />
-      );
-    case 4:
-      return (
-        <QuestionCard
-          title="Which best describes your skin type?"
-          options={OPTIONS_Q4}
-          gradientFrom="#EAFBF6"
-          gradientTo="#73946B"
-          accent="#8caa88"
-          gridCols="grid-cols-2"
-          current={step}
-          answerKey="skinType"
-        />
-      );
-    case 5:
-      return (
-        <QuestionCard
-          title="Is your skin sensitive?"
-          options={OPTIONS_Q5}
-          gradientFrom="#F3F9EA"
-          gradientTo="#DDA853"
-          accent="#e3bd7b"
-          gridCols="grid-cols-1 sm:grid-cols-3"
-          current={step}
-          answerKey="sensitivity"
-        />
-      );
-    case 6:
-      return (
-        <QuestionCard
-          title="Are you pregnant or breastfeeding?"
-          options={OPTIONS_Q6}
-          gradientFrom="#FFF6D5"
-          gradientTo="#F08B51"
-          accent="#f5ac79"
-          gridCols="grid-cols-1 sm:grid-cols-2"
-          current={step}
-          answerKey="pregnancy"
-        />
-      );
-    case 7:
-      return (
-        <QuestionCard
-          title="What’s your budget preference?"
-          options={OPTIONS_Q7}
-          gradientFrom="#FFE5E9"
-          gradientTo="#B9375D"
-          accent="#cf708b"
-          gridCols="grid-cols-1 sm:grid-cols-3"
-          current={step}
-          answerKey="budget"
-        />
-      );
-    default:
-      return <PlaceholderCard current={step} />;
-  }
-}
-
 type QuestionCardProps = {
-  title: string;
-  options: string[];
-  gradientFrom: string;
-  gradientTo: string;
-  accent: string;
-  gridCols: string;
+  meta: StepMeta;
   current: number;
-  answerKey: QuizAnswerKey;
 };
 
-function QuestionCard(props: QuestionCardProps) {
-  const { title, options, gradientFrom, gradientTo, accent, gridCols, current, answerKey } = props;
+function QuestionCard({ meta, current }: QuestionCardProps) {
   const router = useRouter();
-  const { value, setValue } = useQuizAnswer(answerKey);
+  const { value, setValue, choices } = useQuizAnswer(meta.key);
+
+  const fallbackChoices = useMemo(() => buildFallbackChoices(meta), [meta]);
+  const availableChoices = choices.length ? choices : fallbackChoices;
 
   const isFinalStep = current >= TOTAL_STEPS;
   const nextHref = isFinalStep ? RESULT_LOADING_HREF : `/quiz/step/${current + 1}`;
 
-  const handleSelect = (opt: string) => {
-    setValue(opt);
-    if (!isFinalStep) setTimeout(() => router.push(nextHref), 160);
+  const handleSelect = (choice: QuizChoice) => {
+    setValue(choice.label);
+    if (!isFinalStep) {
+      setTimeout(() => router.push(nextHref), 160);
+    }
   };
 
   return (
     <div className="relative rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] overflow-hidden">
       <div
         className="absolute inset-0"
-        style={{ backgroundImage: `linear-gradient(to bottom, ${gradientFrom}, ${gradientTo})` }}
+        style={{
+          backgroundImage: `linear-gradient(to bottom, ${meta.gradientFrom}, ${meta.gradientTo})`,
+        }}
       />
 
       <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 z-20">
@@ -167,17 +77,17 @@ function QuestionCard(props: QuestionCardProps) {
 
       <div className="relative z-10 flex flex-col p-8 sm:p-10 h-[80vh] max-h-[700px]">
         <h1 className="mt-6 text-center text-2xl sm:text-4xl font-extrabold text-gray-800 drop-shadow-[0_2px_0_rgba(0,0,0,0.2)]">
-          {title}
+          {meta.title}
         </h1>
 
         <div className="flex-1 flex items-center justify-center">
-          <div className={`grid gap-4 ${gridCols} place-items-center`}>
-            {options.map((opt) => {
-              const selected = value === opt;
+          <div className={`grid gap-4 ${meta.gridCols} place-items-center`}>
+            {availableChoices.map((choice) => {
+              const selected = value === choice.label;
               return (
                 <button
-                  key={opt}
-                  onClick={() => handleSelect(opt)}
+                  key={choice.id}
+                  onClick={() => handleSelect(choice)}
                   className={[
                     "w-full sm:min-w-[280px] px-6 py-5 rounded-full text-lg font-semibold",
                     "border-2 border-black shadow-[0_6px_0_rgba(0,0,0,0.35)]",
@@ -186,10 +96,10 @@ function QuestionCard(props: QuestionCardProps) {
                     "hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)]",
                     "active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]",
                   ].join(" ")}
-                  style={selected ? { backgroundColor: accent } : undefined}
+                  style={selected ? { backgroundColor: meta.accent } : undefined}
                   aria-pressed={selected}
                 >
-                  {opt}
+                  {choice.label}
                 </button>
               );
             })}

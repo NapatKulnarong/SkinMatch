@@ -29,8 +29,10 @@ from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction, IntegrityError
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
+from quiz.views import router as quiz_router
 
 api = NinjaAPI()
+api.add_router("/quiz", quiz_router)
 User = get_user_model()
 
 # --------------- Schemas ---------------
