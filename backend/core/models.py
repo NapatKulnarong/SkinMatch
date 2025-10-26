@@ -165,6 +165,11 @@ class SkinFactTopic(models.Model):
     view_count = models.PositiveIntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    last_updated = models.DateField(
+        default=timezone.now,
+        help_text="When this topic was last reviewed / fact-checked for accuracy."
+    )
+    
 
     class Meta:
         ordering = ("-created_at",)
@@ -182,41 +187,97 @@ class SkinFactTopic(models.Model):
 
 
 class SkinFactContentBlock(models.Model):
-    """Structured content block (text or image) rendered within a Skin Fact topic."""
+    """
+    Ordered content blocks that make up the body of a SkinFactTopic.
+    Each block can be:
+    - a section heading like "What Is Hyaluronic Acid?"
+    - a normal text section
+    - a text section with an image
+    do NOT force it to be only-image or only-text. The editor can mix.
+    """
 
     class BlockType(models.TextChoices):
-        PARAGRAPH = "paragraph", "Paragraph"
-        IMAGE = "image", "Image"
+        HEADING = "heading", "Heading / Section Title"
+        TEXT = "text", "Text Section"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     topic = models.ForeignKey(
-        SkinFactTopic, on_delete=models.CASCADE, related_name="content_blocks"
+        SkinFactTopic,
+        on_delete=models.CASCADE,
+        related_name="content_blocks",
     )
-    order = models.PositiveIntegerField(default=0)
-    block_type = models.CharField(max_length=20, choices=BlockType.choices)
-    heading = models.CharField(max_length=180, blank=True)
-    text = models.TextField(blank=True)
+
+    # Controls order in the article
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Display order, starting from 0. Lower = appears earlier."
+    )
+
+    # heading vs text
+    block_type = models.CharField(
+        max_length=20,
+        choices=BlockType.choices,
+        help_text="Use 'heading' for section headers, 'text' for normal explanatory content."
+    )
+
+    # Shown as block title in UI
+    heading = models.CharField(
+        max_length=180,
+        blank=True,
+        help_text="Small heading/title for this block, e.g. 'How to Use Hyaluronic Acid Effectively'."
+    )
+
+    # The actual paragraph(s)
+    text = models.TextField(
+        blank=True,
+        help_text="Main body text (3–6 sentences)."
+    )
+
+    # Optional supporting image
     image = models.ImageField(
         upload_to="facts/blocks/",
         blank=True,
         null=True,
         validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        help_text="Optional. Example: serum texture, hydrated skin close-up."
     )
-    image_alt = models.CharField(max_length=160, blank=True)
+
+    image_alt = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Describe the image for accessibility. Example: 'Transparent serum drop with bubbles'."
+    )
 
     class Meta:
         ordering = ("order",)
 
     def __str__(self) -> str:
-        return f"{self.block_type} block for {self.topic}"
+        # Helpful in admin list/dropdowns
+        if self.heading:
+            return f"[{self.order}] {self.heading}"
+        return f"[{self.order}] {self.get_block_type_display()} block"
 
     def clean(self):
+        """
+        Custom validation that actually matches what you're doing in admin:
+        - 'heading' blocks MUST have heading, can have optional text/image
+        - 'text' blocks MUST have text; heading/image are optional
+        """
         super().clean()
-        if self.block_type == self.BlockType.PARAGRAPH:
+
+        if self.block_type == self.BlockType.HEADING:
+            if not (self.heading or "").strip():
+                raise ValidationError("Heading blocks must have a heading title.")
+
+        if self.block_type == self.BlockType.TEXT:
             if not (self.text or "").strip():
-                raise ValidationError("Paragraph blocks require text content.")
-        if self.block_type == self.BlockType.IMAGE and not self.image:
-            raise ValidationError("Image blocks require an uploaded image.")
+                raise ValidationError("Text blocks must include body text.")
+
+        # image validation (only check file type, not dimensions)
+        if self.image and not (self.image_alt or "").strip():
+            raise ValidationError("Please provide image alt text for accessibility.")
+
 
 
 class SkinFactView(models.Model):
