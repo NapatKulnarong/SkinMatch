@@ -100,6 +100,20 @@ export default function AccountSettingsPage() {
     return "/img/avatar_placeholder.png";
   }, [avatarPreview, profile]);
 
+  const hasFormChanges = useMemo(() => {
+    if (!profile) return false;
+    const normalize = (value?: string | null) => (value ?? "").trim();
+    return (
+      normalize(fieldState.first_name) !== normalize(profile.first_name) ||
+      normalize(fieldState.last_name) !== normalize(profile.last_name) ||
+      normalize(fieldState.username) !== normalize(profile.username) ||
+      normalize(fieldState.date_of_birth) !== normalize(profile.date_of_birth) ||
+      normalize(fieldState.gender) !== normalize(profile.gender)
+    );
+  }, [fieldState, profile]);
+
+  const canSave = Boolean(profile) && (hasFormChanges || Boolean(avatarFile));
+
   const handleFieldChange = (key: keyof FieldState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { value } = event.target;
     setFieldState((prev) => ({ ...prev, [key]: value }));
@@ -109,7 +123,7 @@ export default function AccountSettingsPage() {
     event.preventDefault();
     if (!tokenRef.current) return;
     setSaving(true);
-    setAvatarUploading(true);
+    setAvatarUploading(Boolean(avatarFile));
     setMessage(null);
     setError(null);
 
@@ -212,12 +226,15 @@ export default function AccountSettingsPage() {
 
   return (
     <main className="min-h-screen bg-[#d3cbe0]">
-      <PageContainer className="pt-28 pb-16 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Profile Settings</h1>
+      <PageContainer className="pt-24 pb-16 lg:px-8 xl:px-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7C6DB1]">
+              Personal profile
+            </p>
+            <h1 className="text-3xl font-extrabold text-gray-900">Profile settings</h1>
             <p className="text-sm text-gray-700">
-              Personalise your SkinMatch profile so we can tailor recommendations.
+              Give Matchy the details it needs to tailor recommendations just for you.
             </p>
           </div>
           <Link
@@ -231,7 +248,7 @@ export default function AccountSettingsPage() {
         {(message || error) && (
           <div
             className={[
-              "mb-6 rounded-xl border-2 px-4 py-3 text-sm font-semibold",
+              "mt-6 rounded-xl border-2 px-4 py-3 text-sm font-semibold",
               message
                 ? "border-green-200 bg-green-50 text-green-700"
                 : "border-red-200 bg-red-50 text-red-700",
@@ -241,55 +258,67 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* Avatar column */}
-          <section className="rounded-2xl border-2 border-black bg-white p-5 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-            <h2 className="text-lg font-bold text-gray-900">Profile picture</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Upload a friendly face so Matchy recognises you next time.
-            </p>
+        <section className="mt-6 rounded-[32px] border-2 border-black bg-gradient-to-br from-white to-[#ece4ff] p-6 shadow-[8px_10px_0_rgba(0,0,0,0.25)] lg:p-8">
+          <div className="grid gap-8 lg:grid-cols-[280px_1fr] 2xl:grid-cols-[320px_1fr]">
+            <div className="flex flex-col gap-6">
+              <div className="rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
+                <h2 className="text-lg font-bold text-gray-900">Profile picture</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Upload a friendly face so Matchy recognises you instantly.
+                </p>
 
-            <div className="mt-4 flex flex-col items-center">
-              <div className="relative h-40 w-40 overflow-hidden rounded-2xl border-2 border-black bg-[#f0e7ff] shadow-[4px_6px_0_rgba(0,0,0,0.2)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={currentAvatar}
-                  alt="Profile avatar preview"
-                  className="h-full w-full object-cover"
-                />
+                <div className="mt-4 space-y-4">
+                  <div className="relative mx-auto h-40 w-40 overflow-hidden rounded-3xl border-2 border-black bg-[#f0e7ff] shadow-[4px_6px_0_rgba(0,0,0,0.2)] sm:h-44 sm:w-44">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentAvatar}
+                      alt="Profile avatar preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Tip: square photo (≥240px). JPG, PNG, GIF, or WEBP works best.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]">
+                      Choose image
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleAvatarSelection}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={avatarUploading || (!profile?.avatar_url && !avatarPreview)}
+                      onClick={handleRemoveAvatar}
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f6d4d9] px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Remove picture
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <label className="mt-4 inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]">
-                Choose image
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={handleAvatarSelection}
-                  className="hidden"
-                />
-              </label>
-
-              <div className="mt-3 flex w-full flex-col gap-2 text-sm">
-                <button
-                  type="button"
-                  disabled={avatarUploading}
-                  onClick={handleRemoveAvatar}
-                  className="inline-flex items-center justify-center rounded-lg border-2 border-black bg-[#f6d4d9] px-3 py-2 font-semibold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Remove picture
-                </button>
-              </div>
+              {canSave && !saving && (
+                <div className="rounded-xl border-2 border-[#f3c078] bg-[#fff3dc] px-4 py-3 text-sm font-semibold text-[#8b5b21] shadow-[0_4px_0_rgba(0,0,0,0.15)]">
+                  You have unsaved changes.
+                </div>
+              )}
             </div>
-          </section>
 
-          {/* Profile details */}
-          <section className="rounded-2xl border-2 border-black bg-white p-6 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-            <h2 className="text-lg font-bold text-gray-900">Personal details</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Update how your name appears across SkinMatch.
-            </p>
+            <form
+              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
+              onSubmit={handleProfileSubmit}
+            >
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Personal details</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Keep your profile in sync so SkinMatch feels like home.
+                </p>
+              </div>
 
-            <form className="mt-6 space-y-5" onSubmit={handleProfileSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
                   First name
@@ -352,16 +381,23 @@ export default function AccountSettingsPage() {
                 </label>
               </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#c8f0c8] px-6 py-3 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? "Saving…" : "Save changes"}
-              </button>
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={!canSave || saving || avatarUploading}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#c8f0c8] px-6 py-3 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving || avatarUploading ? "Saving…" : "Save changes"}
+                </button>
+                {!canSave && !saving && !avatarUploading && (
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+                    Everything is up to date
+                  </span>
+                )}
+              </div>
             </form>
-          </section>
-        </div>
+          </div>
+        </section>
       </PageContainer>
     </main>
   );

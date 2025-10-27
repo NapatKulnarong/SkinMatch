@@ -165,6 +165,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Quiz configuration
+QUIZ_REQUIRE_AUTH_FOR_PRODUCTS = False
+
 # --- JWT config ---
 from datetime import timedelta
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Iterable
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -237,7 +238,8 @@ def submit_quiz(request, session_id: uuid.UUID):
     session.profile_snapshot = profile_payload
     session.completed_at = timezone.now()
 
-    include_products = bool(session.user_id)
+    require_auth = getattr(settings, "QUIZ_REQUIRE_AUTH_FOR_PRODUCTS", False)
+    include_products = bool(session.user_id) or not require_auth
     result_payload = calculate_results(session, include_products=include_products)
     session.result_summary = result_payload
     session.save(update_fields=[

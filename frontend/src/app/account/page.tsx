@@ -121,8 +121,6 @@ function AccountContent() {
     if (parts.length) return parts.join(" ");
     return profile.username || "SkinMatch Member";
   }, [profile]);
-  const displayEmail = profile?.email ?? "hello@skinmatch.app";
-
   // Default avatar logic
   const avatarSrc = useMemo(() => {
     const url = profile?.avatar_url?.trim();
@@ -175,15 +173,23 @@ function AccountContent() {
                 />
               </div>
 
-              <div className="mt-3">
+              <div className="mt-3 space-y-2">
                 <p className="text-[15px] font-extrabold leading-tight text-gray-900">
                   {displayName}
                 </p>
+                {profile?.email && (
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className="text-[13px] font-semibold text-[#3970b7] hover:underline"
+                  >
+                    {profile.email}
+                  </a>
+                )}
 
                 {/* Profile info display - only show available fields */}
                 {profile && (
-                  <div className="mt-2 space-y-1 text-xs text-gray-600">
-                    {profile.username && <div>{profile.username}</div>}
+                  <div className="space-y-1 text-xs text-gray-600">
+                    {profile.username && <div>@{profile.username}</div>}
                     {profile.date_of_birth && (
                       <div>DOB: {new Date(profile.date_of_birth).toLocaleDateString()}</div>
                     )}
