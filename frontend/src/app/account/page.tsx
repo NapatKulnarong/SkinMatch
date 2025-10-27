@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import PageContainer from "@/components/PageContainer";
 import { fetchProfile } from "@/lib/api.auth";
 import {
   clearSession,
@@ -112,7 +113,14 @@ function AccountContent() {
     initializeAccount();
   }, [router, searchParams]);
 
-  const displayName = profile?.username ?? "SkinMatch Member";
+  const displayName = useMemo(() => {
+    if (!profile) return "SkinMatch Member";
+    const parts = [profile.first_name, profile.last_name].filter(
+      (part): part is string => Boolean(part && part.trim())
+    );
+    if (parts.length) return parts.join(" ");
+    return profile.username || "SkinMatch Member";
+  }, [profile]);
   const displayEmail = profile?.email ?? "hello@skinmatch.app";
 
   // Default avatar logic
@@ -125,6 +133,7 @@ function AccountContent() {
   const handleLogout = () => {
     console.log("🚪 Logging out...");
     clearSession();
+    setProfile(null);
     router.push("/login");
   };
 
@@ -142,22 +151,20 @@ function AccountContent() {
 
   return (
     <main className="min-h-screen bg-[#d3cbe0]">
-      <div className="pt-32" />
-
-      <section className="max-w-10xl mx-auto px-6 md:px-8 pb-10">
+      <PageContainer className="pt-32 pb-10 lg:px-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
             <p className="text-sm font-semibold text-red-700">{error}</p>
-            <p className="text-xs text-red-600 mt-1">Redirecting to login...</p>
+            <p className="mt-1 text-xs text-red-600">Redirecting to login...</p>
           </div>
         )}
 
         {/* Equal-height first row via auto-rows-fr, and make children h-full */}
-        <div className="grid grid-cols-12 gap-6 auto-rows-fr items-stretch">
+        <section className="grid grid-cols-12 items-stretch gap-6 auto-rows-fr">
           {/* LEFT PROFILE CARD */}
           <aside className="col-span-12 md:col-span-3">
-            <div className="h-full rounded-2xl border-2 border-black bg-white p-4 shadow-[6px_8px_0_rgba(0,0,0,0.25)] flex flex-col">
-              <div className="relative rounded-xl border-2 border-black overflow-hidden">
+            <div className="flex h-full flex-col rounded-2xl border-2 border-black bg-white p-4 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+              <div className="relative overflow-hidden rounded-xl border-2 border-black">
                 <Image
                   src={avatarSrc}
                   alt={displayName}
@@ -169,23 +176,18 @@ function AccountContent() {
               </div>
 
               <div className="mt-3">
-                <p className="font-extrabold text-[15px] leading-tight text-gray-900">
+                <p className="text-[15px] font-extrabold leading-tight text-gray-900">
                   {displayName}
                 </p>
-                <span className="text-[13px] text-[#3970b7]">{displayEmail}</span>
-                
+
                 {/* Profile info display - only show available fields */}
                 {profile && (
-                  <div className="mt-2 text-xs text-gray-600 space-y-1">
-                    {profile.username && (
-                      <div>Username: {profile.username}</div>
-                    )}
+                  <div className="mt-2 space-y-1 text-xs text-gray-600">
+                    {profile.username && <div>{profile.username}</div>}
                     {profile.date_of_birth && (
                       <div>DOB: {new Date(profile.date_of_birth).toLocaleDateString()}</div>
                     )}
-                    {profile.gender && (
-                      <div>Gender: {profile.gender}</div>
-                    )}
+                    {profile.gender && <div>Gender: {profile.gender}</div>}
                   </div>
                 )}
               </div>
@@ -221,8 +223,8 @@ function AccountContent() {
           <div className="col-span-12 md:col-span-4">
             <Panel title="Wishlist" tall />
           </div>
-        </div>
-      </section>
+        </section>
+      </PageContainer>
     </main>
   );
 }

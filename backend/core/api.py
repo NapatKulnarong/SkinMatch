@@ -1,4 +1,3 @@
-import os
 from ninja import NinjaAPI, Schema, ModelSchema
 from ninja.errors import HttpError
 from .models import (
@@ -27,9 +26,13 @@ import uuid
 from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction, IntegrityError
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
+from pathlib import Path
+from uuid import uuid4
 from quiz.views import router as quiz_router
 
 import google.generativeai as genai
@@ -94,6 +97,8 @@ class ProfileOut(Schema):
     Unified profile response : user core fields + profile extras
     """
     model_config = ConfigDict(from_attributes=True)  # allow model instances
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     # profile
     u_id: uuid.UUID
     is_verified: bool
@@ -113,34 +118,31 @@ class UserProfileSchema(ModelSchema):
         model = UserProfile
         model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
 
-class GenIn(Schema):
-    prompt: str
-    model: Optional[str] = "gemini-2.5-flash"
 
-class GenOut(Schema):
-    response: str
+class FactTopicSummary(Schema):
+    id: uuid.UUID
+    slug: str
+    title: str
+    subtitle: Optional[str] = None
+    excerpt: Optional[str] = None
+    section: str
+    hero_image_url: Optional[str] = None
+    hero_image_alt: Optional[str] = None
+    view_count: int
 
-CANDIDATES = [
-    "gemini-2.5-flash",       # current flash (usually free)
-    "gemini-flash-latest",    # alias to current flash
-    "gemini-2.0-flash",       # older flash
-    "gemini-2.0-flash-001",   # older flash variant
-]
 
-def generate_text(prompt: str, temperature: float = 0.2) -> str:
-    last_err = None
-    for name in CANDIDATES:
-        try:
-            model = genai.GenerativeModel(name)
-            resp = model.generate_content(
-                prompt,
-                generation_config={"temperature": temperature},
-            )
-            return (resp.text or "").strip()
-        except Exception as e:
-            last_err = e
-            continue
-    raise last_err
+class FactContentBlockOut(Schema):
+    order: int
+    block_type: str
+    heading: Optional[str] = None
+    text: Optional[str] = None
+    image_url: Optional[str] = None
+    image_alt: Optional[str] = None
+
+
+class FactTopicDetailOut(FactTopicSummary):
+    content_blocks: List[FactContentBlockOut]
+    updated_at: datetime
 # --------------- Auth endpoints ---------------
 
 
@@ -243,45 +245,125 @@ def token_logout(request):
     # Client should delete stored token
     return {"ok": True, "token": None, "message": "Logged out (token discarded client-side)"}
 
-@api.get("/auth/me", response=ProfileOut, auth=JWTAuth())
-def me_view(request):
-    # request.auth is the authenticated User object (from JWTAuth)
-    user: User = request.auth
-    profile, _ = UserProfile.objects.select_related("user").get_or_create(user=user)
-    # merge profile + user fields
+def _absolute_avatar_url(raw_url: Optional[str], request) -> Optional[str]:
+    if not raw_url:
+        return None
+    url = raw_url.strip()
+    if not url:
+        return None
+    if url.startswith(("http://", "https://")):
+        return url
+    if url.startswith("/"):
+        return request.build_absolute_uri(url) if request else url
+    media_url = settings.MEDIA_URL.rstrip("/") + "/" + url.lstrip("/")
+    return request.build_absolute_uri(media_url) if request else media_url
+
+
+def _serialize_profile_response(user, profile: UserProfile, request=None) -> dict:
     return {
         "u_id": profile.u_id,
         "is_verified": profile.is_verified,
         "created_at": profile.created_at,
-        "avatar_url": profile.avatar_url,
+        "avatar_url": _absolute_avatar_url(profile.avatar_url, request),
         "date_of_birth": profile.date_of_birth,
         "gender": profile.gender,
         "username": user.get_username(),
         "email": user.email,
         "is_staff": user.is_staff,
         "is_superuser": user.is_superuser,
+        "first_name": user.first_name or None,
+        "last_name": user.last_name or None,
     }
+
+
+@api.get("/auth/me", response=ProfileOut, auth=JWTAuth())
+def me_view(request):
+    # request.auth is the authenticated User object (from JWTAuth)
+    user: User = request.auth
+    profile, _ = UserProfile.objects.select_related("user").get_or_create(user=user)
+    return _serialize_profile_response(user, profile, request)
+
+
+@api.put("/auth/me", response=ProfileOut, auth=JWTAuth())
+def update_profile(request, payload: ProfileUpdateIn):
+    user: User = request.auth
+    profile, _ = UserProfile.objects.select_related("user").get_or_create(user=user)
+
+    updates_user = {}
+    updates_profile = {}
+
+    if payload.first_name is not None:
+        updates_user["first_name"] = payload.first_name.strip()
+    if payload.last_name is not None:
+        updates_user["last_name"] = payload.last_name.strip()
+    if payload.username is not None:
+        new_username = payload.username.strip()
+        if not new_username:
+            raise HttpError(400, "Username cannot be blank")
+        exists = User.objects.exclude(id=user.id).filter(username__iexact=new_username).exists()
+        if exists:
+            raise HttpError(400, "Username already taken")
+        updates_user["username"] = new_username
+    if payload.date_of_birth is not None:
+        dob_value = payload.date_of_birth.strip()
+        if dob_value == "":
+            updates_profile["date_of_birth"] = None
+        else:
+            try:
+                updates_profile["date_of_birth"] = date.fromisoformat(dob_value)
+            except ValueError as exc:
+                raise HttpError(400, "Date of birth must be in YYYY-MM-DD format.") from exc
+    if payload.gender is not None:
+        gender_value = payload.gender.strip()
+        if gender_value == "":
+            updates_profile["gender"] = None
+        elif gender_value not in dict(UserProfile.Gender.choices):
+            raise HttpError(400, "Invalid gender selection")
+        else:
+            updates_profile["gender"] = gender_value
+    if payload.avatar_url is not None:
+        updates_profile["avatar_url"] = payload.avatar_url.strip()
+    if payload.remove_avatar:
+        updates_profile["avatar_url"] = ""
+
+    if updates_user:
+        for field, value in updates_user.items():
+            setattr(user, field, value)
+        user.save(update_fields=list(updates_user.keys()))
+
+    if updates_profile:
+        for field, value in updates_profile.items():
+            setattr(profile, field, value)
+        profile.save(update_fields=list(updates_profile.keys()) + ["updated_at"])
+
+    return _serialize_profile_response(user, profile, request)
+
+
+@api.post("/auth/me/avatar", response=ProfileOut, auth=JWTAuth())
+def upload_avatar(request, file: UploadedFile = File(...)):
+    user: User = request.auth
+    profile, _ = UserProfile.objects.select_related("user").get_or_create(user=user)
+
+    original_name = Path(file.name or "")
+    ext = original_name.suffix.lower()
+    allowed_ext = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    if ext not in allowed_ext:
+        raise HttpError(400, "Unsupported file type. Please upload PNG, JPG, GIF, or WEBP.")
+
+    filename = f"profiles/{uuid4().hex}{ext}"
+    saved_path = default_storage.save(filename, ContentFile(file.read()))
+    storage_url = default_storage.url(saved_path)
+    profile.avatar_url = storage_url
+    profile.save(update_fields=["avatar_url", "updated_at"])
+
+    return _serialize_profile_response(user, profile, request)
 
 @api.get("/users", response=List[ProfileOut], auth=JWTAuth())
 def list_users(request, limit: int = 50, offset: int = 0):
     qs = (UserProfile.objects
           .select_related("user")
           .order_by("created_at")[offset:offset+limit])
-    return [
-        {
-            "u_id": p.u_id,
-            "is_verified": p.is_verified,
-            "created_at": p.created_at,
-            "avatar_url": p.avatar_url,
-            "date_of_birth": p.date_of_birth,
-            "gender": p.gender,
-            "username": p.user.username,
-            "email": p.user.email,
-            "is_staff": p.user.is_staff,
-            "is_superuser": p.user.is_superuser,
-        }
-        for p in qs
-    ]
+    return [_serialize_profile_response(p.user, p, request) for p in qs]
 
 @api.get("/hello")
 def api_root(request):
@@ -424,12 +506,27 @@ def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBl
 def _resolve_media_url(request, image_field) -> Optional[str]:
     if not image_field:
         return None
+
     try:
-        url = image_field.url
+        relative_url = image_field.url  # e.g. "/media/facts/hero/myimg.jpg"
     except ValueError:
         return None
-    if request:
-        return request.build_absolute_uri(url)
-    return url
+
+    if not request:
+        # fallback: just return relative
+        return relative_url
+
+    # Build something like "http://backend:8000/media/facts/hero/myimg.jpg"
+    absolute = request.build_absolute_uri(relative_url)
+
+    # Important bit:
+    # When the frontend (running in your browser on macOS at http://localhost:3000)
+    # calls the backend container, Django thinks its own host is "backend:8000".
+    # But the browser cannot resolve "backend". It ONLY knows "localhost:8000".
+    absolute = absolute.replace("http://backend:8000", "http://localhost:8000")
+    absolute = absolute.replace("http://backend", "http://localhost:8000")
+
+    return absolute
+
 
 # ------------------------------------------------------------------------------------

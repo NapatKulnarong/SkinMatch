@@ -57,7 +57,7 @@ export async function login(payload: LoginPayload) {
   const res = await fetch(`${API_BASE}/auth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ identifier: payload.identifier, password: payload.password }),
   });
   const data = await handleJson<{ ok: boolean; message: string; token?: string }>(res);
   if (!data.ok || !data.token) throw new Error(data.message || "Login failed");
@@ -76,25 +76,21 @@ export async function loginWithGoogle(idToken: string) {
 }
 
 export async function createAdminSession(token: string, profile: StoredProfile) {
-  // Check if user has staff privileges using the already fetched profile
   if (!profile.is_staff) {
     throw new Error("User does not have staff privileges");
   }
-  
-  // Return the admin URL for redirection
+
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-  
   let adminUrl = `${backendBase}/admin/`;
-  
-  // Replace any Docker internal URLs with localhost for browser access
-  if (adminUrl.includes('backend:8000')) {
-    adminUrl = adminUrl.replace('backend:8000', 'localhost:8000');
+
+  if (adminUrl.includes("backend:8000")) {
+    adminUrl = adminUrl.replace("backend:8000", "localhost:8000");
   }
-  
+
   return {
     ok: true,
     message: "Admin session available",
-    redirect_url: adminUrl
+    redirect_url: adminUrl,
   };
 }
 
@@ -119,4 +115,43 @@ export async function logout(token: string) {
   const data = await handleJson<{ ok: boolean; message: string }>(res);
   if (!data.ok) throw new Error(data.message || "Logout failed");
   return data;
+}
+
+export type ProfileUpdatePayload = {
+  first_name?: string | null;
+  last_name?: string | null;
+  username?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  avatar_url?: string | null;
+  remove_avatar?: boolean;
+};
+
+export async function updateProfile(
+  token: string,
+  payload: ProfileUpdatePayload
+): Promise<StoredProfile> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<StoredProfile>(res);
+}
+
+export async function uploadAvatar(token: string, file: File): Promise<StoredProfile> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/auth/me/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  return handleJson<StoredProfile>(res);
 }

@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@react-oauth/google": "^0.12.2"
+    "@react-oauth/google": "^0.12.2",
+    "react-markdown": "^10.1.0"
   }
 }

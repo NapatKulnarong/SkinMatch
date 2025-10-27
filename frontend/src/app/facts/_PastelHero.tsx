@@ -1,46 +1,52 @@
-"use client";
-
+// app/facts/_PastelHero.tsx
 import Image from "next/image";
-import { mixWithWhite, usePastelColor } from "@/lib/usePastelColor";
 
 type PastelHeroProps = {
-  cover: string;
+  cover: string; // heroImageUrl or fallback
   title: string;
+  subtitle?: string | null;
 };
 
-export default function PastelHero({ cover, title }: PastelHeroProps) {
-  const tint = usePastelColor(cover, "#f2f2f3");
-  const surface = mixWithWhite(tint, 0.3);
-  const overlayGradient = "linear-gradient(to right, rgba(0,0,0,0.55), rgba(0,0,0,0.3), transparent)";
-
+export default function PastelHero({ cover, title, subtitle }: PastelHeroProps) {
   return (
-    <section className="mt-8 px-6 md:px-8">
-      <div
-        className="mx-auto max-w-4xl relative rounded-[28px] border-2 border-black overflow-hidden shadow-[8px_10px_0_rgba(0,0,0,0.35)]"
-        style={{ backgroundColor: surface, transition: "background-color 200ms ease" }}
-      >
-        <div className="relative h-[420px] md:h-[480px] w-full">
-          <Image
-            src={cover}
-            alt="Article cover"
-            fill
-            priority
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 1200px"
-          />
+    <section
+      className="
+        mx-auto
+        max-w-4xl
+        w-full
+        rounded-[16px]
+        border-2 border-black
+        shadow-[8px_10px_0_rgba(0,0,0,0.4)]
+        bg-gradient-to-br from-[#5f5f5f] to-[#cfcfcf]
+        overflow-hidden
+        mb-8
+      "
+    >
+      <div className="relative w-full min-h-[260px] md:min-h-[300px]">
+        {/* hero image */}
+        <Image
+          src={cover}
+          alt={subtitle || title}
+          fill
+          unoptimized={cover.startsWith("http")}
+          className="object-cover object-center opacity-80"
+          sizes="(max-width: 768px) 100vw, 800px"
+        />
 
-          <div className="absolute inset-0" style={{ background: overlayGradient }} />
+        {/* gradient overlay so text is readable */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
 
-          <div className="absolute inset-0 flex items-end">
-            <h1
-              className="
-                p-6 md:p-8 text-white drop-shadow-[0_1.5px_0_rgba(0,0,0,0.5)]
-                text-3xl md:text-5xl font-extrabold leading-tight max-w-[80%]
-              "
-            >
-              {title}
-            </h1>
-          </div>
+        {/* text block */}
+        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+          <h1 className="text-white font-extrabold text-2xl leading-snug md:text-3xl md:leading-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.7)]">
+            {title}
+          </h1>
+
+          {subtitle ? (
+            <p className="text-white/90 text-base md:text-lg font-medium mt-3 max-w-[46ch] drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
+              {subtitle}
+            </p>
+          ) : null}
         </div>
       </div>
     </section>

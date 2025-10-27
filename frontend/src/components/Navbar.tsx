@@ -6,6 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useNavWidthSetter } from "./NavWidthContext";
+import {
+  getStoredProfile,
+  PROFILE_EVENT,
+  type StoredProfile,
+} from "@/lib/auth-storage";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -34,13 +39,35 @@ export default function Navbar() {
     return pathname.startsWith(href);
   };
 
-  // username (if you later set it in localStorage)
-  const [username, setUsername] = useState<string | null>(null);
+  const [profile, setProfile] = useState<StoredProfile | null>(null);
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("sm_username");
-      if (stored) setUsername(stored);
-    } catch {}
+    const updateProfile = (next?: StoredProfile | null) => {
+      setProfile(next ?? getStoredProfile());
+    };
+
+    updateProfile();
+
+    const profileListener = (event: Event) => {
+      if ("detail" in event) {
+        const custom = event as CustomEvent<StoredProfile | null>;
+        updateProfile(custom.detail ?? null);
+        return;
+      }
+      updateProfile();
+    };
+
+    const storageListener = (event: StorageEvent) => {
+      if (event.key === "sm_profile" || event.key === "sm_token") {
+        updateProfile();
+      }
+    };
+
+    window.addEventListener(PROFILE_EVENT, profileListener);
+    window.addEventListener("storage", storageListener);
+    return () => {
+      window.removeEventListener(PROFILE_EVENT, profileListener);
+      window.removeEventListener("storage", storageListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,7 +97,16 @@ export default function Navbar() {
       setNavWidth(null);
     };
   }, [setNavWidth]);
-  const loginLabel = username && username.trim() !== "" ? username : "Login / Sign Up";
+  const loginLabel = (() => {
+    if (!profile) return "Login / Sign Up";
+    const parts = [profile.first_name, profile.last_name].filter(
+      (part): part is string => Boolean(part && part.trim())
+    );
+    if (parts.length) return parts.join(" ");
+    return profile.username || "My Account";
+  })();
+  const loginHref = profile ? "/account" : "/login";
+  const avatarSrc = profile?.avatar_url || "/default-profile.png";
 
   return (
     <header
@@ -101,10 +137,10 @@ export default function Navbar() {
         <div className="flex items-center gap-2 border-2 border-black rounded-full px-3 py-2 bg-white shadow-[2px_3px_0px_rgba(0,0,0,0.3)]">
           {/* Inner pill that turns purple when on /login */}
           <Link
-            href="/login"
-            aria-current={isActive("/login") ? "page" : undefined}
+            href={loginHref}
+            aria-current={isActive(loginHref) ? "page" : undefined}
             className={`${pillBase} ${
-              isActive("/login") ? "bg-[#c7b6ea] text-black" : "bg-gray-200 text-black"
+              isActive(loginHref) ? "bg-[#c7b6ea] text-black" : "bg-gray-200 text-black"
             }`}
           >
             {loginLabel}
@@ -112,8 +148,8 @@ export default function Navbar() {
 
           {/* Small avatar INSIDE the bar (right side) */}
           <Image
-            src="/default-profile.png"
-            alt="Profile"
+            src={avatarSrc}
+            alt="Profile avatar"
             width={36}
             height={36}
             className="rounded-full border-2 border-black bg-[#e9e3eb]" /* light-lavender fill like mock */

@@ -46,7 +46,7 @@ export default function PopularTopics() {
 
   if (loading) {
     return (
-      <PageContainer as="section" className="pt-16">
+      <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
         <div className="relative">
           <div className="relative h-[420px] md:h-[480px] rounded-[28px] border-2 border-black bg-white/50 shadow-[8px_10px_0_rgba(0,0,0,0.2)] animate-pulse" />
         </div>
@@ -56,7 +56,7 @@ export default function PopularTopics() {
 
   if (error || !current) {
     return (
-      <PageContainer as="section" className="pt-16">
+      <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
         <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error ?? "No popular topics found yet. Check back soon!"}
         </div>
@@ -68,20 +68,20 @@ export default function PopularTopics() {
   const blurb = current.subtitle || current.excerpt || "Discover the full story.";
 
   return (
-    <PageContainer as="section" className="pt-16">
-      {/* Card wrapper must be relative so the badge can anchor to its corner */}
+    <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
+      {/* Rest of your existing code remains the same */}
       <div className="relative">
-        {/* Corner badge that sits on the card’s top-left corner */}
-<div
-  className="
-    absolute -top-7 left-0 z-20
-    rounded-full border-2 border-black bg-[#F8D7B6]
-    px-6 py-2.5 text-[17px] font-bold text-gray-700
-    shadow-[4px_6px_0_rgba(0,0,0,0.35)]
-  "
->
-  Popular Topics
-</div>
+        {/* Corner badge that sits on the card's top-left corner */}
+        <div
+          className="
+            absolute -top-7 left-0 z-20
+            rounded-full border-2 border-black bg-[#F8D7B6]
+            px-6 py-2.5 text-[17px] font-bold text-gray-700
+            shadow-[4px_6px_0_rgba(0,0,0,0.35)]
+          "
+        >
+          Popular Topics
+        </div>
 
         {/* Feature card */}
         <div
