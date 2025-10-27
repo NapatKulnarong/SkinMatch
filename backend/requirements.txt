@@ -1,6 +1,7 @@
 django>=5.0
 django-ninja
 django-ninja-extra
+ djangorestframework>=3.15.0,<3.16.0
 psycopg[binary]>=3.2
 dj-database-url>=2.1.0
 python-dotenv>=1.0.1

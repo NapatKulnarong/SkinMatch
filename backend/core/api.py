@@ -37,14 +37,18 @@ from pathlib import Path
 from uuid import uuid4
 from quiz.views import router as quiz_router
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ModuleNotFoundError:  # pragma: no cover - allow running without optional dependency
+    genai = None
 
 
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 User = get_user_model()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+if genai is not None:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --------------- Schemas ---------------
 
@@ -145,6 +149,8 @@ CANDIDATES = [
 ]
 
 def generate_text(prompt: str, temperature: float = 0.2) -> str:
+    if genai is None:
+        raise RuntimeError("google.generativeai is not installed")
     last_err = None
     for name in CANDIDATES:
         try:

@@ -63,19 +63,29 @@ class SkinFactModelTest(TestCase):
         topic = SkinFactTopic.objects.create(
             slug="hydration", title="Hydration", section=SkinFactTopic.Section.TRENDING
         )
-        blk = SkinFactContentBlock(topic=topic, block_type="paragraph", text="")
+        blk = SkinFactContentBlock(
+            topic=topic,
+            block_type=SkinFactContentBlock.BlockType.TEXT,
+            text="",
+        )
         with self.assertRaises(ValidationError):
             blk.full_clean()
 
-    def test_content_block_image_requires_image_file(self):
+    def test_text_block_with_image_requires_alt_text(self):
         topic = SkinFactTopic.objects.create(
             slug="retinol", title="Retinol 101", section=SkinFactTopic.Section.KNOWLEDGE
         )
-        blk = SkinFactContentBlock(topic=topic, block_type="image")
+        blk = SkinFactContentBlock(
+            topic=topic,
+            block_type=SkinFactContentBlock.BlockType.TEXT,
+            text="Retinol helps with cell turnover.",
+        )
+
+        blk.image = fake_jpg("retinol.jpg")
         with self.assertRaises(ValidationError):
             blk.full_clean()
 
-        blk.image = fake_jpg("retinol.jpg")
+        blk.image_alt = "Illustration of a retinol serum bottle."
         blk.full_clean()
         blk.save()
         self.assertTrue(blk.image.storage.exists(blk.image.name))
