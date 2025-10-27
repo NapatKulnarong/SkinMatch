@@ -12,7 +12,24 @@ export type StoredProfile = {
   gender?: string | null;
   is_staff: boolean;
   is_superuser: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
 };
+
+export const PROFILE_EVENT = "sm-profile-changed";
+
+function emitProfileEvent(profile: StoredProfile | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const event = new CustomEvent(PROFILE_EVENT, {
+      detail: profile,
+    } as CustomEventInit<StoredProfile | null>);
+    window.dispatchEvent(event);
+  } catch {
+    // Fallback for environments without CustomEvent constructor
+    window.dispatchEvent(new Event(PROFILE_EVENT));
+  }
+}
 
 export function setAuthToken(token: string) {
   if (typeof window === "undefined") return;
@@ -32,6 +49,7 @@ export function clearAuthToken() {
 export function saveProfile(profile: StoredProfile) {
   if (typeof window === "undefined") return;
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  emitProfileEvent(profile);
 }
 
 export function getStoredProfile(): StoredProfile | null {
@@ -50,6 +68,7 @@ export function getStoredProfile(): StoredProfile | null {
 export function clearStoredProfile() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(PROFILE_KEY);
+  emitProfileEvent(null);
 }
 
 export function clearSession() {

@@ -84,3 +84,42 @@ export async function fetchProfile(token: string): Promise<StoredProfile> {
   });
   return handleJson<StoredProfile>(res);
 }
+
+export type ProfileUpdatePayload = {
+  first_name?: string | null;
+  last_name?: string | null;
+  username?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  avatar_url?: string | null;
+  remove_avatar?: boolean;
+};
+
+export async function updateProfile(
+  token: string,
+  payload: ProfileUpdatePayload
+): Promise<StoredProfile> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<StoredProfile>(res);
+}
+
+export async function uploadAvatar(token: string, file: File): Promise<StoredProfile> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/auth/me/avatar`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  return handleJson<StoredProfile>(res);
+}
