@@ -4,43 +4,68 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import PageContainer from "@/components/PageContainer";
+import { fetchPopularTopics } from "@/lib/api.facts";
+import type { FactTopicSummary } from "@/lib/types";
 
-type Topic = {
-  id: string;
-  slug: string;
-  title: string;
-  image: string; // /public/img/...
-  clicks: number;
-};
-
-async function getTopTopics(): Promise<Topic[]> {
-  const data: Topic[] = [
-    { id: "1", slug: "do-sheet-masks-help", title: "Do sheet mask actually help your skin?", image: "/img/facts_img/sheet_mask.jpg", clicks: 8243 },
-    { id: "2", slug: "retinol-beginners", title: "Retinol for beginners", image: "/img/facts_img/retinol.jpg", clicks: 7712 },
-    { id: "3", slug: "spf-everyday", title: "Why SPF is a daily essential", image: "/img/facts_img/spf.jpg", clicks: 6940 },
-    { id: "4", slug: "vitamin-c-myths", title: "Vitamin C myths (and what really works)", image: "/img/facts_img/vitc.jpg", clicks: 5129 },
-    { id: "5", slug: "double-cleansing", title: "Double cleansing: who actually needs it?", image: "/img/facts_img/double_cleanse.jpg", clicks: 4982 },
-  ];
-  await new Promise((r) => setTimeout(r, 150));
-  return data.slice(0, 5);
-}
+const FALLBACK_IMAGE = "/img/facts_img/sheet_mask.jpg";
 
 export default function PopularTopics() {
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [idx, setIdx] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getTopTopics().then(setTopics);
+    let active = true;
+    fetchPopularTopics()
+      .then((data) => {
+        if (!active) return;
+        setTopics(data);
+        setIdx(0);
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Failed to load popular topics", err);
+        setError("We couldn't load popular topics right now.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     if (topics.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % topics.length), 6000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setIdx((i) => (i + 1) % topics.length), 6000);
+    return () => clearInterval(timer);
   }, [topics.length]);
 
   const current = useMemo(() => topics[idx], [topics, idx]);
-  if (!current) return null;
+
+  if (loading) {
+    return (
+      <PageContainer as="section" className="pt-16">
+        <div className="relative">
+          <div className="relative h-[420px] md:h-[480px] rounded-[28px] border-2 border-black bg-white/50 shadow-[8px_10px_0_rgba(0,0,0,0.2)] animate-pulse" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error || !current) {
+    return (
+      <PageContainer as="section" className="pt-16">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+          {error ?? "No popular topics found yet. Check back soon!"}
+        </div>
+      </PageContainer>
+    );
+  }
+
+  const heroImage = current.heroImageUrl ?? FALLBACK_IMAGE;
+  const blurb = current.subtitle || current.excerpt || "Discover the full story.";
 
   return (
     <PageContainer as="section" className="pt-16">
@@ -68,10 +93,11 @@ export default function PopularTopics() {
           {/* Image */}
           <div className="relative h-[420px] md:h-[480px]">
             <Image
-              src={current.image}
+              src={heroImage}
               alt={current.title}
               fill
               priority
+              unoptimized={heroImage.startsWith("http")}
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 1200px"
             />
@@ -86,7 +112,13 @@ export default function PopularTopics() {
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="mt-4 max-w-xl">
+                <p className="text-base font-medium text-black/80 md:text-lg">
+                  {blurb}
+                </p>
+              </div>
+
+              <div className="mt-6 flex items-center gap-2">
                 <Link
                   href={`/facts/${current.slug}`}
                   className="

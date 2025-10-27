@@ -1,4 +1,4 @@
-import { QuizAnswers } from "../_QuizContext";
+import type { QuizAnswerKey } from "../_QuizContext";
 
 type IngredientRecommendation = {
   ingredient: string;
@@ -16,6 +16,8 @@ export type QuizGuidance = {
   avoid: IngredientRecommendation[];
   insights: string[];
 };
+
+type AnswerLabels = Record<QuizAnswerKey, string | null>;
 
 const CONCERN_GUIDANCE: Record<string, PartialGuidance> = {
   "Acne & breakouts": {
@@ -261,7 +263,7 @@ const BUDGET_GUIDANCE: Record<string, PartialGuidance> = {
   },
 };
 
-export function buildGuidance(answers: QuizAnswers): QuizGuidance {
+export function buildGuidance(answers: AnswerLabels): QuizGuidance {
   const segments: PartialGuidance[] = [];
 
   const { primaryConcern, secondaryConcern, eyeConcern, skinType, sensitivity, pregnancy, budget } =

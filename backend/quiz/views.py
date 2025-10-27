@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.text import slugify
 from ninja import Router
 from ninja.errors import HttpError
 
@@ -25,11 +26,13 @@ from .recommendations import recommend_products
 from .schemas import (
     AnswerAck,
     AnswerIn,
+    ChoiceOut,
     FinalizeOut,
     HistoryItemOut,
     FeedbackAck,
     FeedbackIn,
     MatchPickOut,
+    QuestionOut,
     ReviewAck,
     ReviewCreateIn,
     ReviewOut,
@@ -39,6 +42,127 @@ from .schemas import (
 )
 
 router = Router(tags=["quiz"])
+
+DEFAULT_QUIZ_FLOW: list[dict] = [
+    {
+        "key": "main_concern",
+        "text": "What is your main skincare concern?",
+        "choices": [
+            {"label": "Acne & breakouts"},
+            {"label": "Fine lines & wrinkles"},
+            {"label": "Uneven skin texture"},
+            {"label": "Blackheads"},
+            {"label": "Hyperpigmentation"},
+            {"label": "Acne scars"},
+            {"label": "Dull skin"},
+            {"label": "Damaged skin barrier"},
+            {"label": "Redness"},
+            {"label": "Excess oil"},
+            {"label": "Dehydrated skin"},
+        ],
+    },
+    {
+        "key": "secondary_concern",
+        "text": "Do you have any secondary concerns?",
+        "choices": [
+            {"label": "Acne & breakouts"},
+            {"label": "Fine lines & wrinkles"},
+            {"label": "Uneven skin texture"},
+            {"label": "Blackheads"},
+            {"label": "Hyperpigmentation"},
+            {"label": "Acne scars"},
+            {"label": "Dull skin"},
+            {"label": "Damaged skin barrier"},
+            {"label": "Redness"},
+            {"label": "Excess oil"},
+            {"label": "Dehydrated skin"},
+        ],
+    },
+    {
+        "key": "eye_concern",
+        "text": "Do you have any eye area concerns?",
+        "choices": [
+            {"label": "Dark circles"},
+            {"label": "Fine lines & wrinkles"},
+            {"label": "Puffiness"},
+            {"label": "None", "value": "none"},
+        ],
+    },
+    {
+        "key": "skin_type",
+        "text": "Which best describes your skin type?",
+        "choices": [
+            {"label": "Normal"},
+            {"label": "Oily"},
+            {"label": "Dry"},
+            {"label": "Combination"},
+        ],
+    },
+    {
+        "key": "sensitivity",
+        "text": "Is your skin sensitive?",
+        "choices": [
+            {"label": "Yes"},
+            {"label": "Sometimes"},
+            {"label": "No"},
+        ],
+    },
+    {
+        "key": "pregnant_or_breastfeeding",
+        "text": "Are you pregnant or breastfeeding?",
+        "choices": [
+            {"label": "Yes"},
+            {"label": "No"},
+        ],
+    },
+    {
+        "key": "budget_preference",
+        "text": "What’s your budget preference?",
+        "choices": [
+            {"label": "Affordable", "value": "affordable"},
+            {"label": "Mid-range", "value": "mid"},
+            {"label": "Premium / luxury", "value": "premium"},
+        ],
+    },
+]
+
+
+def _ensure_default_questions() -> None:
+    with transaction.atomic():
+        for order, config in enumerate(DEFAULT_QUIZ_FLOW, start=1):
+            question, _ = Question.objects.update_or_create(
+                key=config["key"],
+                defaults={
+                    "text": config["text"],
+                    "is_multi": config.get("is_multi", False),
+                    "order": order,
+                },
+            )
+            desired_values: set[str] = set()
+            for choice_order, choice_cfg in enumerate(config["choices"], start=1):
+                label = choice_cfg["label"]
+                value = choice_cfg.get("value") or slugify(label)
+                desired_values.add(value)
+                Choice.objects.update_or_create(
+                    question=question,
+                    value=value,
+                    defaults={
+                        "label": label,
+                        "order": choice_order,
+                    },
+                )
+            if desired_values:
+                question.choices.exclude(value__in=desired_values).delete()
+
+
+@router.get("/questions", response=list[QuestionOut])
+def list_quiz_questions(request):
+    _ensure_default_questions()
+    questions = (
+        Question.objects.prefetch_related("choices")
+        .order_by("order")
+    )
+    return [_serialize_question(question) for question in questions]
 
 
 def _get_session_for_request(session_id: uuid.UUID, request) -> QuizSession:
@@ -52,6 +176,7 @@ def _get_session_for_request(session_id: uuid.UUID, request) -> QuizSession:
 
 @router.post("/start", response=SessionOut)
 def start_quiz(request):
+    _ensure_default_questions()
     user = request.user if getattr(request, "user", None) and request.user.is_authenticated else None
     session = QuizSession.objects.create(user=user)
     return SessionOut(id=session.id, started_at=session.started_at)
@@ -133,6 +258,26 @@ def submit_quiz(request, session_id: uuid.UUID):
         profile=profile_out,
         result_summary=session.result_summary,
         requires_auth=not include_products,
+    )
+
+
+def _serialize_question(question: Question) -> QuestionOut:
+    choices = [
+        ChoiceOut(
+            id=choice.id,
+            label=choice.label,
+            value=choice.value,
+            order=choice.order,
+        )
+        for choice in question.choices.all()
+    ]
+    return QuestionOut(
+        id=question.id,
+        key=question.key,
+        text=question.text,
+        is_multi=question.is_multi,
+        order=question.order,
+        choices=choices,
     )
 
 

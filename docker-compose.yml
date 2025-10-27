@@ -7,7 +7,6 @@ services:
     entrypoint:
       - /bin/bash
       - /app/docker-entrypoint.sh
-
     env_file:
       - ./backend/.env
     environment:
