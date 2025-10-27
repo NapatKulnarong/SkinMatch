@@ -56,11 +56,21 @@ export default function TrendingSkincare() {
     );
   }
 
-  if (error || !topics.length) {
+  if (error) {
     return (
       <PageContainer as="section" className="pt-16">
         <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
-          {error ?? "No trending skincare topics found yet."}
+          {error}
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!topics.length) {
+    return (
+      <PageContainer as="section" className="pt-16">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+          No trending skincare topics found yet.
         </div>
       </PageContainer>
     );
