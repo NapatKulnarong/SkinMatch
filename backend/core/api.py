@@ -1,4 +1,6 @@
-from ninja import NinjaAPI, Schema, ModelSchema
+import os
+from ninja import NinjaAPI, Schema, ModelSchema, File
+from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from .models import (
     UserProfile,
@@ -118,33 +120,46 @@ class UserProfileSchema(ModelSchema):
         model = UserProfile
         model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
 
-
-class FactTopicSummary(Schema):
-    id: uuid.UUID
-    slug: str
-    title: str
-    subtitle: Optional[str] = None
-    excerpt: Optional[str] = None
-    section: str
-    hero_image_url: Optional[str] = None
-    hero_image_alt: Optional[str] = None
-    view_count: int
+class ProfileUpdateIn(Schema):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    avatar_url: Optional[str] = None
+    remove_avatar: Optional[bool] = None
 
 
-class FactContentBlockOut(Schema):
-    order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
+class GenIn(Schema):
+    prompt: str
+    model: Optional[str] = "gemini-2.5-flash"
 
+class GenOut(Schema):
+    response: str
 
-class FactTopicDetailOut(FactTopicSummary):
-    content_blocks: List[FactContentBlockOut]
-    updated_at: datetime
+CANDIDATES = [
+    "gemini-2.5-flash",       # current flash (usually free)
+    "gemini-flash-latest",    # alias to current flash
+    "gemini-2.0-flash",       # older flash
+    "gemini-2.0-flash-001",   # older flash variant
+]
+
+def generate_text(prompt: str, temperature: float = 0.2) -> str:
+    last_err = None
+    for name in CANDIDATES:
+        try:
+            model = genai.GenerativeModel(name)
+            resp = model.generate_content(
+                prompt,
+                generation_config={"temperature": temperature},
+            )
+            return (resp.text or "").strip()
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
+
 # --------------- Auth endpoints ---------------
-
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
@@ -381,7 +396,6 @@ class FactTopicSummary(Schema):
     hero_image_url: Optional[str] = None
     hero_image_alt: Optional[str] = None
     view_count: int
-
 
 class FactContentBlockOut(Schema):
     order: int
