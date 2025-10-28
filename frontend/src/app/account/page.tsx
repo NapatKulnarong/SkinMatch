@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/auth-storage";
 import {
   fetchQuizHistory,
+  deleteQuizHistory,
   type QuizHistoryItem,
 } from "@/lib/api.quiz";
 
@@ -159,7 +161,7 @@ function AccountContent() {
 
   return (
     <main className="min-h-screen bg-[#d3cbe0]">
-      <PageContainer className="pt-24 pb-16 lg:px-8">
+      <PageContainer className="pt-28 pb-16 lg:px-8">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Account</h1>
@@ -229,8 +231,20 @@ function AccountContent() {
             </div>
           </aside>
 
-          {/* RIGHT: MATCH HISTORY */}
-          <div className="col-span-12 lg:col-span-8">
+          {/* RIGHT: MATCH HISTORY WITH MASCOT */}
+          <div className="col-span-12 lg:col-span-8 relative">
+            {/* Matchy Mascot - Positioned on top center of the Match History box */}
+            <div className="absolute -top-46 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <Image
+                src="/img/mascot/matchy_5.png"
+                alt="Matchy mascot"
+                width={200}
+                height={200}
+                className="w-[180px] sm:w-[300px] drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)]"
+                priority
+              />
+            </div>
+            
             <MatchHistoryPanel token={authToken} />
           </div>
 
@@ -305,7 +319,8 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [deletingKeys, setDeletingKeys] = useState<Set<string>>(new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -325,6 +340,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
         if (cancelled) return;
         setHistory(items);
         setError(null);
+        setActionError(null);
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to load quiz history", err);
@@ -343,16 +359,39 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
     };
   }, [token]);
 
-  const handleDelete = (itemId: string) => {
-    setDeletedIds(prev => new Set([...prev, itemId]));
+  const handleDelete = async (item: QuizHistoryItem, key: string) => {
+    if (!token) {
+      setActionError("Please sign in again to manage your matches.");
+      return;
+    }
+
+    const identifier = item.profileId ?? item.sessionId;
+    if (!identifier) {
+      setActionError("This legacy match can't be deleted automatically yet.");
+      return;
+    }
+
+    setActionError(null);
+    setDeletingKeys(prev => new Set(prev).add(key));
+
+    try {
+      await deleteQuizHistory(identifier, token);
+      const refreshed = await fetchQuizHistory(token);
+      setHistory(refreshed);
+    } catch (err) {
+      console.error("Failed to delete quiz history item", err);
+      const message = err instanceof Error ? err.message : "Failed to delete match";
+      setActionError(message);
+    } finally {
+      setDeletingKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
   };
 
-  const visibleHistory = history
-    .filter(item => {
-      const key = item.sessionId ?? item.profileId ?? item.completedAt;
-      return !deletedIds.has(key);
-    })
-    .slice(0, 6); // Show only 6 latest matches
+  const visibleHistory = history.slice(0, 6);
 
   if (loading) {
     return (
@@ -446,6 +485,11 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
       }
     >
       <div className="h-full overflow-y-auto pr-2">
+        {actionError && (
+          <div className="mb-4 rounded-2xl border-2 border-[#f0c0c0] bg-[#fbecec] px-4 py-3 text-sm font-semibold text-[#8b4949]">
+            {actionError}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
           {visibleHistory.map((item, index) => {
             const key = item.sessionId ?? item.profileId ?? `${item.completedAt}-${index}`;
@@ -466,8 +510,8 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
             
             const budgetLabel = item.budget ? formatBudgetLabel(item.budget) : null;
             const profileLink = item.profileId ? `/account/match/${item.profileId}` : null;
+            const isDeleting = deletingKeys.has(key);
 
-            // Refined minimal color schemes with subtle interest
             const concernStyles: Record<string, { gradient: string; badge: string; accent: string; border: string }> = {
               'acne': { 
                 gradient: 'from-[#fef6f6] via-[#fdf0f0] to-[#fcebeb]', 
@@ -549,7 +593,6 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                     className={`group relative rounded-3xl border-2 ${style.border} bg-gradient-to-br ${style.gradient} p-6 shadow-[0_6px_0_rgba(0,0,0,0.15)] transition-all hover:-translate-y-2 hover:shadow-[0_10px_0_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-[0_4px_0_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6DB1]/40 flex flex-col block`}
                     prefetch
                   >
-                    {/* Date Badge */}
                     <div className="mb-4 flex items-start justify-between">
                       <div className={`rounded-2xl border-2 ${style.badge} px-4 py-2.5 shadow-sm`}>
                         <p className="text-xs font-black uppercase tracking-wider">
@@ -569,12 +612,10 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       </div>
                     </div>
 
-                    {/* Title - Fixed height for consistency */}
                     <h3 className="mb-4 text-xl font-black leading-tight text-gray-900 min-h-[3.5rem] line-clamp-2">
                       {primary}
                     </h3>
 
-                    {/* Budget - Always reserve space even if empty */}
                     <div className="mb-4 h-[30px] flex items-center">
                       {budgetLabel ? (
                         <div className="inline-flex items-center gap-2 rounded-full border-2 border-black/10 bg-white/70 px-4 py-1.5 shadow-sm backdrop-blur-sm">
@@ -589,17 +630,24 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                     </div>
                   </Link>
 
-                  {/* Delete button overlay in edit mode */}
                   {editMode && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        handleDelete(key);
+                        void handleDelete(item, key);
                       }}
-                      className="absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)]"
+                      disabled={isDeleting}
+                      className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                        isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
+                      }`}
                       aria-label="Delete match"
                     >
-                      <svg className="h-5 w-5 text-[#8b4949]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg
+                        className={`h-5 w-5 text-[#8b4949] ${isDeleting ? "animate-pulse" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
@@ -608,7 +656,6 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
               );
             }
 
-            // Legacy entry
             return (
               <div key={key} className="relative">
                 <div className="relative rounded-3xl border-2 border-dashed border-black/20 bg-gradient-to-br from-[#f5f5f5] to-[#e8e8e8] p-6 opacity-50">
@@ -635,17 +682,24 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                   </div>
                 </div>
 
-                {/* Delete button for legacy items in edit mode */}
                 {editMode && (
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      handleDelete(key);
+                      void handleDelete(item, key);
                     }}
-                    className="absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)]"
+                    disabled={isDeleting}
+                    className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                      isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
+                    }`}
                     aria-label="Delete match"
                   >
-                    <svg className="h-5 w-5 text-[#8b4949]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      className={`h-5 w-5 text-[#8b4949] ${isDeleting ? "animate-pulse" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>

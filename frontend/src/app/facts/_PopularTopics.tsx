@@ -46,7 +46,7 @@ export default function PopularTopics() {
 
   if (loading) {
     return (
-      <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
+      <PageContainer as="section" className="pt-20">
         <div className="relative">
           <div className="relative h-[420px] md:h-[480px] rounded-[28px] border-2 border-black bg-white/50 shadow-[8px_10px_0_rgba(0,0,0,0.2)] animate-pulse" />
         </div>
@@ -56,7 +56,7 @@ export default function PopularTopics() {
 
   if (error || !current) {
     return (
-      <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
+      <PageContainer as="section" className="pt-20">
         <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error ?? "No popular topics found yet. Check back soon!"}
         </div>
@@ -68,8 +68,7 @@ export default function PopularTopics() {
   const blurb = current.subtitle || current.excerpt || "Discover the full story.";
 
   return (
-    <PageContainer as="section" className="pt-20"> {/* Changed from pt-16 to pt-20 */}
-      {/* Rest of your existing code remains the same */}
+    <PageContainer as="section" className="pt-20">
       <div className="relative">
         {/* Corner badge that sits on the card's top-left corner */}
         <div
@@ -82,6 +81,16 @@ export default function PopularTopics() {
         >
           Popular Topics
         </div>
+
+        {/* Matchy mascot - Sitting under the card with legs visible */}
+        <Image
+          src="/img/mascot/matchy_4.png"
+          alt="Matchy smiling and waving"
+          width={320}
+          height={320}
+          className="absolute -bottom-28 -right-14 z-10 w-[285px] sm:w-[390px] pointer-events-none"
+          priority
+        />
 
         {/* Feature card */}
         <div
