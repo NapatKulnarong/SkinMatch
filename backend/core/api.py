@@ -228,14 +228,19 @@ def signup(request, payload: SignUpIn):
     gender_choice = None
     if payload.gender and payload.gender in dict(UserProfile.Gender.choices):
         gender_choice = payload.gender
-    
-    UserProfile.objects.get_or_create(
-        user=user,
-        defaults=dict(
-            date_of_birth=dob,
-            gender=gender_choice
-        ),
-    )
+
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    profile_updates: list[str] = []
+    if dob is not None and profile.date_of_birth != dob:
+        profile.date_of_birth = dob
+        profile_updates.append("date_of_birth")
+    if gender_choice is not None and profile.gender != gender_choice:
+        profile.gender = gender_choice
+        profile_updates.append("gender")
+
+    if profile_updates:
+        profile.save(update_fields=profile_updates + ["updated_at"])
     return {"ok": True, "message": "Signup successful"}
 
 @api.post("/auth/logout", response=tokenOut, auth=JWTAuth())
