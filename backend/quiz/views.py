@@ -557,11 +557,15 @@ def _price_snapshot_for(product: Product) -> tuple[Decimal | None, str]:
 def _sanitize_product_url(raw_url: str | None) -> str | None:
     if not raw_url:
         return None
-    parsed = urlparse(raw_url)
-    host = parsed.netloc.lower()
-    if host.endswith("shopee.co.th"):
-        return raw_url
-    return None
+    cleaned = raw_url.strip()
+    if not cleaned:
+        return None
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if not parsed.netloc:
+        return None
+    return cleaned
 
 
 def _product_image_url(product: Product) -> str | None:

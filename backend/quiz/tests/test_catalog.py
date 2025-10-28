@@ -134,7 +134,7 @@ def test_calculate_results_auto_seeds_catalog_when_empty():
         if recommendation["price_snapshot"] is not None:
             assert recommendation["currency"] == Product.Currency.THB
         if recommendation["product_url"]:
-            assert "shopee.co.th" in recommendation["product_url"]
+            assert recommendation["product_url"].startswith(("http://", "https://"))
 
 
 @pytest.mark.django_db
@@ -174,7 +174,7 @@ def test_recommendation_prefers_uploaded_product_image(tmp_path, settings):
         hero_ingredients="Hydrating Agent",
         price=Decimal("650.00"),
         currency=Product.Currency.THB,
-        product_url="https://shopee.co.th/product/123/456",
+        product_url="https://store.example.com/products/123",
         image_url="https://example.com/fallback.jpg",
         is_active=True,
     )
@@ -223,12 +223,12 @@ def test_recommendation_prefers_uploaded_product_image(tmp_path, settings):
     assert recommendation["image_url"] is not None
     assert recommendation["image_url"].endswith(".png")
     assert recommendation["image_url"].startswith(settings.MEDIA_URL)
-    assert recommendation["product_url"] == "https://shopee.co.th/product/123/456"
+    assert recommendation["product_url"] == "https://store.example.com/products/123"
 
     pick = session.picks.first()
     assert pick is not None
     assert pick.image_url.endswith(".png")
-    assert pick.product_url == "https://shopee.co.th/product/123/456"
+    assert pick.product_url == "https://store.example.com/products/123"
 
 
 @pytest.mark.django_db
@@ -259,7 +259,7 @@ def test_recommendation_uses_placeholder_when_no_image():
         hero_ingredients="Vitamin C",
         price=Decimal("1200.00"),
         currency=Product.Currency.THB,
-        product_url="https://shopee.co.th/product/987/654",
+        product_url="https://store.example.com/placeholder",
         is_active=True,
     )
 
@@ -289,4 +289,4 @@ def test_recommendation_uses_placeholder_when_no_image():
     result = calculate_results(session, include_products=True)
     recommendation = result["recommendations"][0]
     assert recommendation["image_url"].startswith("data:image/svg+xml;utf8,")
-    assert recommendation["product_url"] == "https://shopee.co.th/product/987/654"
+    assert recommendation["product_url"] == "https://store.example.com/placeholder"
