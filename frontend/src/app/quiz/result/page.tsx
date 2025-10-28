@@ -339,7 +339,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
               className="flex h-full flex-col gap-3 rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
             >
               {item.imageUrl ? (
-                <div className="relative h-40 w-full overflow-hidden rounded-2xl border-2 border-black bg-white">
+                <div className="relative w-full overflow-hidden rounded-2xl border-2 border-black bg-white aspect-square">
                   <Image
                     src={item.imageUrl}
                     alt={`${brandLabel} ${item.productName}`}
@@ -350,7 +350,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                   />
                 </div>
               ) : (
-                <div className="flex h-40 w-full items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-[#f2ebff] text-xs font-semibold uppercase tracking-[0.2em] text-[#7a628c]">
+                <div className="flex w-full items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-[#f2ebff] text-xs font-semibold uppercase tracking-[0.2em] text-[#7a628c] aspect-square">
                   Product preview coming soon
                 </div>
               )}
