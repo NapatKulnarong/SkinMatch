@@ -200,3 +200,12 @@ class FeedbackIn(Schema):
 
 class FeedbackAck(Schema):
     ok: bool
+
+
+class EmailSummaryIn(Schema):
+    session_id: uuid.UUID
+    email: Optional[str] = None
+
+
+class EmailSummaryAck(Schema):
+    ok: bool

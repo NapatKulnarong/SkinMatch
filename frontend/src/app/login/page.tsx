@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -358,7 +359,17 @@ function LoginContent() {
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
-    <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:justify-center md:gap-12">
+      <div className="md:mr-6">
+        <Image
+          src="/img/mascot/matchy_2.png"
+          alt="Matchy mascot waving hello"
+          width={700}
+          height={700}
+          priority
+          className="drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-6 md:translate-y-8"
+        />
+      </div>
       <div
         className={[
           "w-[540px] rounded-3xl border-2 border-black overflow-hidden",

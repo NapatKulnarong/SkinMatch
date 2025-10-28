@@ -567,3 +567,22 @@ export async function fetchQuizHistoryDetail(profileId: string): Promise<QuizHis
   const data: RawHistoryDetail = await res.json();
   return mapHistoryDetail(data);
 }
+
+export async function emailQuizSummary(sessionId: string, email?: string): Promise<void> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/email-summary`, {
+    method: "POST",
+    headers: {
+      ...withAuth({ "Content-Type": "application/json" }),
+    },
+    body: JSON.stringify({
+      session_id: sessionId,
+      email: email ?? null,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "We couldn't email your summary just yet.");
+  }
+}
