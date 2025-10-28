@@ -18,6 +18,30 @@ export type StoredProfile = {
 
 export const PROFILE_EVENT = "sm-profile-changed";
 
+const PUBLIC_BACKEND_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
+
+const BACKEND_HOST_PATTERN = /^https?:\/\/backend(?::\d+)?/i;
+
+function normaliseAvatarUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/")) {
+    return `${PUBLIC_BACKEND_BASE}${trimmed}`;
+  }
+  if (BACKEND_HOST_PATTERN.test(trimmed)) {
+    return trimmed.replace(BACKEND_HOST_PATTERN, PUBLIC_BACKEND_BASE);
+  }
+  return trimmed;
+}
+
+export function normalizeStoredProfile(profile: StoredProfile): StoredProfile {
+  return {
+    ...profile,
+    avatar_url: normaliseAvatarUrl(profile.avatar_url),
+  };
+}
+
 function emitProfileEvent(profile: StoredProfile | null) {
   if (typeof window === "undefined") return;
   try {
@@ -48,8 +72,9 @@ export function clearAuthToken() {
 
 export function saveProfile(profile: StoredProfile) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  emitProfileEvent(profile);
+  const normalised = normalizeStoredProfile(profile);
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(normalised));
+  emitProfileEvent(normalised);
 }
 
 export function getStoredProfile(): StoredProfile | null {
@@ -57,7 +82,12 @@ export function getStoredProfile(): StoredProfile | null {
   const raw = localStorage.getItem(PROFILE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as StoredProfile;
+    const parsed = JSON.parse(raw) as StoredProfile;
+    const normalized = normalizeStoredProfile(parsed);
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(normalized));
+    }
+    return normalized;
   } catch (error) {
     console.warn("Failed to parse stored profile", error);
     localStorage.removeItem(PROFILE_KEY);

@@ -244,6 +244,7 @@ def token_logout(request):
     # Client should delete stored token
     return {"ok": True, "token": None, "message": "Logged out (token discarded client-side)"}
 
+
 def _absolute_avatar_url(raw_url: Optional[str], request) -> Optional[str]:
     if not raw_url:
         return None
@@ -251,11 +252,23 @@ def _absolute_avatar_url(raw_url: Optional[str], request) -> Optional[str]:
     if not url:
         return None
     if url.startswith(("http://", "https://")):
+        # Already absolute - fix backend hostname if present
+        url = url.replace("http://backend:8000", "http://localhost:8000")
+        url = url.replace("http://backend", "http://localhost:8000")
         return url
+    
     if url.startswith("/"):
-        return request.build_absolute_uri(url) if request else url
-    media_url = settings.MEDIA_URL.rstrip("/") + "/" + url.lstrip("/")
-    return request.build_absolute_uri(media_url) if request else media_url
+        absolute = request.build_absolute_uri(url) if request else url
+    else:
+        media_url = settings.MEDIA_URL.rstrip("/") + "/" + url.lstrip("/")
+        absolute = request.build_absolute_uri(media_url) if request else media_url
+    
+    # Fix the hostname for browser access
+    if isinstance(absolute, str):
+        absolute = absolute.replace("http://backend:8000", "http://localhost:8000")
+        absolute = absolute.replace("http://backend", "http://localhost:8000")
+    
+    return absolute
 
 
 def _serialize_profile_response(user, profile: UserProfile, request=None) -> dict:

@@ -1,3 +1,5 @@
+import { getAuthToken } from "./auth-storage";
+
 type RawChoice = {
   id: string;
   label: string;
@@ -70,6 +72,55 @@ type RawFinalize = {
     summary: RawFinalizeSummary;
     recommendations: RawRecommendation[];
   };
+};
+
+type RawHistoryItem = {
+  session_id: string | null;
+  completed_at: string;
+  profile_id: string | null;
+  primary_concerns?: string[] | null;
+  budget?: string | null;
+  profile?: RawProfile | null;
+  result_summary?: {
+    summary?: RawFinalizeSummary | null;
+    recommendations?: RawRecommendation[] | null;
+  } | null;
+  answer_snapshot?: Record<string, unknown> | null;
+};
+
+type RawMatchPick = {
+  product_id: string;
+  slug: string;
+  brand: string;
+  product_name: string;
+  category: string;
+  rank: number;
+  score: number;
+  price_snapshot: number | null;
+  currency: string;
+  ingredients: string[];
+  rationale: Record<string, string[]>;
+  image_url?: string | null;
+  product_url?: string | null;
+  average_rating?: number | null;
+  review_count?: number | null;
+};
+
+type RawSessionDetail = {
+  session_id: string;
+  started_at: string;
+  completed_at: string | null;
+  picks: RawMatchPick[];
+  profile: RawProfile | null;
+};
+
+type RawHistoryDetail = {
+  session_id: string | null;
+  completed_at: string;
+  profile: RawProfile | null;
+  summary: RawFinalizeSummary | null;
+  recommendations: RawRecommendation[];
+  answer_snapshot: Record<string, unknown>;
 };
 
 const getApiBase = () => {
@@ -167,6 +218,53 @@ export type QuizFinalize = {
   recommendations: QuizRecommendation[];
 };
 
+export type QuizHistoryItem = {
+  sessionId: string | null;
+  completedAt: string;
+  profileId: string | null;
+  primaryConcerns: string[];
+  budget: string | null;
+  profile: QuizProfile | null;
+  resultSummary: QuizResultSummary | null;
+  recommendations: QuizRecommendation[];
+  answerSnapshot: Record<string, unknown>;
+};
+
+export type QuizHistoryDetail = {
+  sessionId: string | null;
+  completedAt: string;
+  profile: QuizProfile | null;
+  summary: QuizResultSummary;
+  recommendations: QuizRecommendation[];
+  answerSnapshot: Record<string, unknown>;
+};
+
+export type QuizMatchPick = {
+  productId: string;
+  slug: string;
+  brand: string;
+  productName: string;
+  category: string;
+  rank: number;
+  score: number;
+  priceSnapshot: number | null;
+  currency: string;
+  ingredients: string[];
+  rationale: Record<string, string[]>;
+  imageUrl: string | null;
+  productUrl: string | null;
+  averageRating: number | null;
+  reviewCount: number;
+};
+
+export type QuizSessionDetail = {
+  sessionId: string;
+  startedAt: string;
+  completedAt: string | null;
+  picks: QuizMatchPick[];
+  profile: QuizProfile | null;
+};
+
 const mapChoice = (raw: RawChoice): QuizChoice => ({
   id: raw.id,
   label: raw.label,
@@ -239,6 +337,69 @@ const mapFinalize = (raw: RawFinalize): QuizFinalize => ({
   recommendations: (raw.result_summary?.recommendations ?? []).map(mapRecommendation),
 });
 
+const mapHistoryItem = (raw: RawHistoryItem): QuizHistoryItem => {
+  const summaryWrapper = raw.result_summary ?? null;
+  return {
+    sessionId: raw.session_id,
+    completedAt: raw.completed_at,
+    profileId: raw.profile_id,
+    primaryConcerns: raw.primary_concerns ?? [],
+    budget: raw.budget ?? null,
+    profile: raw.profile ? mapProfile(raw.profile) : null,
+    resultSummary: summaryWrapper?.summary ? mapSummary(summaryWrapper.summary) : null,
+    recommendations: (summaryWrapper?.recommendations ?? []).map(mapRecommendation),
+    answerSnapshot: (raw.answer_snapshot ?? {}) as Record<string, unknown>,
+  };
+};
+
+const mapHistoryDetail = (raw: RawHistoryDetail): QuizHistoryDetail => ({
+  sessionId: raw.session_id,
+  completedAt: raw.completed_at,
+  profile: raw.profile ? mapProfile(raw.profile) : null,
+  summary: mapSummary(raw.summary ?? {}),
+  recommendations: raw.recommendations.map(mapRecommendation),
+  answerSnapshot: raw.answer_snapshot ?? {},
+});
+
+const mapPick = (raw: RawMatchPick): QuizMatchPick => ({
+  productId: raw.product_id,
+  slug: raw.slug,
+  brand: raw.brand,
+  productName: raw.product_name,
+  category: raw.category,
+  rank: raw.rank,
+  score: Number(raw.score),
+  priceSnapshot: raw.price_snapshot ?? null,
+  currency: raw.currency,
+  ingredients: raw.ingredients ?? [],
+  rationale: raw.rationale ?? {},
+  imageUrl: raw.image_url ?? null,
+  productUrl: raw.product_url ?? null,
+  averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+  reviewCount: raw.review_count ?? 0,
+});
+
+const mapSessionDetail = (raw: RawSessionDetail): QuizSessionDetail => ({
+  sessionId: raw.session_id,
+  startedAt: raw.started_at,
+  completedAt: raw.completed_at ?? null,
+  picks: raw.picks.map(mapPick),
+  profile: raw.profile ? mapProfile(raw.profile) : null,
+});
+
+const withAuth = (headers: HeadersInit = {}): HeadersInit => {
+  const token = getAuthToken();
+  if (!token) return headers;
+  if (headers instanceof Headers) {
+    headers.set("Authorization", `Bearer ${token}`);
+    return headers;
+  }
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 export async function fetchQuizQuestions(): Promise<QuizQuestion[]> {
   const base = getApiBase();
   const res = await fetch(`${base}/quiz/questions`, {
@@ -256,7 +417,7 @@ export async function startQuizSession(): Promise<QuizSession> {
   const res = await fetch(`${base}/quiz/start`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      ...withAuth({ "Content-Type": "application/json" }),
     },
   });
   if (!res.ok) {
@@ -275,7 +436,7 @@ export async function submitQuizAnswer(
   const res = await fetch(`${base}/quiz/answer`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      ...withAuth({ "Content-Type": "application/json" }),
     },
     body: JSON.stringify({
       session_id: sessionId,
@@ -294,7 +455,7 @@ export async function finalizeQuizSession(sessionId: string): Promise<QuizFinali
   const res = await fetch(`${base}/quiz/submit?session_id=${encodeURIComponent(sessionId)}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      ...withAuth({ "Content-Type": "application/json" }),
     },
   });
   if (!res.ok) {
@@ -303,4 +464,66 @@ export async function finalizeQuizSession(sessionId: string): Promise<QuizFinali
   }
   const data: RawFinalize = await res.json();
   return mapFinalize(data);
+}
+
+export async function fetchQuizHistory(token: string): Promise<QuizHistoryItem[]> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/history`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  });
+
+  if (res.status === 401) {
+    return [];
+  }
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "Failed to load quiz history");
+  }
+
+  const data: RawHistoryItem[] = await res.json();
+  return data.map(mapHistoryItem);
+}
+
+export async function fetchQuizSessionDetail(sessionId: string): Promise<QuizSessionDetail> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/session/${encodeURIComponent(sessionId)}`, {
+    method: "GET",
+    headers: withAuth(),
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
+    throw new Error("We couldn't find that match session. Please refresh.");
+  }
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "Failed to load match details");
+  }
+
+  const data: RawSessionDetail = await res.json();
+  return mapSessionDetail(data);
+}
+
+export async function fetchQuizHistoryDetail(profileId: string): Promise<QuizHistoryDetail> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/history/profile/${encodeURIComponent(profileId)}`, {
+    method: "GET",
+    headers: withAuth(),
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
+    throw new Error("We couldn't find that match session. Please refresh.");
+  }
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "Failed to load match details");
+  }
+
+  const data: RawHistoryDetail = await res.json();
+  return mapHistoryDetail(data);
 }

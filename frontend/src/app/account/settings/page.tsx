@@ -16,6 +16,7 @@ import {
   getAuthToken,
   saveProfile,
   StoredProfile,
+  normalizeStoredProfile,
 } from "@/lib/auth-storage";
 
 type FieldState = {
@@ -64,7 +65,7 @@ export default function AccountSettingsPage() {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const fetched = await fetchProfile(token);
+        const fetched = normalizeStoredProfile(await fetchProfile(token));
         setProfile(fetched);
         setFieldState({
           first_name: fetched.first_name ?? "",
@@ -99,6 +100,12 @@ export default function AccountSettingsPage() {
     if (profile?.avatar_url) return profile.avatar_url;
     return "/img/avatar_placeholder.png";
   }, [avatarPreview, profile]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[settings] avatar preview src", currentAvatar);
+    }
+  }, [currentAvatar]);
 
   const hasFormChanges = useMemo(() => {
     if (!profile) return false;
@@ -140,7 +147,7 @@ export default function AccountSettingsPage() {
       let updatedProfile: StoredProfile | null = null;
 
       if (avatarFile) {
-        updatedProfile = await uploadAvatar(tokenRef.current, avatarFile);
+        updatedProfile = normalizeStoredProfile(await uploadAvatar(tokenRef.current, avatarFile));
         setAvatarFile(null);
         if (avatarPreview) {
           URL.revokeObjectURL(avatarPreview);
@@ -148,7 +155,7 @@ export default function AccountSettingsPage() {
         }
       }
 
-      const updated = await updateProfile(tokenRef.current, payload);
+      const updated = normalizeStoredProfile(await updateProfile(tokenRef.current, payload));
       const finalProfile = updatedProfile ?? updated;
       setProfile(finalProfile);
       saveProfile(finalProfile);
