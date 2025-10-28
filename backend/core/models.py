@@ -191,14 +191,16 @@ class SkinFactContentBlock(models.Model):
     Ordered content blocks that make up the body of a SkinFactTopic.
     Each block can be:
     - a section heading like "What Is Hyaluronic Acid?"
-    - a normal text section
-    - a text section with an image
+    - a normal text paragraph
+    - a text section with an accompanying image
     do NOT force it to be only-image or only-text. The editor can mix.
     """
 
     class BlockType(models.TextChoices):
         HEADING = "heading", "Heading / Section Title"
         TEXT = "text", "Text Section"
+        PARAGRAPH = "paragraph", "Paragraph"
+        IMAGE = "image", "Image + Text"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -266,17 +268,24 @@ class SkinFactContentBlock(models.Model):
         """
         super().clean()
 
-        if self.block_type == self.BlockType.HEADING:
+        block_type = self.block_type
+
+        if block_type == self.BlockType.HEADING:
             if not (self.heading or "").strip():
                 raise ValidationError("Heading blocks must have a heading title.")
 
-        if self.block_type == self.BlockType.TEXT:
+        if block_type in {self.BlockType.TEXT, self.BlockType.PARAGRAPH}:
             if not (self.text or "").strip():
                 raise ValidationError("Text blocks must include body text.")
 
-        # image validation (only check file type, not dimensions)
-        if self.image and not (self.image_alt or "").strip():
-            raise ValidationError("Please provide image alt text for accessibility.")
+        has_image = bool(self.image and getattr(self.image, "name", ""))
+
+        if block_type == self.BlockType.IMAGE and not has_image:
+            raise ValidationError("Image blocks must include an uploaded image.")
+
+        if has_image and block_type in {self.BlockType.TEXT, self.BlockType.PARAGRAPH}:
+            if not (self.image_alt or "").strip():
+                raise ValidationError("Please provide image alt text for accessibility.")
 
 
 

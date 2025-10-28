@@ -1761,15 +1761,33 @@ def _ensure_reference_data():
         )
         restriction_map[key] = restriction
 
-    ingredient_map = {}
+    ingredient_map: dict[str, Ingredient] = {}
     for key, common_name, benefits in INGREDIENTS:
-        ingredient, _ = Ingredient.objects.update_or_create(
-            key=key,
-            defaults={
-                "common_name": common_name,
-                "benefits": benefits,
-            },
-        )
+        possible_keys = {key}
+        if "-" in key:
+            possible_keys.add(key.replace("-", "_"))
+        if "_" in key:
+            possible_keys.add(key.replace("_", "-"))
+        ingredient: Ingredient | None = None
+        for candidate in possible_keys:
+            ingredient = Ingredient.objects.filter(key=candidate).first()
+            if ingredient:
+                break
+        if ingredient:
+            updates = {}
+            if ingredient.common_name != common_name:
+                updates["common_name"] = common_name
+            if ingredient.benefits != benefits:
+                updates["benefits"] = benefits
+            if updates:
+                Ingredient.objects.filter(pk=ingredient.pk).update(**updates)
+                ingredient.refresh_from_db(fields=list(updates.keys()))
+        else:
+            ingredient = Ingredient.objects.create(
+                key=key,
+                common_name=common_name,
+                benefits=benefits,
+            )
         ingredient_map[key] = ingredient
 
     return concern_map, skin_type_map, restriction_map, ingredient_map

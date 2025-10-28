@@ -1,11 +1,13 @@
 // src/app/quiz/result/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
+import { emailQuizSummary } from "@/lib/api.quiz";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
@@ -19,6 +21,10 @@ export default function QuizResultPage() {
   const navWidth = useNavWidth();
 
   const hasPrimary = Boolean(answers.primaryConcern?.label);
+
+  const [emailInput, setEmailInput] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
@@ -47,7 +53,7 @@ export default function QuizResultPage() {
     return highlights.slice(0, 6);
   }, [guidance.lookFor, result?.summary.topIngredients]);
 
-  const combinedInsights = useMemo(() => {
+  const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];
     const summaryInsights = buildSummaryInsights(result?.summary);
     summaryInsights.forEach((note) => {
@@ -58,12 +64,42 @@ export default function QuizResultPage() {
     return insights;
   }, [guidance.insights, result?.summary]);
 
+  const aiStrategyNotes = result?.strategyNotes ?? [];
+  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
+
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
   }, [answerLabels, result?.profile]);
 
   const recommendations = result?.recommendations ?? [];
   const requiresAuth = Boolean(result?.requiresAuth);
+
+  useEffect(() => {
+    setEmailStatus("idle");
+    setEmailMessage(null);
+    setEmailInput("");
+  }, [result?.sessionId]);
+
+  const handleEmailSummary = useCallback(async () => {
+    if (!result?.sessionId) {
+      setEmailStatus("error");
+      setEmailMessage("We couldn't find this quiz session. Please refresh and try again.");
+      return;
+    }
+
+    setEmailStatus("sending");
+    setEmailMessage(null);
+    try {
+      const emailValue = emailInput.trim();
+      await emailQuizSummary(result.sessionId, emailValue || undefined);
+      setEmailStatus("success");
+      setEmailMessage(emailValue ? `Summary sent to ${emailValue}.` : "Summary sent to your account email.");
+    } catch (err) {
+      setEmailStatus("error");
+      const message = err instanceof Error ? err.message : "Failed to email this summary. Please try again.";
+      setEmailMessage(message);
+    }
+  }, [emailInput, result?.sessionId]);
 
   if (!hasPrimary) {
     return (
@@ -155,13 +191,13 @@ export default function QuizResultPage() {
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
               <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
               <ul className="mt-4 space-y-4">
-                {combinedInsights.map((insight) => (
+                {strategyNotes.map((insight) => (
                   <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
                     {insight}
                   </li>
                 ))}
               </ul>
-              {!combinedInsights.length && (
+              {!strategyNotes.length && (
                 <p className="text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>
@@ -202,6 +238,40 @@ export default function QuizResultPage() {
                 Retake the quiz
                 <span aria-hidden>↺</span>
               </button>
+            </div>
+            <div className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4">
+              <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
+              <p className="text-sm text-[#1b2a50]/70">
+                Get a copy of your routine roadmap delivered straight to your inbox.
+              </p>
+              <div className="space-y-3 text-left">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(event) => setEmailInput(event.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full rounded-xl border border-[#1b2a50]/30 bg-white/90 px-4 py-2 text-sm text-[#1b2a50] shadow-[0_3px_0_rgba(0,0,0,0.12)] focus:border-[#1b2a50] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleEmailSummary}
+                  disabled={emailStatus === "sending" || !result?.sessionId}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#1b2a50] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {emailStatus === "sending" ? "Sending..." : "Send summary"}
+                </button>
+                {emailStatus === "success" && emailMessage && (
+                  <p className="text-sm font-semibold text-[#1b2a50]">{emailMessage}</p>
+                )}
+                {emailStatus === "error" && emailMessage && (
+                  <p className="text-sm font-semibold text-[#B9375D]">{emailMessage}</p>
+                )}
+                {emailStatus === "idle" && !emailMessage && (
+                  <p className="text-xs text-[#1b2a50]/60">
+                    Leave the field blank to use your account email, or enter another address.
+                  </p>
+                )}
+              </div>
             </div>
           </aside>
 
@@ -324,11 +394,35 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-left">
         {recommendations.map((item) => {
           const brandLabel = item.brandName ?? item.brand;
+          const priceLabel =
+            item.priceSnapshot !== null
+              ? new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: item.currency,
+                  maximumFractionDigits: 0,
+                }).format(item.priceSnapshot)
+              : null;
           return (
             <article
               key={item.productId}
-              className="rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] space-y-3"
+              className="flex h-full flex-col gap-3 rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
             >
+              {item.imageUrl ? (
+                <div className="relative h-40 w-full overflow-hidden rounded-2xl border-2 border-black bg-white">
+                  <Image
+                    src={item.imageUrl}
+                    alt={`${brandLabel} ${item.productName}`}
+                    fill
+                    unoptimized
+                    className="object-cover object-center"
+                    sizes="(max-width: 768px) 90vw, (max-width: 1024px) 40vw, 320px"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-40 w-full items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-[#f2ebff] text-xs font-semibold uppercase tracking-[0.2em] text-[#7a628c]">
+                  Product preview coming soon
+                </div>
+              )}
               <header className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B9375D]">
                   {brandLabel}
@@ -339,16 +433,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
               <p className="text-sm text-[#3C3D37]/75">
                 Match score{" "}
                 <span className="font-semibold text-[#3C3D37]">{item.score.toFixed(1)}</span>
-                {item.priceSnapshot !== null && (
-                  <>
-                    {" • "}
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: item.currency,
-                      maximumFractionDigits: 0,
-                    }).format(item.priceSnapshot)}
-                  </>
-                )}
+                {priceLabel ? <> • {priceLabel}</> : null}
               </p>
               {item.ingredients.length > 0 && (
                 <p className="text-xs text-[#3C3D37]/70">
@@ -356,7 +441,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                   {item.ingredients.length > 3 ? "…" : ""}
                 </p>
               )}
-              <footer className="flex items-center justify-between text-xs text-[#3C3D37]/60">
+              <footer className="mt-auto flex items-center justify-between text-xs text-[#3C3D37]/60">
                 {item.averageRating ? (
                   <span>
                     {item.averageRating.toFixed(1)} ★ ({item.reviewCount} review
@@ -370,9 +455,9 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                     href={item.productUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-[#B9375D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 font-semibold text-[#B9375D] shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.2)]"
                   >
-                    View
+                    View product
                   </a>
                 )}
               </footer>

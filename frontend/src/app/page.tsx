@@ -1,9 +1,123 @@
 // frontend/src/app/page.tsx
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
-import { ArrowRightIcon } from "@heroicons/react/24/solid";
-import Link from "next/link";
+import {
+  getAuthToken,
+  getStoredProfile,
+  PROFILE_EVENT,
+  type StoredProfile,
+} from "@/lib/auth-storage";
+import { fetchQuizHistory } from "@/lib/api.quiz";
+import {
+  QUIZ_ANSWERS_STORAGE_KEY,
+  QUIZ_SESSION_STORAGE_KEY,
+} from "./quiz/_QuizContext";
+
+function QuizCtaButton() {
+  const [profile, setProfile] = useState<StoredProfile | null>(null);
+  const [hasQuizHistory, setHasQuizHistory] = useState(false);
+
+  useEffect(() => {
+    const updateProfile = (next?: StoredProfile | null) => {
+      setProfile(next ?? getStoredProfile());
+    };
+
+    updateProfile();
+
+    const profileListener = (event: Event) => {
+      if ("detail" in event) {
+        const custom = event as CustomEvent<StoredProfile | null>;
+        updateProfile(custom.detail ?? null);
+        return;
+      }
+      updateProfile();
+    };
+
+    const storageListener = (event: StorageEvent) => {
+      if (event.key === "sm_profile" || event.key === "sm_token") {
+        updateProfile();
+      }
+    };
+
+    window.addEventListener(PROFILE_EVENT, profileListener);
+    window.addEventListener("storage", storageListener);
+    return () => {
+      window.removeEventListener(PROFILE_EVENT, profileListener);
+      window.removeEventListener("storage", storageListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!profile) {
+      setHasQuizHistory(false);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      setHasQuizHistory(false);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    const loadHistory = async () => {
+      try {
+        const items = await fetchQuizHistory(token);
+        if (!isCancelled) {
+          setHasQuizHistory(items.length > 0);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.warn("Failed to load quiz history", error);
+          setHasQuizHistory(false);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [profile]);
+
+  const showRetake = Boolean(profile && hasQuizHistory);
+  const buttonLabel = showRetake ? "Retake the quiz" : "Find your match now";
+
+  const handleClick = useCallback(() => {
+    if (!showRetake || typeof window === "undefined") {
+      return;
+    }
+    try {
+      window.localStorage.removeItem(QUIZ_ANSWERS_STORAGE_KEY);
+      window.localStorage.removeItem(QUIZ_SESSION_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Failed to clear stored quiz state before retake", error);
+    }
+  }, [showRetake]);
+
+  return (
+    <Link
+      href="/quiz"
+      onClick={handleClick}
+      className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-white px-8 py-4 font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+    >
+      <span>{buttonLabel}</span>
+      <ArrowRightIcon className="h-6 w-6" />
+    </Link>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -31,13 +145,7 @@ export default function HomePage() {
                 </p>
 
                 <div className="flex justify-center md:justify-start">
-                  <Link
-                    href="/quiz"
-                    className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-white px-8 py-4 font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
-                  >
-                    <span>Find your match now</span>
-                    <ArrowRightIcon className="h-6 w-6" />
-                  </Link>
+                  <QuizCtaButton />
                 </div>
               </div>
 
