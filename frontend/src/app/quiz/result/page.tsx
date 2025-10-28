@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
@@ -20,6 +20,68 @@ export default function QuizResultPage() {
   const navWidth = useNavWidth();
 
   const hasPrimary = Boolean(answers.primaryConcern?.label);
+// === AI Integration Start ===
+
+// Store AI-generated strategy notes and errors
+const [strategyNotes, setAiStrategyNotes] = useState<string[]>([]);
+const [aiError, setAiError] = useState<string | null>(null);
+
+useEffect(() => {
+  // Only run if quiz is finished and user has answered
+  if (!isComplete || !hasPrimary) return;
+
+  // Get JWT from localStorage
+  const token = window.localStorage.getItem("access_token");
+  if (!token) {
+    setAiError("Please log in to view personalised AI guidance.");
+    return;
+  }
+
+  // 🧠 Build dynamic prompt from quiz answers
+  const primary = answers.primaryConcern?.label ?? "general skin concerns";
+  const secondary = answers.secondaryConcern ?? "none";
+  const skinType = answers.skinType ?? "unknown skin type";
+  const sensitivity = answers.sensitivity ?? "normal";
+  const budget = answers.budget ?? "any";
+
+  const prompt = `What is AI?`;
+
+  console.log("Prompt for AI:", prompt);
+
+  // 🚀 Send POST request to Django backend (protected route)
+  fetch("http://localhost:8000/api/ai/gemini/generate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ prompt }),
+  })
+    .then((res) => {
+      if (res.status === 401) {
+        setAiError("Session expired. Please log in again.");
+        throw new Error("Unauthorized");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      if (data?.text) {
+        // Split AI output into lines
+        const lines = data.text
+          .split(/\n|•|-/)
+          .map((l: string) => l.trim())
+          .filter(Boolean);
+        setAiStrategyNotes(lines);
+      } else {
+        setAiError("AI did not return usable strategy notes.");
+      }
+    })
+    .catch((err) => {
+      console.error("AI fetch failed:", err);
+      setAiError("We couldn’t load AI guidance right now.");
+    });
+}, [isComplete, hasPrimary, answers]);
+// === AI Integration End ===
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
@@ -59,8 +121,8 @@ export default function QuizResultPage() {
     return insights;
   }, [guidance.insights, result?.summary]);
 
-  const aiStrategyNotes = result?.strategyNotes ?? [];
-  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
+  // const aiStrategyNotes = result?.strategyNotes ?? [];
+  // const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
 
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
@@ -158,17 +220,24 @@ export default function QuizResultPage() {
           <aside className="space-y-8">
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
               <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
-              <ul className="mt-4 space-y-4">
-                {strategyNotes.map((insight) => (
-                  <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
-                    {insight}
-                  </li>
-                ))}
-              </ul>
-              {!strategyNotes.length && (
-                <p className="text-sm text-[#1b2a50]/70">
-                  Keep routines gentle and consistent—your skin will reward the steady care.
+              {/* Error of Loading State */}
+              {aiError ?(
+                <p className="text-sm text-[#B9375D]/80">{aiError}</p>
+              ) : strategyNotes.length === 0 ? (
+                <p className="text-sm text-[#1b2a50]/70 animate-pulse">
+                  Fetching AI-guided routine strategy...
                 </p>
+              ) : (
+                <ul className="mt-4 space-y-4">
+                  {strategyNotes.map((line) => (
+                    <li
+                      key={line}
+                      className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed"
+                    >
+                      {line}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 

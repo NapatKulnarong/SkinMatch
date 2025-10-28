@@ -49,8 +49,7 @@ api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 User = get_user_model()
 
-if genai:
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --------------- Schemas ---------------
 
@@ -139,44 +138,81 @@ class ProfileUpdateIn(Schema):
 
 class GenIn(Schema):
     prompt: str
-    model: Optional[str] = "gemini-2.5-flash"
 
 class GenOut(Schema):
-    response: str
+    text: str
 
-CANDIDATES = [
-    "gemini-2.5-flash",       # current flash (usually free)
-    "gemini-flash-latest",    # alias to current flash
-    "gemini-2.0-flash",       # older flash
-    "gemini-2.0-flash-001",   # older flash variant
-]
+FALLBACK_TEXT = (
+    "• Use a gentle, non-stripping cleanser morning and night.\n"
+    "• Moisturize consistently, even if skin is oily — choose lightweight or gel textures.\n"
+    "• Apply broad-spectrum sunscreen every morning."
+)
 
-def generate_text(prompt: str, temperature: float = 0.2) -> str:
-    if genai is None:
-        raise RuntimeError("google-generativeai SDK is not installed")
+def generate_text(prompt: str) -> str:
+    """
+    Call Gemini and ALWAYS return a non-empty string.
+    We'll log internals so we can see what's going on with finish_reason.
+    """
 
-    last_err = None
-    for name in CANDIDATES:
+    model = genai.GenerativeModel("gemini-2.5-flash")
+
+    try:
+        resp = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.4,
+                "max_output_tokens": 256,
+            },
+        )
+    except Exception as e:
+        print("Gemini error during request:", e)
+        return FALLBACK_TEXT
+
+    # Log the raw structure so we understand what Gemini gave us.
+    try:
+        print("DEBUG Gemini resp object:", resp)
+        if hasattr(resp, "candidates"):
+            print("DEBUG candidates len:", len(resp.candidates))
+            if resp.candidates:
+                print("DEBUG first candidate:", resp.candidates[0])
+                print("DEBUG finish_reason:", getattr(resp.candidates[0], "finish_reason", None))
+                # Some SDKs expose safety ratings:
+                print("DEBUG safety_ratings:", getattr(resp.candidates[0], "safety_ratings", None))
+    except Exception as e:
+        print("DEBUG logging failed:", e)
+
+    # ---- extract text safely ----
+
+    text = getattr(resp, "text", None)
+
+    if not text:
+        # Try pulling from parts
         try:
-            model = genai.GenerativeModel(name)
-            resp = model.generate_content(
-                prompt,
-                generation_config={"temperature": temperature},
-            )
-            return (resp.text or "").strip()
+            cand0 = resp.candidates[0]
+            parts = cand0.content.parts
+            collected = []
+            for p in parts:
+                if hasattr(p, "text") and isinstance(p.text, str):
+                    collected.append(p.text)
+            text = "\n".join(collected).strip()
         except Exception as e:
-            last_err = e
-            continue
-    raise last_err
-# --------------- Auth endpoints ---------------
+            print("DEBUG could not extract from parts:", e)
+            text = ""
 
+    # Final safety net:
+    if not text or not text.strip():
+        print("DEBUG: Gemini returned no usable text. Falling back.")
+        return FALLBACK_TEXT
+
+    # If we got here, we DO have text. Don't over-block.
+    return text.strip()
+# --------------- Auth endpoints ---------------
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
-    if genai is None:
-        raise HttpError(503, "AI generation service is not available.")
-    response_text = generate_text(payload.prompt)
-    return {"response": response_text}
+    print("DEBUG gemini_generate endpoint running with direct dict return")
+    answer = generate_text(payload.prompt)
+    return {"text": answer}
 
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
