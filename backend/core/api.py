@@ -1,14 +1,33 @@
-from ninja import NinjaAPI, Schema, ModelSchema, File
-from ninja.files import UploadedFile
+import os
+import uuid
+from datetime import date, datetime
+from pathlib import Path
+from typing import List, Optional
+from uuid import uuid4
+
+try:
+    import google.generativeai as genai  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    genai = None
+from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.db import IntegrityError, transaction
+from django.db.models import Case, Count, IntegerField, Max, Q, When
+from django.shortcuts import get_object_or_404
+from ninja import File, ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
+from ninja.files import UploadedFile
+
 from .models import (
     UserProfile,
     SkinFactContentBlock,
     SkinFactTopic,
     SkinFactView,
 )
-from typing import List, Optional
 from pydantic import ConfigDict, field_validator, model_validator
+
 try:
     from pydantic import EmailStr as _EmailStr
 except ImportError:  # pragma: no cover - fallback for limited environments
@@ -20,25 +39,18 @@ else:
         EmailStr = str  # type: ignore
     else:
         EmailStr = _EmailStr  # type: ignore
-from datetime import datetime, date
+
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
-import uuid
-from datetime import datetime
-from django.conf import settings
-from django.contrib.auth import authenticate, get_user_model
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-from django.db import transaction, IntegrityError
-from django.db.models import Case, Count, IntegerField, Max, Q, When
-from django.shortcuts import get_object_or_404
-from pathlib import Path
-from uuid import uuid4
 from quiz.views import router as quiz_router
+
 
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 User = get_user_model()
+
+if genai:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --------------- Schemas ---------------
 
@@ -114,6 +126,7 @@ class UserProfileSchema(ModelSchema):
         model = UserProfile
         model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
 
+
 class ProfileUpdateIn(Schema):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -124,31 +137,47 @@ class ProfileUpdateIn(Schema):
     remove_avatar: Optional[bool] = None
 
 
-class FactTopicSummary(Schema):
-    id: uuid.UUID
-    slug: str
-    title: str
-    subtitle: Optional[str] = None
-    excerpt: Optional[str] = None
-    section: str
-    hero_image_url: Optional[str] = None
-    hero_image_alt: Optional[str] = None
-    view_count: int
+class GenIn(Schema):
+    prompt: str
+    model: Optional[str] = "gemini-2.5-flash"
 
+class GenOut(Schema):
+    response: str
 
-class FactContentBlockOut(Schema):
-    order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
+CANDIDATES = [
+    "gemini-2.5-flash",       # current flash (usually free)
+    "gemini-flash-latest",    # alias to current flash
+    "gemini-2.0-flash",       # older flash
+    "gemini-2.0-flash-001",   # older flash variant
+]
 
+def generate_text(prompt: str, temperature: float = 0.2) -> str:
+    if genai is None:
+        raise RuntimeError("google-generativeai SDK is not installed")
 
-class FactTopicDetailOut(FactTopicSummary):
-    content_blocks: List[FactContentBlockOut]
-    updated_at: datetime
+    last_err = None
+    for name in CANDIDATES:
+        try:
+            model = genai.GenerativeModel(name)
+            resp = model.generate_content(
+                prompt,
+                generation_config={"temperature": temperature},
+            )
+            return (resp.text or "").strip()
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
 # --------------- Auth endpoints ---------------
+
+
+@api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
+def genai_generate(request, payload: GenIn):
+    if genai is None:
+        raise HttpError(503, "AI generation service is not available.")
+    response_text = generate_text(payload.prompt)
+    return {"response": response_text}
+
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
     identifier = payload.identifier
@@ -166,7 +195,6 @@ def token_login(request, payload: LoginIn):
     
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
-
 
 @api.post("/auth/oauth/google", response=tokenOut)
 def google_login(request, payload: GoogleLoginIn):
@@ -377,6 +405,37 @@ def list_users(request, limit: int = 50, offset: int = 0):
           .order_by("created_at")[offset:offset+limit])
     return [_serialize_profile_response(p.user, p, request) for p in qs]
 
+@api.get("/hello")
+def api_root(request):
+    return {"message": "Welcome to the API!"}
+
+# ------------------------------------------------------------------------------------
+
+class FactTopicSummary(Schema):
+    id: uuid.UUID
+    slug: str
+    title: str
+    subtitle: Optional[str] = None
+    excerpt: Optional[str] = None
+    section: str
+    hero_image_url: Optional[str] = None
+    hero_image_alt: Optional[str] = None
+    view_count: int
+
+
+class FactContentBlockOut(Schema):
+    order: int
+    block_type: str
+    heading: Optional[str] = None
+    text: Optional[str] = None
+    image_url: Optional[str] = None
+    image_alt: Optional[str] = None
+
+
+class FactTopicDetailOut(FactTopicSummary):
+    content_blocks: List[FactContentBlockOut]
+    updated_at: datetime
+
 @api.get("/facts/topics/popular", response=List[FactTopicSummary])
 def popular_facts(request, limit: int = 5):
     limit = max(1, min(limit, 10))
@@ -510,7 +569,4 @@ def _resolve_media_url(request, image_field) -> Optional[str]:
     return absolute
 
 
-
-@api.get("/hello")
-def api_root(request):
-    return {"message": "Welcome to the API!"}
+# ------------------------------------------------------------------------------------
