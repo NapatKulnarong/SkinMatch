@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from ninja import Schema
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 
 class SessionOut(Schema):
@@ -81,6 +83,12 @@ class ReviewAck(Schema):
     ok: bool
 
 
+class HistoryDeleteAck(Schema):
+    ok: bool
+    deleted_profile_id: uuid.UUID | None = None
+    deleted_session_id: uuid.UUID | None = None
+
+
 class SkinProfileOut(Schema):
     id: uuid.UUID
     session_id: Optional[uuid.UUID]
@@ -94,6 +102,38 @@ class SkinProfileOut(Schema):
     ingredient_restrictions: List[str]
     budget: Optional[str]
     is_latest: bool
+
+
+class QuizResultSummary(Schema):
+    primary_concerns: List[str] = Field(default_factory=list)
+    top_ingredients: List[str] = Field(default_factory=list)
+    category_breakdown: Dict[str, float] = Field(default_factory=dict)
+    generated_at: Optional[str] = None
+    score_version: Optional[str] = None
+
+    @field_validator("generated_at", mode="before")
+    @classmethod
+    def _serialize_generated_at(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)
+
+    @field_validator("category_breakdown", mode="before")
+    @classmethod
+    def _ensure_category_breakdown(cls, value):
+        if value in (None, ""):
+            return {}
+        if isinstance(value, dict):
+            sanitized: Dict[str, float] = {}
+            for key, raw_value in value.items():
+                try:
+                    sanitized[str(key)] = float(raw_value)
+                except (TypeError, ValueError):
+                    continue
+            return sanitized
+        return {}
 
 
 class FinalizeOut(Schema):
@@ -110,6 +150,19 @@ class HistoryItemOut(Schema):
     profile_id: Optional[uuid.UUID]
     primary_concerns: List[str]
     budget: Optional[str]
+    profile: Optional[SkinProfileOut] = None
+    result_summary: Dict[str, Any] | None = None
+    answer_snapshot: Dict[str, Any] | None = None
+
+
+class HistoryDetailOut(Schema):
+    session_id: Optional[uuid.UUID]
+    completed_at: datetime
+    profile: Optional[SkinProfileOut]
+    summary: QuizResultSummary
+    recommendations: List[MatchPickOut]
+    strategy_notes: List[str] = Field(default_factory=list)
+    answer_snapshot: Dict[str, Any]
 
 
 class MatchPickOut(Schema):

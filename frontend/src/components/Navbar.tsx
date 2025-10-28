@@ -107,6 +107,10 @@ export default function Navbar() {
   })();
   const loginHref = profile ? "/account" : "/login";
   const avatarSrc = profile?.avatar_url || "/default-profile.png";
+  const [avatarError, setAvatarError] = useState(false);
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarSrc]);
 
   return (
     <header
@@ -147,12 +151,13 @@ export default function Navbar() {
           </Link>
 
           {/* Small avatar INSIDE the bar (right side) */}
-          <Image
-            src={avatarSrc}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={avatarSrc}
+            src={avatarError ? "/default-profile.png" : avatarSrc}
             alt="Profile avatar"
-            width={36}
-            height={36}
-            className="rounded-full border-2 border-black bg-[#e9e3eb]" /* light-lavender fill like mock */
+            className="h-10 w-10 rounded-full border-2 border-black bg-[#e9e3eb] object-cover"
+            onError={() => setAvatarError(true)}
           />
         </div>
       </div>

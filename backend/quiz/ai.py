@@ -1,0 +1,310 @@
+from __future__ import annotations
+
+import logging
+import os
+from collections import Counter
+from typing import Iterable, List, Sequence
+
+logger = logging.getLogger(__name__)
+
+try:  # Optional dependency – configured only when installed
+    import google.generativeai as _genai  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional
+    _genai = None
+
+try:  # Optional Google API error class for model availability
+    from google.api_core.exceptions import NotFound as _ModelNotFound  # type: ignore
+except Exception:  # pragma: no cover - optional
+    _ModelNotFound = None  # type: ignore
+
+try:  # Optional enum helpers for safety configuration
+    from google.generativeai.types import HarmBlockThreshold, HarmCategory  # type: ignore
+except Exception:  # pragma: no cover - optional
+    HarmBlockThreshold = HarmCategory = None  # type: ignore
+    _SAFETY_SETTINGS: dict | None = None
+else:
+    _SAFETY_SETTINGS = {
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
+
+_CONFIGURED = False
+
+
+def _ensure_configured() -> None:
+    """Best-effort configuration of the Gemini client, if available."""
+    global _CONFIGURED, _genai
+    if _CONFIGURED:
+        return
+
+    _CONFIGURED = True
+    if _genai is None:
+        return
+
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        logger.warning("GOOGLE_API_KEY not set; skipping Gemini strategy notes.")
+        _genai = None
+        return
+
+    try:
+        _genai.configure(api_key=api_key)
+    except Exception:  # pragma: no cover - network/SDK failure
+        logger.exception("Unable to configure Google Generative AI – disabling strategy note generation.")
+        _genai = None
+
+
+def generate_strategy_notes(
+    *,
+    traits: dict,
+    summary: dict,
+    recommendations: Sequence[dict],
+) -> List[str]:
+    """
+    Produce a set of routine strategy notes.
+    """
+    fallback = _fallback_strategy_notes(traits, summary, recommendations)
+
+    _ensure_configured()
+    if _genai is None:
+        return fallback
+
+    prompt = _build_prompt(traits=traits, summary=summary, recommendations=recommendations)
+    configured_model = (os.getenv("GOOGLE_GEMINI_MODEL") or "").strip()
+    candidate_models = [
+        configured_model or None,
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-001",
+        "gemini-1.5-flash-latest",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+    ]
+
+    generation_config = {
+        "temperature": 0.3,
+        "max_output_tokens": 1024,
+        "candidate_count": 1,
+    }
+    generation_kwargs = {}
+    if _SAFETY_SETTINGS:
+        generation_kwargs["safety_settings"] = _SAFETY_SETTINGS
+
+    tried: set[str] = set()
+    for model_name in candidate_models:
+        if not model_name or model_name in tried:
+            continue
+        tried.add(model_name)
+        try:
+            model = _genai.GenerativeModel(model_name, generation_config=generation_config)
+            response = model.generate_content(prompt, **generation_kwargs)
+            ai_notes = _extract_notes(response)
+            if ai_notes:
+                return ai_notes
+            logger.warning("Gemini model '%s' returned no actionable notes; trying fallback.", model_name)
+        except Exception as exc:
+            if _ModelNotFound and isinstance(exc, _ModelNotFound):
+                logger.warning("Gemini model '%s' unavailable; trying next candidate.", model_name)
+                continue
+            logger.exception("Gemini model '%s' failed; falling back to heuristics.", model_name)
+            break
+
+    return fallback
+
+
+def _extract_notes(response) -> List[str]:
+    if response is None:
+        return []
+
+    lines: List[str] = []
+    candidates = getattr(response, "candidates", None) or []
+
+    for candidate in candidates:
+        finish_reason = getattr(candidate, "finish_reason", None)
+        if finish_reason in (2, "SAFETY", "BLOCKED"):  # pragma: no cover - enum values vary by SDK
+            # ADD DETAILED LOGGING HERE
+            safety_ratings = getattr(candidate, "safety_ratings", None)
+            logger.warning(f"Gemini blocked! Finish reason: {finish_reason}")
+            logger.warning(f"Safety ratings: {safety_ratings}")
+            continue
+
+        content = getattr(candidate, "content", None)
+        parts_iterable = []
+        if content is not None:
+            parts_iterable = getattr(content, "parts", []) or []
+        else:  # pragma: no cover - older SDKs expose parts directly
+            parts_iterable = getattr(candidate, "parts", []) or []
+
+        for part in parts_iterable:
+            text_fragment = getattr(part, "text", None)
+            if not text_fragment:
+                continue
+            for raw_line in text_fragment.splitlines():
+                cleaned = raw_line.strip()
+                if not cleaned:
+                    continue
+                cleaned = cleaned.lstrip("-•*0123456789. \t").strip()
+                if not cleaned:
+                    continue
+                lines.append(cleaned)
+                if len(lines) >= 8:
+                    return lines
+
+    return lines
+
+
+def _fallback_strategy_notes(traits: dict, summary: dict, recommendations: Sequence[dict]) -> List[str]:
+    notes: List[str] = []
+    primary = _clean_list(traits.get("primary_concerns"))
+    secondary = _clean_list(traits.get("secondary_concerns"))
+    eye_concerns = _clean_list(traits.get("eye_area_concerns"))
+    restrictions = _clean_list(traits.get("restrictions"))
+    skin_type = _clean_text(traits.get("skin_type"))
+    sensitivity = _clean_text(traits.get("sensitivity"))
+    budget = _clean_text(traits.get("budget"))
+    top_ingredients = _clean_list(summary.get("top_ingredients"))
+
+    if primary:
+        concerns = _format_list(primary[:2])
+        notes.append(f"Anchor your routine around formulas that target {concerns}.")
+
+    if secondary:
+        notes.append(
+            f"Layer in weekly treatments to address secondary goals like {_format_list(secondary[:2])} without overloading skin."
+        )
+
+    if top_ingredients:
+        notes.append(f"Keep key ingredients such as {_format_list(top_ingredients[:3])} in rotation for steady progress.")
+
+    cat_breakdown = summary.get("category_breakdown") or {}
+    if isinstance(cat_breakdown, dict) and cat_breakdown:
+        dominant = Counter({str(k): float(v or 0) for k, v in cat_breakdown.items()}).most_common(2)
+        if dominant:
+            focus = _format_list([label for label, _ in dominant])
+            notes.append(f"Expect the routine to lean on {focus} steps to keep results consistent.")
+
+    if skin_type:
+        notes.append(_skin_type_tip(skin_type))
+
+    if sensitivity and sensitivity.lower() in {"yes", "sometimes"}:
+        notes.append("Buffer stronger actives with moisturiser sandwiches to keep sensitivity in check.")
+
+    if eye_concerns:
+        notes.append("Give the eye area dedicated hydration and SPF coverage to maintain resilience.")
+
+    if restrictions:
+        notes.append(f"Double-check INCI lists to avoid restricted ingredients like {_format_list(restrictions[:3])}.")
+
+    if budget:
+        notes.append(f"Balance spend by pairing a hero treatment with budget-friendly maintenance staples.")
+
+    category_focus = [rec.get("category") for rec in recommendations[:3] if rec.get("category")]
+    if category_focus:
+        notes.append(f"Your matches spotlight {_format_list(category_focus)} to support daily consistency.")
+
+    ingredients_from_recs = []
+    for rec in recommendations[:3]:
+        ingredients_from_recs.extend(_clean_list(rec.get("ingredients")))
+    if ingredients_from_recs:
+        top_rec_ingredients = Counter(ingredients_from_recs).most_common(2)
+        if top_rec_ingredients:
+            notes.append(
+                f"Layer standout actives such as {_format_list([name for name, _ in top_rec_ingredients])} with plenty of barrier support."
+            )
+
+    # Ensure uniqueness while preserving order
+    seen = set()
+    deduped = []
+    for note in notes:
+        if note and note not in seen:
+            deduped.append(note)
+            seen.add(note)
+        if len(deduped) >= 8:
+            break
+    return deduped
+
+
+def _clean_list(value) -> List[str]:
+    if not value:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [_clean_text(item) for item in value if _clean_text(item)]
+    text = _clean_text(value)
+    return [text] if text else []
+
+
+def _clean_text(value) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    return text
+
+
+def _format_list(items: Iterable[str]) -> str:
+    items = [item.strip() for item in items if item and item.strip()]
+    if not items:
+        return ""
+    if len(items) == 1:
+        return items[0]
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return ", ".join(items[:-1]) + f", and {items[-1]}"
+
+
+def _skin_type_tip(skin_type: str) -> str:
+    normalized = skin_type.lower()
+    if normalized == "oily":
+        return "Balance oil by pairing mattifying actives with lightweight gel hydration."
+    if normalized == "dry":
+        return "Build your routine around cushiony textures and richer moisturisers to seal moisture in."
+    if normalized == "combination":
+        return "Multi-moisturise—use gels on oilier zones and creams on dry patches for tailored comfort."
+    return "Keep your routine balanced with staples that maintain a healthy skin barrier."
+
+
+def _build_prompt(*, traits: dict, summary: dict, recommendations: Sequence[dict]) -> str:
+    primary = _format_list(_clean_list(traits.get("primary_concerns")))
+    secondary = _format_list(_clean_list(traits.get("secondary_concerns")))
+    skin_type = _clean_text(traits.get("skin_type")) or "unspecified"
+    sensitivity = _clean_text(traits.get("sensitivity")) or "Unreported"
+    budget = _clean_text(traits.get("budget")) or "unspecified"
+    restrictions = _format_list(_clean_list(traits.get("restrictions")))
+    ingredients = _format_list(_clean_list(summary.get("top_ingredients")))
+    categories = summary.get("category_breakdown") or {}
+    cat_lines = []
+    if isinstance(categories, dict):
+        for label, score in list(categories.items())[:4]:
+            cat_lines.append(f"- {label}: {score}")
+
+    rec_lines = []
+    for rec in recommendations[:3]:
+        name = rec.get("product_name") or rec.get("slug") or "Unnamed product"
+        brand = rec.get("brand") or ""
+        category = rec.get("category") or ""
+        ingredients_list = _format_list(_clean_list(rec.get("ingredients"))[:3])
+        rec_lines.append(f"- {brand} {name} ({category}) with {ingredients_list or 'various ingredients'}")
+
+    sections = [
+        "Create 6-8 short routine tips for organizing these beauty products.",
+        "Each tip should be under 140 characters.",
+        "Focus on practical usage patterns like application order and timing.",
+        "Reference the specific data below.",
+        "",
+        f"Product focus areas: {primary or 'General skincare'}",
+        f"Additional goals: {secondary or 'Not specified'}",
+        f"Skin characteristics: {skin_type}",
+        f"Sensitivity notes: {sensitivity}",
+        f"Shopping budget: {budget}",
+        f"Avoid these ingredients: {restrictions or 'None'}",
+        f"Key ingredients featured: {ingredients or 'Standard cosmetic ingredients'}",
+    ]
+    if cat_lines:
+        sections.append("Product categories:")
+        sections.extend(cat_lines)
+    if rec_lines:
+        sections.append("Sample products:")
+        sections.extend(rec_lines)
+    sections.append("")
+    sections.append("Return only the tips as bullet points.")
+    return "\n".join(sections)

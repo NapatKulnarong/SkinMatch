@@ -1,6 +1,7 @@
 // src/app/quiz/result/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -47,7 +48,7 @@ export default function QuizResultPage() {
     return highlights.slice(0, 6);
   }, [guidance.lookFor, result?.summary.topIngredients]);
 
-  const combinedInsights = useMemo(() => {
+  const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];
     const summaryInsights = buildSummaryInsights(result?.summary);
     summaryInsights.forEach((note) => {
@@ -57,6 +58,9 @@ export default function QuizResultPage() {
     });
     return insights;
   }, [guidance.insights, result?.summary]);
+
+  const aiStrategyNotes = result?.strategyNotes ?? [];
+  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
 
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
@@ -155,13 +159,13 @@ export default function QuizResultPage() {
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
               <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
               <ul className="mt-4 space-y-4">
-                {combinedInsights.map((insight) => (
+                {strategyNotes.map((insight) => (
                   <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
                     {insight}
                   </li>
                 ))}
               </ul>
-              {!combinedInsights.length && (
+              {!strategyNotes.length && (
                 <p className="text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>
@@ -324,11 +328,35 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-left">
         {recommendations.map((item) => {
           const brandLabel = item.brandName ?? item.brand;
+          const priceLabel =
+            item.priceSnapshot !== null
+              ? new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: item.currency,
+                  maximumFractionDigits: 0,
+                }).format(item.priceSnapshot)
+              : null;
           return (
             <article
               key={item.productId}
-              className="rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] space-y-3"
+              className="flex h-full flex-col gap-3 rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
             >
+              {item.imageUrl ? (
+                <div className="relative h-40 w-full overflow-hidden rounded-2xl border-2 border-black bg-white">
+                  <Image
+                    src={item.imageUrl}
+                    alt={`${brandLabel} ${item.productName}`}
+                    fill
+                    unoptimized
+                    className="object-cover object-center"
+                    sizes="(max-width: 768px) 90vw, (max-width: 1024px) 40vw, 320px"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-40 w-full items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-[#f2ebff] text-xs font-semibold uppercase tracking-[0.2em] text-[#7a628c]">
+                  Product preview coming soon
+                </div>
+              )}
               <header className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B9375D]">
                   {brandLabel}
@@ -339,16 +367,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
               <p className="text-sm text-[#3C3D37]/75">
                 Match score{" "}
                 <span className="font-semibold text-[#3C3D37]">{item.score.toFixed(1)}</span>
-                {item.priceSnapshot !== null && (
-                  <>
-                    {" • "}
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: item.currency,
-                      maximumFractionDigits: 0,
-                    }).format(item.priceSnapshot)}
-                  </>
-                )}
+                {priceLabel ? <> • {priceLabel}</> : null}
               </p>
               {item.ingredients.length > 0 && (
                 <p className="text-xs text-[#3C3D37]/70">
@@ -356,7 +375,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                   {item.ingredients.length > 3 ? "…" : ""}
                 </p>
               )}
-              <footer className="flex items-center justify-between text-xs text-[#3C3D37]/60">
+              <footer className="mt-auto flex items-center justify-between text-xs text-[#3C3D37]/60">
                 {item.averageRating ? (
                   <span>
                     {item.averageRating.toFixed(1)} ★ ({item.reviewCount} review
@@ -370,9 +389,9 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                     href={item.productUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-[#B9375D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 font-semibold text-[#B9375D] shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.2)]"
                   >
-                    View
+                    View product
                   </a>
                 )}
               </footer>
