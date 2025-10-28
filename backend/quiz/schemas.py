@@ -155,6 +155,7 @@ class HistoryDetailOut(Schema):
     profile: Optional[SkinProfileOut]
     summary: QuizResultSummary
     recommendations: List[MatchPickOut]
+    strategy_notes: List[str] = Field(default_factory=list)
     answer_snapshot: Dict[str, Any]
 
 

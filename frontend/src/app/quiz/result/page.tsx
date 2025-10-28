@@ -48,7 +48,7 @@ export default function QuizResultPage() {
     return highlights.slice(0, 6);
   }, [guidance.lookFor, result?.summary.topIngredients]);
 
-  const combinedInsights = useMemo(() => {
+  const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];
     const summaryInsights = buildSummaryInsights(result?.summary);
     summaryInsights.forEach((note) => {
@@ -58,6 +58,9 @@ export default function QuizResultPage() {
     });
     return insights;
   }, [guidance.insights, result?.summary]);
+
+  const aiStrategyNotes = result?.strategyNotes ?? [];
+  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
 
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
@@ -156,13 +159,13 @@ export default function QuizResultPage() {
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
               <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
               <ul className="mt-4 space-y-4">
-                {combinedInsights.map((insight) => (
+                {strategyNotes.map((insight) => (
                   <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
                     {insight}
                   </li>
                 ))}
               </ul>
-              {!combinedInsights.length && (
+              {!strategyNotes.length && (
                 <p className="text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>

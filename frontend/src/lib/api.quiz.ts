@@ -71,6 +71,7 @@ type RawFinalize = {
   result_summary: {
     summary: RawFinalizeSummary;
     recommendations: RawRecommendation[];
+    strategy_notes?: string[] | null;
   };
 };
 
@@ -84,6 +85,7 @@ type RawHistoryItem = {
   result_summary?: {
     summary?: RawFinalizeSummary | null;
     recommendations?: RawRecommendation[] | null;
+    strategy_notes?: string[] | null;
   } | null;
   answer_snapshot?: Record<string, unknown> | null;
 };
@@ -119,7 +121,8 @@ type RawHistoryDetail = {
   completed_at: string;
   profile: RawProfile | null;
   summary: RawFinalizeSummary | null;
-  recommendations: RawRecommendation[];
+  recommendations: RawRecommendation[] | null;
+  strategy_notes?: string[] | null;
   answer_snapshot: Record<string, unknown>;
 };
 
@@ -215,6 +218,7 @@ export type QuizFinalize = {
   requiresAuth: boolean;
   profile: QuizProfile | null;
   summary: QuizResultSummary;
+  strategyNotes: string[];
   recommendations: QuizRecommendation[];
 };
 
@@ -226,6 +230,7 @@ export type QuizHistoryItem = {
   budget: string | null;
   profile: QuizProfile | null;
   resultSummary: QuizResultSummary | null;
+  strategyNotes: string[];
   recommendations: QuizRecommendation[];
   answerSnapshot: Record<string, unknown>;
 };
@@ -235,6 +240,7 @@ export type QuizHistoryDetail = {
   completedAt: string;
   profile: QuizProfile | null;
   summary: QuizResultSummary;
+  strategyNotes: string[];
   recommendations: QuizRecommendation[];
   answerSnapshot: Record<string, unknown>;
 };
@@ -328,12 +334,24 @@ const mapSummary = (raw: RawFinalizeSummary): QuizResultSummary => ({
   scoreVersion: raw.score_version ?? null,
 });
 
+const mapStrategyNotes = (notes?: string[] | null): string[] =>
+  (notes ?? [])
+    .map((note) => {
+      if (!note) return "";
+      if (typeof note === "string") {
+        return note.trim();
+      }
+      return String(note).trim();
+    })
+    .filter((note) => Boolean(note.length));
+
 const mapFinalize = (raw: RawFinalize): QuizFinalize => ({
   sessionId: raw.session_id,
   completedAt: raw.completed_at,
   requiresAuth: Boolean(raw.requires_auth),
   profile: raw.profile ? mapProfile(raw.profile) : null,
   summary: mapSummary(raw.result_summary?.summary ?? {}),
+  strategyNotes: mapStrategyNotes(raw.result_summary?.strategy_notes),
   recommendations: (raw.result_summary?.recommendations ?? []).map(mapRecommendation),
 });
 
@@ -347,6 +365,7 @@ const mapHistoryItem = (raw: RawHistoryItem): QuizHistoryItem => {
     budget: raw.budget ?? null,
     profile: raw.profile ? mapProfile(raw.profile) : null,
     resultSummary: summaryWrapper?.summary ? mapSummary(summaryWrapper.summary) : null,
+    strategyNotes: mapStrategyNotes(summaryWrapper?.strategy_notes),
     recommendations: (summaryWrapper?.recommendations ?? []).map(mapRecommendation),
     answerSnapshot: (raw.answer_snapshot ?? {}) as Record<string, unknown>,
   };
@@ -357,7 +376,8 @@ const mapHistoryDetail = (raw: RawHistoryDetail): QuizHistoryDetail => ({
   completedAt: raw.completed_at,
   profile: raw.profile ? mapProfile(raw.profile) : null,
   summary: mapSummary(raw.summary ?? {}),
-  recommendations: raw.recommendations.map(mapRecommendation),
+  strategyNotes: mapStrategyNotes(raw.strategy_notes),
+  recommendations: (raw.recommendations ?? []).map(mapRecommendation),
   answerSnapshot: raw.answer_snapshot ?? {},
 });
 

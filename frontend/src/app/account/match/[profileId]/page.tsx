@@ -75,6 +75,10 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   }, [detail, guidance]);
   const strategyNotes = useMemo(() => {
     if (!detail || !guidance) return [] as string[];
+    const aiNotes = detail.strategyNotes ?? [];
+    if (aiNotes.length) {
+      return aiNotes;
+    }
     const merged = [...buildSummaryInsights(detail.summary), ...guidance.insights];
     const seen = new Set<string>();
     return merged.filter((note) => {

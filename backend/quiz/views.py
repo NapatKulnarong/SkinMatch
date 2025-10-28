@@ -25,6 +25,7 @@ from .models import (
     QuizFeedback,
     QuizSession,
 )
+from .ai import generate_strategy_notes
 from .recommendations import recommend_products
 from .schemas import (
     AnswerAck,
@@ -359,6 +360,9 @@ def history_profile_detail(request, profile_id: uuid.UUID):
     summary_payload = profile.result_summary or {}
     summary = _map_history_summary(summary_payload.get("summary"))
     recommendations_payload = summary_payload.get("recommendations") or []
+    strategy_notes_payload = summary_payload.get("strategy_notes") or []
+    if not isinstance(strategy_notes_payload, list):
+        strategy_notes_payload = []
 
     return HistoryDetailOut(
         session_id=profile.session_id,
@@ -366,6 +370,7 @@ def history_profile_detail(request, profile_id: uuid.UUID):
         profile=_serialize_profile(profile),
         summary=summary,
         recommendations=[_serialize_pick_from_payload(payload) for payload in recommendations_payload],
+        strategy_notes=[str(item).strip() for item in strategy_notes_payload if str(item).strip()],
         answer_snapshot=profile.answer_snapshot or {},
     )
 
@@ -533,13 +538,22 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
                 }
             )
 
+    summary_payload = {
+        **summary,
+        "generated_at": timezone.now().isoformat(),
+        "score_version": session.score_version,
+    }
+
+    strategy_notes = generate_strategy_notes(
+        traits=traits,
+        summary=summary_payload,
+        recommendations=picks_payload,
+    )
+
     return {
-        "summary": {
-            **summary,
-            "generated_at": timezone.now().isoformat(),
-            "score_version": session.score_version,
-        },
+        "summary": summary_payload,
         "recommendations": picks_payload,
+        "strategy_notes": strategy_notes,
     }
 
 
@@ -609,24 +623,45 @@ def _persist_skin_profile(session: QuizSession, profile_payload: dict) -> SkinPr
         raise ValueError("Cannot persist skin profile for anonymous session")
     with transaction.atomic():
         SkinProfile.objects.filter(user=session.user, is_latest=True).update(is_latest=False)
-        profile = SkinProfile.objects.create(
+        profile_defaults = {
+            "primary_concerns": _ensure_list(profile_payload.get("primary_concerns")),
+            "secondary_concerns": _ensure_list(profile_payload.get("secondary_concerns")),
+            "eye_area_concerns": _ensure_list(profile_payload.get("eye_area_concerns")),
+            "skin_type": _coerce_choice(profile_payload.get("skin_type")),
+            "sensitivity": _coerce_choice(profile_payload.get("sensitivity")),
+            "pregnant_or_breastfeeding": profile_payload.get("pregnant_or_breastfeeding"),
+            "ingredient_restrictions": _ensure_list(profile_payload.get("ingredient_restrictions")),
+            "budget": _coerce_choice(profile_payload.get("budget")),
+            "answer_snapshot": session.answer_snapshot,
+            "result_summary": session.result_summary,
+            "score_version": session.score_version,
+            "is_latest": True,
+        }
+        profile, created = SkinProfile.objects.get_or_create(
             user=session.user,
             session=session,
-            primary_concerns=_ensure_list(profile_payload.get("primary_concerns")),
-            secondary_concerns=_ensure_list(profile_payload.get("secondary_concerns")),
-            eye_area_concerns=_ensure_list(profile_payload.get("eye_area_concerns")),
-            skin_type=_coerce_choice(profile_payload.get("skin_type")),
-            sensitivity=_coerce_choice(profile_payload.get("sensitivity")),
-            pregnant_or_breastfeeding=profile_payload.get("pregnant_or_breastfeeding"),
-            ingredient_restrictions=_ensure_list(
-                profile_payload.get("ingredient_restrictions")
-            ),
-            budget=_coerce_choice(profile_payload.get("budget")),
-            answer_snapshot=session.answer_snapshot,
-            result_summary=session.result_summary,
-            score_version=session.score_version,
-            is_latest=True,
+            defaults=profile_defaults,
         )
+        if not created:
+            for field, value in profile_defaults.items():
+                setattr(profile, field, value)
+            profile.save(
+                update_fields=[
+                    "primary_concerns",
+                    "secondary_concerns",
+                    "eye_area_concerns",
+                    "skin_type",
+                    "sensitivity",
+                    "pregnant_or_breastfeeding",
+                    "ingredient_restrictions",
+                    "budget",
+                    "answer_snapshot",
+                    "result_summary",
+                    "score_version",
+                    "is_latest",
+                    "updated_at",
+                ]
+            )
     return profile
 
 
