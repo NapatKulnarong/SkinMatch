@@ -278,8 +278,14 @@ class SkinFactContentBlock(models.Model):
             if not (self.text or "").strip():
                 raise ValidationError("Text blocks must include body text.")
 
-        if block_type == self.BlockType.IMAGE and not self.image:
+        has_image = bool(self.image and getattr(self.image, "name", ""))
+
+        if block_type == self.BlockType.IMAGE and not has_image:
             raise ValidationError("Image blocks must include an uploaded image.")
+
+        if has_image and block_type in {self.BlockType.TEXT, self.BlockType.PARAGRAPH}:
+            if not (self.image_alt or "").strip():
+                raise ValidationError("Please provide image alt text for accessibility.")
 
 
 
