@@ -15,11 +15,11 @@ const tips = [
 
 export default function QuizLoadingPage() {
   const router = useRouter();
-  const { answers, finalize } = useQuiz();
+  const { answers, finalize, isComplete } = useQuiz();
   const hasDetails = Boolean(answers.primaryConcern?.label);
 
   useEffect(() => {
-    if (!hasDetails) {
+    if (!hasDetails || !isComplete) {
       router.replace("/quiz");
       return;
     }
@@ -44,7 +44,7 @@ export default function QuizLoadingPage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [finalize, router, hasDetails]);
+  }, [finalize, router, hasDetails, isComplete]);
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
