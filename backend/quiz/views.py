@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Iterable
 
+import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -12,6 +13,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 from ninja import Router
 from ninja.errors import HttpError
+from django.core.mail import send_mail
+from django.http import Http404
 
 from core.models import SkinProfile
 from core.auth import decode_token
@@ -39,6 +42,8 @@ from .schemas import (
     MatchPickOut,
     QuestionOut,
     QuizResultSummary,
+    EmailSummaryAck,
+    EmailSummaryIn,
     ReviewAck,
     ReviewCreateIn,
     ReviewOut,
@@ -49,6 +54,7 @@ from .schemas import (
 
 router = Router(tags=["quiz"])
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def _resolve_request_user(request):
@@ -287,7 +293,7 @@ def submit_quiz(request, session_id: uuid.UUID):
     ])
 
     profile_out = None
-    if include_products:
+    if include_products and session.user_id:
         profile = _persist_skin_profile(session, profile_payload)
         profile_out = _serialize_profile(profile)
 
@@ -463,6 +469,105 @@ def delete_product_review(request, product_id: uuid.UUID):
     review = get_object_or_404(ProductReview, product=product, user=user)
     review.delete()
     return ReviewAck(ok=True)
+
+@router.post("/email-summary", response=EmailSummaryAck)
+def email_summary(request, payload: EmailSummaryIn):
+    request_user = _resolve_request_user(request)
+    target_email = (payload.email or "").strip()
+
+    if not target_email:
+        if request_user and getattr(request_user, "email", ""):
+            target_email = request_user.email
+
+    if not target_email:
+        raise HttpError(400, "Email is required to send the summary.")
+
+    traits: dict
+    summary_data: dict
+    recommendations_payload: list
+    strategy_notes: list[str]
+
+    session = None
+    try:
+        session = _get_session_for_request(payload.session_id, request)
+    except HttpError as exc:
+        if exc.status_code != 404:
+            raise
+        session = None
+    except Http404:
+        session = None
+
+    if session:
+        traits, summary_data, recommendations_payload, strategy_notes = _gather_summary_from_session(session)
+    else:
+        if not request_user or not request_user.is_authenticated:
+            raise HttpError(401, "Authentication required.")
+        profile = (
+            SkinProfile.objects.filter(user=request_user, session_id=payload.session_id).first()
+            or SkinProfile.objects.filter(user=request_user, is_latest=True).order_by("-created_at").first()
+        )
+        if not profile:
+            raise HttpError(404, "Session not found.")
+        traits, summary_data, recommendations_payload, strategy_notes = _gather_summary_from_profile(profile)
+
+    subject = "Your SkinMatch routine roadmap"
+    top_ingredients = summary_data.get("top_ingredients") or []
+    primary = _format_csv(traits.get("primary_concerns"))
+    secondary = _format_csv(traits.get("secondary_concerns"))
+    eye_concerns = _format_csv(traits.get("eye_area_concerns"))
+    restrictions = _format_csv(traits.get("restrictions"))
+
+    lines = [
+        "Hi there,",
+        "",
+        "Here's a copy of your SkinMatch routine roadmap:",
+        "",
+        f"Primary concerns: {primary or 'Not specified'}",
+        f"Secondary concerns: {secondary or 'Not specified'}",
+        f"Eye area concerns: {eye_concerns or 'Not specified'}",
+        f"Skin type: {traits.get('skin_type') or 'Not specified'}",
+        f"Sensitivity: {traits.get('sensitivity') or 'Not specified'}",
+        f"Budget preference: {traits.get('budget') or 'Not specified'}",
+    ]
+
+    if restrictions:
+        lines.append(f"Ingredient restrictions: {restrictions}")
+
+    if top_ingredients:
+        lines.append("")
+        lines.append(f"Ingredients to prioritise: {', '.join(top_ingredients)}")
+
+    if strategy_notes:
+        lines.append("")
+        lines.append("Strategy notes:")
+        for note in strategy_notes:
+            lines.append(f" • {note}")
+
+    if recommendations_payload:
+        lines.append("")
+        lines.append("Highlighted matches:")
+        for payload_item in recommendations_payload[:5]:
+            product_name = payload_item.get("product_name") or payload_item.get("slug") or "Product"
+            brand = payload_item.get("brand") or ""
+            lines.append(f" • {brand} {product_name}".strip())
+
+    lines.extend([
+        "",
+        "Need to tweak something? You can retake the quiz anytime to refresh this roadmap.",
+        "",
+        "— The SkinMatch Team",
+    ])
+
+    message = "\n".join(lines)
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
+
+    try:
+        send_mail(subject, message, from_email, [target_email])
+    except Exception:
+        logger.exception("Failed to send SkinMatch summary email to %s", target_email)
+        raise HttpError(500, "We couldn't send the email right now. Please try again later.")
+
+    return EmailSummaryAck(ok=True)
 
 
 def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
@@ -761,6 +866,55 @@ def _ensure_str(value) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _format_csv(values) -> str:
+    items = _ensure_list(values)
+    return ", ".join(item for item in items if item)
+
+
+def _gather_summary_from_session(session: QuizSession) -> tuple[dict, dict, list, list[str]]:
+    profile_snapshot = session.profile_snapshot or {}
+    traits = _extract_profile_traits(profile_snapshot)
+    result_summary = session.result_summary or {}
+    summary_data = result_summary.get("summary") or {}
+    recommendations = result_summary.get("recommendations") or []
+    strategy_notes = result_summary.get("strategy_notes") or []
+
+    if not strategy_notes:
+        strategy_notes = generate_strategy_notes(
+            traits=traits,
+            summary=summary_data,
+            recommendations=recommendations,
+        )
+
+    return traits, summary_data, recommendations, strategy_notes
+
+
+def _gather_summary_from_profile(profile: SkinProfile) -> tuple[dict, dict, list, list[str]]:
+    traits = {
+        "primary_concerns": list(profile.primary_concerns or []),
+        "secondary_concerns": list(profile.secondary_concerns or []),
+        "eye_area_concerns": list(profile.eye_area_concerns or []),
+        "skin_type": profile.skin_type or None,
+        "sensitivity": profile.sensitivity or None,
+        "restrictions": list(profile.ingredient_restrictions or []),
+        "budget": profile.budget or None,
+    }
+
+    summary_payload = profile.result_summary or {}
+    summary_data = summary_payload.get("summary") or {}
+    recommendations = summary_payload.get("recommendations") or []
+    strategy_notes = summary_payload.get("strategy_notes") or []
+
+    if not strategy_notes:
+        strategy_notes = generate_strategy_notes(
+            traits=traits,
+            summary=summary_data,
+            recommendations=recommendations,
+        )
+
+    return traits, summary_data, recommendations, strategy_notes
 
 
 def _coerce_choice(value) -> str:
