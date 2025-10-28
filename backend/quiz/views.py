@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable
 from urllib.parse import quote, urlparse
 import hashlib
@@ -47,13 +46,6 @@ from .schemas import (
 )
 
 router = Router(tags=["quiz"])
-
-CURRENCY_TO_THB: dict[str, Decimal] = {
-    Product.Currency.USD: Decimal("36.0"),
-    Product.Currency.KRW: Decimal("0.028"),
-    Product.Currency.JPY: Decimal("0.26"),
-    Product.Currency.EUR: Decimal("39.0"),
-}
 
 DEFAULT_QUIZ_FLOW: list[dict] = [
     {
@@ -482,7 +474,8 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     if include_products:
         for rank, recommendation in enumerate(recommendations, start=1):
             product = recommendation.product
-            display_price, display_currency = _price_snapshot_for(product)
+            display_price = product.price
+            display_currency = product.currency or Product.Currency.USD
             image_url = _product_image_url(product)
             purchase_url = _sanitize_product_url(product.product_url)
             MatchPick.objects.create(
@@ -531,27 +524,6 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
         },
         "recommendations": picks_payload,
     }
-
-
-def _quantize_price(value: Decimal) -> Decimal:
-    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-
-def _price_snapshot_for(product: Product) -> tuple[Decimal | None, str]:
-    price = product.price
-    if price is None:
-        return None, Product.Currency.THB
-
-    currency = product.currency or Product.Currency.THB
-    if currency == Product.Currency.THB:
-        return _quantize_price(price), Product.Currency.THB
-
-    rate = CURRENCY_TO_THB.get(currency)
-    if rate:
-        converted = _quantize_price(price * rate)
-        return converted, Product.Currency.THB
-
-    return _quantize_price(price), currency
 
 
 def _sanitize_product_url(raw_url: str | None) -> str | None:

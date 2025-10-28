@@ -6,6 +6,7 @@ import base64
 import pytest
 from django.core.management import call_command
 from django.test import override_settings
+from django.utils.text import slugify
 
 from quiz.catalog_loader import reset_sample_catalog_state
 from quiz.models import (
@@ -132,9 +133,57 @@ def test_calculate_results_auto_seeds_catalog_when_empty():
     assert Product.objects.filter(is_active=True).exists()
     for recommendation in result["recommendations"]:
         if recommendation["price_snapshot"] is not None:
-            assert recommendation["currency"] == Product.Currency.THB
+            product = Product.objects.get(id=recommendation["product_id"])
+            assert recommendation["currency"] == product.currency
+            assert recommendation["price_snapshot"] == float(product.price)
         if recommendation["product_url"]:
             assert recommendation["product_url"].startswith(("http://", "https://"))
+
+
+@pytest.mark.django_db
+def test_budget_preference_respects_currency_conversion():
+    reset_sample_catalog_state()
+    Product.objects.all().delete()
+    ProductConcern.objects.all().delete()
+    ProductIngredient.objects.all().delete()
+    ProductSkinType.objects.all().delete()
+
+    concern, _ = SkinConcern.objects.get_or_create(
+        key="acne-breakouts",
+        defaults={"name": "Acne & Breakouts"},
+    )
+
+    def create_product(name: str, price: str) -> Product:
+        product = Product.objects.create(
+            slug=slugify(name),
+            name=name,
+            brand=name.split()[0],
+            origin_country=Product.Origin.THAI,
+            category=Product.Category.SERUM,
+            price=Decimal(price),
+            currency=Product.Currency.THB,
+            is_active=True,
+        )
+        ProductConcern.objects.create(product=product, concern=concern, weight=90)
+        return product
+
+    create_product("Budget Serum", "450.00")  # ~USD 12.6 -> affordable
+    premium_product = create_product("Luxury Serum", "2200.00")  # ~USD 61.6 -> premium
+
+    session = QuizSession.objects.create()
+    session.profile_snapshot = {
+        "primary_concerns": ["Acne & Breakouts"],
+        "secondary_concerns": [],
+        "eye_area_concerns": [],
+        "skin_type": "Combination",
+        "sensitivity": None,
+        "ingredient_restrictions": [],
+        "budget": "premium",
+    }
+
+    result = calculate_results(session, include_products=True)
+    top = result["recommendations"][0]
+    assert top["product_id"] == str(premium_product.id)
 
 
 @pytest.mark.django_db
