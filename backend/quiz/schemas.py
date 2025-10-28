@@ -202,6 +202,11 @@ class FeedbackAck(Schema):
     ok: bool
 
 
+class HistoryDeleteAck(Schema):
+    ok: bool
+    was_latest: bool = False
+
+
 class EmailSummaryIn(Schema):
     session_id: uuid.UUID
     email: Optional[str] = None

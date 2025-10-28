@@ -245,6 +245,11 @@ export type QuizHistoryDetail = {
   answerSnapshot: Record<string, unknown>;
 };
 
+export type QuizHistoryDeleteAck = {
+  ok: boolean;
+  wasLatest: boolean;
+};
+
 export type QuizMatchPick = {
   productId: string;
   slug: string;
@@ -508,24 +513,32 @@ export async function fetchQuizHistory(token: string): Promise<QuizHistoryItem[]
   return data.map(mapHistoryItem);
 }
 
-export async function deleteQuizHistoryItem(historyId: string, token?: string): Promise<void> {
+export async function deleteQuizHistory(historyId: string, token: string): Promise<QuizHistoryDeleteAck> {
   const base = getApiBase();
-  const headers: HeadersInit =
-    token ? { Authorization: `Bearer ${token}` } : withAuth();
-
   const res = await fetch(`${base}/quiz/history/${encodeURIComponent(historyId)}`, {
     method: "DELETE",
-    headers,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
   });
 
   if (res.status === 404) {
-    return;
+    throw new Error("That match is no longer available.");
+  }
+  if (res.status === 401) {
+    throw new Error("Please sign in again to manage your matches.");
+  }
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || "Failed to delete match");
   }
 
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(errorBody || "Failed to delete match history");
-  }
+  const data = (await res.json()) as { ok?: boolean; was_latest?: boolean };
+  return {
+    ok: Boolean(data?.ok),
+    wasLatest: Boolean(data?.was_latest),
+  };
 }
 
 export async function fetchQuizSessionDetail(sessionId: string): Promise<QuizSessionDetail> {

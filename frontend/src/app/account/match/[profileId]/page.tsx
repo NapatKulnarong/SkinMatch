@@ -335,19 +335,15 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               </div>
             </div>
 
-            {/* product matches */}
-            <section className="rounded-3xl border-2 border-dashed border-black/30 bg-white/70 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
-              <header className="space-y-2 text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#3C3D37] text-opacity-60">
-                  Product matches
-                </p>
-                <h3 className="text-lg font-bold text-[#3C3D37]">
-                  {recommendations.length
-                    ? "Curated for your profile"
-                    : "Matches unavailable"}
+            {/* IMPROVED PRODUCT MATCHES SECTION */}
+            <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
+              <header className="space-y-2 text-center mb-6">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7C6DB1]">Product matches</p>
+                <h3 className="text-2xl font-extrabold text-[#3C3D37]">
+                  {recommendations.length ? "Curated for your profile" : "Matches unavailable"}
                 </h3>
               </header>
-              <div className="mt-4">{renderRecommendations(recommendations)}</div>
+              <div>{renderRecommendations(recommendations)}</div>
             </section>
           </section>
         ) : null}
@@ -567,15 +563,16 @@ function lookupChoiceLabel(key: HistoryAnswerKey, value: string | null) {
 function renderRecommendations(recommendations: QuizRecommendation[]) {
   if (!recommendations.length) {
     return (
-      <p className="text-sm text-[#3C3D37] text-opacity-70">
-        We&apos;re still analysing product data for your skin traits. Ingredient
-        guidance above is ready to use today.
-      </p>
+      <div className="text-center py-8">
+        <p className="text-sm text-[#3C3D37] text-opacity-70">
+          We&apos;re still analysing product data for your skin traits. Ingredient guidance above is ready to use today.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-left">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {recommendations.map((item) => {
         const brandLabel = item.brandName ?? item.brand;
         const priceLabel =
@@ -589,10 +586,13 @@ function renderRecommendations(recommendations: QuizRecommendation[]) {
         return (
           <article
             key={item.productId}
-            className="flex h-full flex-col gap-3 rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgба(0,0,0,0.18)]"
+            className="group relative flex h-full flex-col rounded-3xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)]"
           >
+
+
+            {/* Product Image - 1:1 Ratio, No Border */}
             {item.imageUrl ? (
-              <div className="relative h-40 w-full overflow-hidden rounded-2xl border-2 border-black bg-white">
+              <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f8f8f8]">
                 <Image
                   src={item.imageUrl}
                   alt={`${brandLabel} ${item.productName}`}
@@ -603,58 +603,81 @@ function renderRecommendations(recommendations: QuizRecommendation[]) {
                 />
               </div>
             ) : (
-              <div className="flex h-40 w-full items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-[#f2ebff] text-xs font-semibold uppercase tracking-[0.2em] text-[#7a628c]">
-                Product preview coming soon
+              <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-[#f2ebff] text-xs font-bold uppercase tracking-[0.2em] text-[#7a628c]">
+                Product preview<br />coming soon
               </div>
             )}
 
-            <header className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B9375D]">
-                {brandLabel}
-              </p>
-              <h4 className="text-lg font-bold text-[#1f2d26]">
-                {item.productName}
-              </h4>
-              <p className="text-xs text-[#3C3D37] text-opacity-60">
-                {capitalizeLabel(item.category)}
-              </p>
-            </header>
-
-            <p className="text-sm text-[#3C3D37] text-opacity-75">
-              Match score{" "}
-              <span className="font-semibold text-[#3C3D37]">
-                {item.score.toFixed(1)}
-              </span>
-              {priceLabel ? <> • {priceLabel}</> : null}
-            </p>
-
-            {item.ingredients.length > 0 && (
-              <p className="text-xs text-[#3C3D37] text-opacity-70">
-                Hero ingredients: {item.ingredients.slice(0, 3).join(", ")}
-                {item.ingredients.length > 3 ? "…" : ""}
-              </p>
-            )}
-
-            <footer className="mt-auto flex items-center justify-between text-xs text-[#3C3D37] text-opacity-60">
-              {item.averageRating ? (
-                <span>
-                  {item.averageRating.toFixed(1)} ★ ({item.reviewCount} review
-                  {item.reviewCount === 1 ? "" : "s"})
+            {/* Product Info */}
+            <div className="mt-4 flex flex-col gap-2 flex-grow">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#B9375D]">{brandLabel}</p>
+              <h4 className="text-base font-bold leading-snug text-[#1f2d26]">{item.productName}</h4>
+              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-60">{capitalizeLabel(item.category)}</p>
+              
+              {/* Match Score & Price */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-[#e8f5e9] px-2.5 py-1 text-xs font-bold text-[#2e7d32]">
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  {item.score.toFixed(1)}
                 </span>
-              ) : (
-                <span>No reviews yet</span>
-              )}
+                {priceLabel && (
+                  <span className="text-sm font-bold text-[#3C3D37]">{priceLabel}</span>
+                )}
+              </div>
 
-              {item.productUrl && (
-                <a
-                  href={item.productUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 font-semibold text-[#B9375D] shadow-[0_3px_0_rgба(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgба(0,0,0,0.2)]"
-                >
-                  View product
-                </a>
+              {/* Hero Ingredients */}
+              {item.ingredients.length > 0 && (
+                <p className="text-xs leading-relaxed text-[#3C3D37] text-opacity-70">
+                  <span className="font-semibold text-[#3C3D37]">Hero ingredients:</span>{" "}
+                  {item.ingredients.slice(0, 3).join(", ")}
+                  {item.ingredients.length > 3 ? "..." : ""}
+                </p>
               )}
+            </div>
+
+            {/* Footer - Rating & CTA */}
+            <footer className="mt-4 flex items-center justify-between gap-3 border-t border-black/10 pt-4">
+              <div className="flex items-center gap-1 text-xs text-[#3C3D37] text-opacity-60">
+                {item.averageRating ? (
+                  <>
+                    <svg className="h-4 w-4 text-[#fbbf24]" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="font-semibold text-[#3C3D37]">
+                      {item.averageRating.toFixed(1)}
+                    </span>
+                    <span>({item.reviewCount})</span>
+                  </>
+                ) : (
+                  <span>No reviews yet</span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Wishlist Heart Button */}
+                <button
+                  type="button"
+                  aria-label="Add to wishlist"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                >
+                  <svg className="h-4 w-4 text-[#B9375D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+
+                {item.productUrl && (
+                  <a
+                    href={item.productUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-4 py-2 text-xs font-bold text-[#B9375D] shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                  >
+                    View product
+                  </a>
+                )}
+              </div>
             </footer>
           </article>
         );
