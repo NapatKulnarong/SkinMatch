@@ -23,6 +23,9 @@ import {
 const ANSWERS_STORAGE_KEY = "skinmatch.quizAnswers";
 const SESSION_STORAGE_KEY = "skinmatch.quizSession";
 
+export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
+export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
+
 type QuizAnswerKey =
   | "primaryConcern"
   | "secondaryConcern"

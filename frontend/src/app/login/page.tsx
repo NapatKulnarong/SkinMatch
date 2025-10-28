@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   setAuthToken,
   type StoredProfile,
 } from "@/lib/auth-storage";
+import { redirectTo } from "./redirect";
 
 type Mode = "intro" | "signup" | "login";
 
@@ -49,6 +51,12 @@ const initialLogin: LoginState = {
   password: "",
 };
 
+const today = new Date();
+const maxDate = today.toISOString().split("T")[0];
+const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate())
+  .toISOString()
+  .split("T")[0];
+
 export default function LoginPage() {
   return (
     <Suspense
@@ -79,11 +87,7 @@ export function buildGoogleAuthUrl(clientId: string) {
   );
 }
 
-
-export function redirectTo(url: string) {
-  window.location.assign(url);
-}
-
+export { redirectTo } from "./redirect";
 
 function LoginContent() {
   const router = useRouter();
@@ -191,7 +195,6 @@ function LoginContent() {
     redirectTo(authUrl);
   };
   
-
   const onSignupChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -218,6 +221,7 @@ function LoginContent() {
     }
 
     let formattedDob: string | undefined;
+
     if (signup.dob) {
       const isoMatch = signup.dob.match(/^\d{4}-\d{2}-\d{2}$/);
       const slashMatch = signup.dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -231,7 +235,31 @@ function LoginContent() {
         setSignupError("Date of birth must be in YYYY-MM-DD format.");
         return;
       }
+
+    const isValidDate = (dateString: string): boolean => {
+      const date = new Date(dateString);
+      return !isNaN(date.getTime());
+    };
+
+    if (!isValidDate(formattedDob)) {
+        setSignupError("Please enter a valid date of birth.");
+        return;
+      }
+
+    const birthDate = new Date(formattedDob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
+
+    if (age < 13) {
+      setSignupError("You must be at least 13 years old to sign up.");
+      return;
+    }
+  }
 
     setSignupLoading(true);
     try {
@@ -282,7 +310,11 @@ function LoginContent() {
         identifier: identifier,
         password: login.password,
       });
-      const token = loginResponse.token!;
+      if (!loginResponse?.token) {
+        throw new Error(loginResponse?.message || "Login failed. Please try again.");
+      }
+
+      const token = loginResponse.token;
       setAuthToken(token);
 
       let fetchedProfile: StoredProfile | null = null;
@@ -296,10 +328,15 @@ function LoginContent() {
       // Check if user is staff and redirect to admin
       if (fetchedProfile?.is_staff) {
         try {
-          // Use the existing token and profile to create admin session
           const adminSession = await createAdminSession(token, fetchedProfile);
-          console.log("🔄 Redirecting to admin:", adminSession.redirect_url);
-          window.location.href = adminSession.redirect_url!;
+          if (adminSession?.redirect_url) {
+            console.log("🔄 Redirecting to admin:", adminSession.redirect_url);
+            redirectTo(adminSession.redirect_url);
+            return;
+          }
+
+          console.warn("Admin session response missing redirect_url", adminSession);
+          setLoginError("Unable to start admin session. Please try again.");
           return;
         } catch (adminError) {
           console.error("Unable to establish admin session", adminError);
@@ -322,7 +359,17 @@ function LoginContent() {
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
-    <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:justify-center md:gap-12">
+      <div className="md:mr-6">
+        <Image
+          src="/img/mascot/matchy_2.png"
+          alt="Matchy mascot waving hello"
+          width={700}
+          height={700}
+          priority
+          className="drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-6 md:translate-y-8"
+        />
+      </div>
       <div
         className={[
           "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
@@ -419,6 +466,7 @@ function LoginContent() {
                     name="name"
                     value={signup.name}
                     onChange={onSignupChange}
+                    max={new Date().toISOString().split("T")[0]}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
                     placeholder="Your name"
                   />
@@ -434,12 +482,14 @@ function LoginContent() {
                   />
                 </Field>
 
-                <Field label="Date of birth">
+                <Field label="Date of birth" >
                   <input
                     type="date"
                     name="dob"
                     value={signup.dob}
                     onChange={onSignupChange}
+                    min={minDate}
+                    max={maxDate}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
                   />
                 </Field>
