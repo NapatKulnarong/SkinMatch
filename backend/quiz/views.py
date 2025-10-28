@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 from typing import Iterable
+from urllib.parse import quote, urlparse
+import hashlib
 
 import logging
 from django.conf import settings
@@ -29,6 +31,7 @@ from .models import (
     QuizSession,
 )
 from .ai import generate_strategy_notes
+from .catalog_loader import ensure_sample_catalog
 from .recommendations import recommend_products
 from .schemas import (
     AnswerAck,
@@ -459,7 +462,38 @@ def session_detail(request, session_id: uuid.UUID):
             raise HttpError(404, "Session not found")
 
     picks_qs = session.picks.select_related("product").order_by("rank")
-    picks = [_serialize_pick(pick) for pick in picks_qs]
+    picks: list[MatchPickOut] = []
+    for pick in picks_qs:
+        product = pick.product
+        image_url = pick.image_url
+        product_url = pick.product_url
+        average_rating = None
+        review_count = 0
+        if product:
+            image_url = image_url or _product_image_url(product)
+            product_url = product_url or _sanitize_product_url(product.product_url)
+            average_rating = _decimal_to_float(product.rating)
+            review_count = product.review_count
+
+        picks.append(
+            MatchPickOut(
+                product_id=str(pick.product_id),
+                slug=pick.product_slug,
+                brand=pick.brand,
+                product_name=pick.product_name,
+                category=pick.category,
+                rank=pick.rank,
+                score=float(pick.score),
+                price_snapshot=float(pick.price_snapshot) if pick.price_snapshot is not None else None,
+                currency=pick.currency,
+                ingredients=list(pick.ingredients or []),
+                rationale=pick.rationale or {},
+                image_url=image_url or None,
+                product_url=product_url or None,
+                average_rating=average_rating,
+                review_count=review_count,
+            )
+        )
 
     profile = (
         _serialize_profile(session.result_profile)
@@ -640,6 +674,9 @@ def email_summary(request, payload: EmailSummaryIn):
 def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     """Generate ranked recommendations for a completed quiz session."""
 
+    if include_products:
+        ensure_sample_catalog()
+
     profile = session.profile_snapshot or {}
     traits = _extract_profile_traits(profile)
 
@@ -674,6 +711,10 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     if include_products:
         for rank, recommendation in enumerate(recommendations, start=1):
             product = recommendation.product
+            display_price = product.price
+            display_currency = product.currency or Product.Currency.USD
+            image_url = _product_image_url(product)
+            purchase_url = _sanitize_product_url(product.product_url)
             MatchPick.objects.create(
                 session=session,
                 product=product,
@@ -684,9 +725,11 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
                 rank=rank,
                 score=recommendation.score,
                 ingredients=recommendation.ingredients,
-                price_snapshot=product.price,
-                currency=product.currency,
+                price_snapshot=display_price,
+                currency=display_currency,
                 rationale=recommendation.rationale,
+                image_url=image_url or "",
+                product_url=purchase_url or "",
             )
 
             picks_payload.append(
@@ -698,10 +741,10 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
                     "category": product.category,
                     "rank": rank,
                     "score": _decimal_to_float(recommendation.score),
-                    "price_snapshot": _decimal_to_float(product.price),
-                    "currency": product.currency,
-                    "image_url": product.image_url,
-                    "product_url": product.product_url,
+                    "price_snapshot": _decimal_to_float(display_price),
+                    "currency": display_currency,
+                    "image_url": image_url,
+                    "product_url": purchase_url,
                     "ingredients": recommendation.ingredients,
                     "rationale": recommendation.rationale,
                     "brand_name": product.brand,
@@ -725,8 +768,55 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     return {
         "summary": summary_payload,
         "recommendations": picks_payload,
-        "strategy_notes": strategy_notes,
     }
+
+
+def _sanitize_product_url(raw_url: str | None) -> str | None:
+    if not raw_url:
+        return None
+    cleaned = raw_url.strip()
+    if not cleaned:
+        return None
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if not parsed.netloc:
+        return None
+    return cleaned
+
+
+def _product_image_url(product: Product) -> str | None:
+    image_value = (getattr(product, "image", "") or "").strip()
+    if image_value:
+        if image_value.startswith(("http://", "https://", "data:")):
+            return image_value
+        relative_path = image_value.lstrip("/")
+        return f"{settings.MEDIA_URL.rstrip('/')}/{relative_path}"
+
+    url = (product.image_url or "").strip()
+    if url:
+        return url
+    return _placeholder_image_data(product)
+
+
+def _placeholder_image_data(product: Product) -> str:
+    base = product.slug or f"{product.brand}-{product.name}"
+    digest = hashlib.sha256(base.encode("utf-8")).hexdigest()
+    color_primary = f"#{digest[:6]}"
+    color_secondary = f"#{digest[6:12]}"
+    text = (product.brand or product.name or "SkinMatch")[:18]
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">'
+        f'<defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">'
+        f'<stop offset="0%" stop-color="{color_primary}" />'
+        f'<stop offset="100%" stop-color="{color_secondary}" />'
+        f'</linearGradient></defs>'
+        f'<rect width="400" height="400" rx="36" fill="url(#grad)" />'
+        f'<text x="50%" y="55%" text-anchor="middle" fill="#ffffff" '
+        f'font-family="Poppins, Arial, sans-serif" font-size="48" font-weight="600">'
+        f'{text}</text></svg>'
+    )
+    return f"data:image/svg+xml;utf8,{quote(svg)}"
 
 
 def _build_answer_snapshot(answers: Iterable[Answer]) -> dict:
