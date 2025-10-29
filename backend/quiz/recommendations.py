@@ -115,10 +115,7 @@ def recommend_products(
 
         if normalized_budget:
             product_budget = _slug(product.currency)
-            if product.currency == "USD":
-                budget_band = _budget_band(product.price)
-            else:
-                budget_band = "mid"
+            budget_band = _budget_band(product)
 
             if budget_band == normalized_budget:
                 product_score += Decimal("8")
@@ -176,12 +173,26 @@ def _resolve_concern_names(concern_slugs: Iterable[str], concern_map: dict[str, 
     return names
 
 
-def _budget_band(price: Decimal | None) -> str:
+_CURRENCY_TO_USD: dict[str, Decimal] = {
+    Product.Currency.USD: Decimal("1"),
+    Product.Currency.THB: Decimal("0.028"),  # ~36 THB per USD
+    Product.Currency.KRW: Decimal("0.00073"),  # ~1370 KRW per USD
+    Product.Currency.JPY: Decimal("0.0067"),  # ~150 JPY per USD
+    Product.Currency.EUR: Decimal("1.08"),
+}
+
+
+def _budget_band(product: Product) -> str:
+    price = product.price
     if price is None:
         return "mid"
-    if price < Decimal("20"):
+
+    rate = _CURRENCY_TO_USD.get(product.currency, Decimal("1"))
+    usd_price = price * rate
+
+    if usd_price < Decimal("20"):
         return "affordable"
-    if price < Decimal("45"):
+    if usd_price < Decimal("45"):
         return "mid"
     return "premium"
 

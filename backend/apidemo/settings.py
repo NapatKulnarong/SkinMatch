@@ -167,6 +167,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Quiz configuration
 QUIZ_REQUIRE_AUTH_FOR_PRODUCTS = False
+QUIZ_AUTO_SEED_SAMPLE = env_bool("QUIZ_AUTO_SEED_SAMPLE", DEBUG)
 
 # Email
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")

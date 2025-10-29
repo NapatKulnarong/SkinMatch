@@ -212,8 +212,9 @@ export default function AccountSettingsPage() {
     return (
       <main className="min-h-screen bg-[#d3cbe0] flex items-center justify-center">
         <div className="rounded-2xl border-2 border-black bg-white px-8 py-6 text-center shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-[#7C6DB1]" />
-          <p className="text-base font-semibold text-gray-800">Loading profile settings…</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#e5dff0] border-t-[#7C6DB1]" />
+          <p className="text-lg font-bold text-gray-900">Loading your profile</p>
+          <p className="mt-1 text-sm text-gray-600">Just a moment...</p>
         </div>
       </main>
     );
@@ -234,172 +235,226 @@ export default function AccountSettingsPage() {
   return (
     <main className="min-h-screen bg-[#d3cbe0]">
       <PageContainer className="pt-24 pb-16 lg:px-8 xl:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7C6DB1]">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#7C6DB1]">
               Personal profile
             </p>
-            <h1 className="text-3xl font-extrabold text-gray-900">Profile settings</h1>
-            <p className="text-sm text-gray-700">
+            <h1 className="text-4xl font-extrabold text-gray-900">Profile settings</h1>
+            <p className="text-base text-gray-700 max-w-2xl">
               Give Matchy the details it needs to tailor recommendations just for you.
             </p>
           </div>
           <Link
             href="/account"
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2.5 text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
           >
-            ← Back to account
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to account
           </Link>
         </div>
 
         {(message || error) && (
           <div
             className={[
-              "mt-6 rounded-xl border-2 px-4 py-3 text-sm font-semibold",
+              "mb-6 rounded-xl border-2 px-5 py-4 text-sm font-semibold shadow-[0_4px_0_rgba(0,0,0,0.15)]",
               message
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-red-200 bg-red-50 text-red-700",
+                ? "border-green-300 bg-green-50 text-green-800"
+                : "border-red-300 bg-red-50 text-red-800",
             ].join(" ")}
           >
             {message ?? error}
           </div>
         )}
 
-        <section className="mt-6 rounded-[32px] border-2 border-black bg-gradient-to-br from-white to-[#ece4ff] p-6 shadow-[8px_10px_0_rgba(0,0,0,0.25)] lg:p-8">
-          <div className="grid gap-8 lg:grid-cols-[280px_1fr] 2xl:grid-cols-[320px_1fr]">
+        <section className="rounded-[32px] border-2 border-black bg-gradient-to-br from-white to-[#ece4ff] p-8 shadow-[8px_10px_0_rgba(0,0,0,0.25)] lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr]">
+            {/* Left Column - Avatar */}
             <div className="flex flex-col gap-6">
-              <div className="rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
-                <h2 className="text-lg font-bold text-gray-900">Profile picture</h2>
-                <p className="mt-1 text-sm text-gray-600">
+              <div className="rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
+                <h2 className="text-xl font-bold text-gray-900">Profile picture</h2>
+                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                   Upload a friendly face so Matchy recognises you instantly.
                 </p>
 
-                <div className="mt-4 space-y-4">
-                  <div className="relative mx-auto h-40 w-40 overflow-hidden rounded-3xl border-2 border-black bg-[#f0e7ff] shadow-[4px_6px_0_rgba(0,0,0,0.2)] sm:h-44 sm:w-44">
+                <div className="mt-6 space-y-5">
+                  {/* Circular Avatar */}
+                  <div className="relative mx-auto h-48 w-48 overflow-hidden rounded-full border-4 border-black bg-[#f0e7ff] shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={currentAvatar}
                       alt="Profile avatar preview"
                       className="h-full w-full object-cover"
                     />
+                    {avatarUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Tip: square photo (≥240px). JPG, PNG, GIF, or WEBP works best.
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <label className="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]">
-                      Choose image
+
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-gray-500 leading-relaxed">
+                      Best results with square photos (240px or larger)
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      JPG, PNG, GIF, or WEBP formats supported
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-[#7C6DB1] px-5 py-3 text-sm font-bold text-white shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:bg-[#6d5da0] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]">
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Choose new image
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp,image/gif"
                         onChange={handleAvatarSelection}
                         className="hidden"
+                        disabled={avatarUploading}
                       />
                     </label>
                     <button
                       type="button"
                       disabled={avatarUploading || (!profile?.avatar_url && !avatarPreview)}
                       onClick={handleRemoveAvatar}
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f6d4d9] px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-5 py-3 text-sm font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                     >
+                      <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                       Remove picture
                     </button>
                   </div>
                 </div>
               </div>
 
+              {/* Unsaved Changes Warning */}
               {canSave && !saving && (
-                <div className="rounded-xl border-2 border-[#f3c078] bg-[#fff3dc] px-4 py-3 text-sm font-semibold text-[#8b5b21] shadow-[0_4px_0_rgba(0,0,0,0.15)]">
-                  You have unsaved changes.
+                <div className="rounded-xl border-2 border-[#f3c078] bg-gradient-to-br from-[#fff8e8] to-[#fff3dc] px-4 py-3.5 shadow-[0_4px_0_rgba(0,0,0,0.15)]">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-[#d97706] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-[#92400e]">Unsaved changes</p>
+                      <p className="text-xs text-[#b45309] mt-1">Remember to save your updates below</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Right Column - Form */}
             <form
-              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
+              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-8 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
               onSubmit={handleProfileSubmit}
             >
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Personal details</h2>
-                <p className="mt-1 text-sm text-gray-600">
+                <h2 className="text-xl font-bold text-gray-900">Personal details</h2>
+                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                   Keep your profile in sync so SkinMatch feels like home.
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
-                  First name
+              <div className="space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                    First name
+                    <input
+                      type="text"
+                      value={fieldState.first_name}
+                      onChange={handleFieldChange("first_name")}
+                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      placeholder="Taylor"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                    Last name
+                    <input
+                      type="text"
+                      value={fieldState.last_name}
+                      onChange={handleFieldChange("last_name")}
+                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      placeholder="Swift"
+                    />
+                  </label>
+                </div>
+
+                <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                  Username
                   <input
                     type="text"
-                    value={fieldState.first_name}
-                    onChange={handleFieldChange("first_name")}
-                    className="rounded-lg border-2 border-black px-3 py-2 text-sm shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
-                    placeholder="Taylor"
+                    value={fieldState.username}
+                    onChange={handleFieldChange("username")}
+                    required
+                    className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                    placeholder="your_username"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
-                  Last name
-                  <input
-                    type="text"
-                    value={fieldState.last_name}
-                    onChange={handleFieldChange("last_name")}
-                    className="rounded-lg border-2 border-black px-3 py-2 text-sm shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
-                    placeholder="Swift"
-                  />
-                </label>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                    Date of birth
+                    <input
+                      type="date"
+                      value={fieldState.date_of_birth}
+                      onChange={handleFieldChange("date_of_birth")}
+                      max={new Date().toISOString().split("T")[0]}
+                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                    Gender
+                    <select
+                      value={fieldState.gender}
+                      onChange={handleFieldChange("gender")}
+                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                    >
+                      {GENDER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </div>
 
-              <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
-                Username
-                <input
-                  type="text"
-                  value={fieldState.username}
-                  onChange={handleFieldChange("username")}
-                  required
-                  className="rounded-lg border-2 border-black px-3 py-2 text-sm shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
-                />
-              </label>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
-                  Date of birth
-                  <input
-                    type="date"
-                    value={fieldState.date_of_birth}
-                    onChange={handleFieldChange("date_of_birth")}
-                    max={new Date().toISOString().split("T")[0]}
-                    className="rounded-lg border-2 border-black px-3 py-2 text-sm shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1 text-sm font-semibold text-gray-800">
-                  Gender
-                  <select
-                    value={fieldState.gender}
-                    onChange={handleFieldChange("gender")}
-                    className="rounded-lg border-2 border-black px-3 py-2 text-sm shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
-                  >
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-4 pt-4 border-t-2 border-gray-100">
                 <button
                   type="submit"
                   disabled={!canSave || saving || avatarUploading}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#c8f0c8] px-6 py-3 text-sm font-semibold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#c8f0c8] px-8 py-3.5 text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]"
                 >
-                  {saving || avatarUploading ? "Saving…" : "Save changes"}
+                  {saving || avatarUploading ? (
+                    <>
+                      <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                      Saving changes...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save changes
+                    </>
+                  )}
                 </button>
                 {!canSave && !saving && !avatarUploading && (
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                    Everything is up to date
-                  </span>
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-bold">
+                      All changes saved
+                    </span>
+                  </div>
                 )}
               </div>
             </form>

@@ -112,6 +112,11 @@ class Product(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     review_count = models.PositiveIntegerField(default=0)
     image_url = models.URLField(blank=True)
+    image = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional relative media path or absolute URL for the product image.",
+    )
     product_url = models.URLField(blank=True)
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, blank=True)
@@ -354,6 +359,8 @@ class MatchPick(models.Model):
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default="USD")
     rationale = models.JSONField(default=dict, blank=True)
+    image_url = models.TextField(blank=True, default="")
+    product_url = models.URLField(blank=True)
     created_at = models.DateTimeField(default=timezone.now, blank=True)
 
     class Meta:

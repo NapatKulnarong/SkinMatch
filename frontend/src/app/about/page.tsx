@@ -82,7 +82,7 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#bcdcf6]">
       {/* Intro Letter */}
-      <PageContainer as="section" className="pt-32 pb-14">
+      <PageContainer as="section" className="pt-44 pb-14">
         <div
           className="relative w-full rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)]"
           style={{
@@ -91,6 +91,14 @@ export default function AboutPage() {
             backgroundRepeat: "repeat",
           }}
         >
+          <Image
+            src="/img/mascot/matchy_3.png"
+            alt="Matchy mascot smiling"
+            width={320}
+            height={240}
+            className="absolute -top-45 w-[240px] sm:w-[300px]"
+            priority
+          />
           <div className="relative p-10">
             <h2 className="text-3xl font-extrabold text-[#3B2F4A] mb-6">
               Message from our Team
@@ -122,10 +130,7 @@ export default function AboutPage() {
       </PageContainer>
 
       {/* Team Grid */}
-      <PageContainer as="section" className="pb-16">
-        <h3 className="text-center text-2xl sm:text-3xl font-extrabold text-[#3B2F4A] mb-8">
-          Meet Our Team
-        </h3>
+      <PageContainer as="section" className="pb-16 -mt-4">
 
         <div className="grid gap-6 lg:gap-8 md:grid-cols-2">
           {TEAM.map((m) => (
