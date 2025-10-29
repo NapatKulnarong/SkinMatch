@@ -768,6 +768,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     return {
         "summary": summary_payload,
         "recommendations": picks_payload,
+        "strategy_notes": strategy_notes,
     }
 
 

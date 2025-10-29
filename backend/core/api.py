@@ -20,6 +20,8 @@ from ninja import File, ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from ninja.errors import HttpError
+from ninja.files import UploadedFile
+
 from .models import (
     UserProfile,
     SkinFactContentBlock,
@@ -125,6 +127,7 @@ class UserProfileSchema(ModelSchema):
         model = UserProfile
         model_fields = ['u_id', 'is_verified', 'created_at', 'avatar_url', 'date_of_birth', 'gender']
 
+
 class ProfileUpdateIn(Schema):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -191,6 +194,7 @@ class FactTopicDetailOut(FactTopicSummary):
     updated_at: datetime
 
 # --------------- Auth endpoints ---------------
+
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
