@@ -183,7 +183,7 @@ export default function HomePage() {
                   SkinMatch
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-700">
-                  "Your skin, Your match, Your best care!"
+                  &ldquo;Your skin, Your match, Your best care!&rdquo;
                 </p>
               </div>
 
@@ -225,7 +225,7 @@ export default function HomePage() {
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-[#2d4a2b]/70">
-                Discover what's inside your favorite products
+                Discover what&apos;s inside your favorite products
               </p>
             </div>
             
@@ -327,7 +327,7 @@ export default function HomePage() {
                   </div>
 
                   <p className="text-xs sm:text-sm leading-relaxed text-[#3C3D37]/80">
-                    "{testimonial.text}"
+                    &ldquo;{testimonial.text}&rdquo;
                   </p>
 
                   <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
