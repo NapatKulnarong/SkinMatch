@@ -1,43 +1,56 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import React, { ComponentProps } from 'react';
 import QuizResultPage from '../page';
 
-// Mock Next.js modules
-jest.mock('next/image', () => ({
-  __esModule: true,
-  default: (props: any) => {
+// --- Mocks ---
+// ✅ Mock next/image
+jest.mock('next/image', () => {
+  const Img = (props: ComponentProps<'img'>) => (
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />;
-  },
-}));
+    <img {...props} />
+  );
+  return {
+    __esModule: true,
+    default: Img,
+  };
+});
 
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ children, href, ...props }: any) => {
-    return <a href={href} {...props}>{children}</a>;
-  },
-}));
+// ✅ Mock next/link
+jest.mock('next/link', () => {
+  const Link = ({
+    children,
+    href,
+    ...props
+  }: { children: React.ReactNode; href: string } & ComponentProps<'a'>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+  return {
+    __esModule: true,
+    default: Link,
+  };
+});
 
-// Capture router.push so we can assert it
-const pushMock = jest.fn();
+// Router mock
+const pushMock = jest.fn() as jest.Mock<void, [string]>;
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ 
-    push: pushMock, 
-    replace: jest.fn(), 
-    back: jest.fn() 
+  useRouter: () => ({
+    push: pushMock,
+    replace: jest.fn(),
+    back: jest.fn(),
   }),
 }));
 
-// Mock NavWidth context for stable desktop layout during tests
+// NavWidth mock
 jest.mock('@/components/NavWidthContext', () => ({
   useNavWidth: () => 1024,
 }));
 
-// Mock the Quiz context with complete data
+// Quiz context mock
 const mockFinalize = jest.fn();
 const mockResetQuiz = jest.fn().mockResolvedValue(undefined);
-
 jest.mock('../../_QuizContext', () => ({
   useQuiz: () => ({
     answers: {
@@ -66,8 +79,8 @@ jest.mock('../../_QuizContext', () => ({
         primaryConcerns: ['Acne'],
         topIngredients: ['Salicylic Acid', 'Niacinamide', 'Tea Tree Oil'],
         categoryBreakdown: {
-          'Cleanser': 2,
-          'Serum': 3,
+          Cleanser: 2,
+          Serum: 3,
         },
       },
       strategyNotes: [
@@ -82,11 +95,12 @@ jest.mock('../../_QuizContext', () => ({
   }),
 }));
 
-// Mock the API module
+// API mock
 jest.mock('@/lib/api.quiz', () => ({
   emailQuizSummary: jest.fn().mockResolvedValue(undefined),
 }));
 
+// --- Tests ---
 describe('QuizResultPage', () => {
   beforeEach(() => {
     pushMock.mockClear();
@@ -96,29 +110,25 @@ describe('QuizResultPage', () => {
 
   it('renders result UI and shows quiz answers', async () => {
     render(<QuizResultPage />);
-    
-    // Check main headings
+
     expect(
       await screen.findByRole('heading', { name: /personalised routine roadmap/i })
     ).toBeInTheDocument();
-    
+
     expect(
       screen.getByRole('heading', { name: /your skin profile/i })
     ).toBeInTheDocument();
-    
+
     expect(
       screen.getByRole('heading', { name: /ingredients to prioritise/i })
     ).toBeInTheDocument();
-    
+
     expect(
       screen.getByRole('heading', { name: /use with caution/i })
     ).toBeInTheDocument();
 
-    // Check that answers are displayed
     expect(screen.getByText('Acne')).toBeInTheDocument();
     expect(screen.getByText('Oily')).toBeInTheDocument();
-    
-    // Check ingredients are shown
     expect(screen.getByText('Salicylic Acid')).toBeInTheDocument();
     expect(screen.getByText('Niacinamide')).toBeInTheDocument();
   });
@@ -126,10 +136,10 @@ describe('QuizResultPage', () => {
   it('navigates to /quiz when "Retake the quiz" is clicked', async () => {
     const user = userEvent.setup();
     render(<QuizResultPage />);
-    
+
     const btn = screen.getByRole('button', { name: /retake the quiz/i });
     await user.click(btn);
-    
+
     expect(mockResetQuiz).toHaveBeenCalled();
     expect(pushMock).toHaveBeenCalledWith('/quiz');
   });
