@@ -83,6 +83,12 @@ class ReviewAck(Schema):
     ok: bool
 
 
+class HistoryDeleteAck(Schema):
+    ok: bool
+    deleted_profile_id: uuid.UUID | None = None
+    deleted_session_id: uuid.UUID | None = None
+
+
 class SkinProfileOut(Schema):
     id: uuid.UUID
     session_id: Optional[uuid.UUID]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   type QuizResultSummary,
 } from "@/lib/api.quiz";
 import { getAuthToken } from "@/lib/auth-storage";
+import { emailQuizSummary } from "@/lib/api.quiz";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -33,6 +34,11 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
+
+  // email form state (used for "Email this summary" box)
+  const [emailInput, setEmailInput] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,11 +67,44 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       }
     };
 
+    // reset email status each time profileId changes
+    setEmailStatus("idle");
+    setEmailMessage(null);
+    setEmailInput("");
+
     load();
     return () => {
       cancelled = true;
     };
   }, [profileId]);
+
+  const handleEmailSummary = useCallback(async () => {
+    if (!detail?.sessionId) {
+      setEmailStatus("error");
+      setEmailMessage("We couldn't find this quiz session. Please refresh and try again.");
+      return;
+    }
+
+    setEmailStatus("sending");
+    setEmailMessage(null);
+    try {
+      const emailValue = emailInput.trim();
+      await emailQuizSummary(detail.sessionId, emailValue || undefined);
+      setEmailStatus("success");
+      setEmailMessage(
+        emailValue
+          ? `Summary sent to ${emailValue}.`
+          : "Summary sent to your account email."
+      );
+    } catch (err) {
+      setEmailStatus("error");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to email this summary. Please try again.";
+      setEmailMessage(message);
+    }
+  }, [detail?.sessionId, emailInput]);
 
   const answerLabels = useMemo(() => (detail ? buildAnswerLabels(detail) : null), [detail]);
   const guidance = useMemo(() => (answerLabels ? buildGuidance(answerLabels) : null), [answerLabels]);
@@ -123,6 +162,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
     <main className="min-h-screen bg-[#FFF6E9]">
       <Navbar />
       <PageContainer className="pt-32 pb-16">
+        {/* top nav row */}
         <div className="flex items-center justify-between">
           <Link
             href="/account"
@@ -130,14 +170,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
           >
             ← Back to account
           </Link>
-          {detail?.sessionId && (
-            <Link
-              href={`/quiz/result?session=${detail.sessionId}`}
-              className="text-sm font-semibold text-[#B9375D] hover:underline"
-            >
-              View original result
-            </Link>
-          )}
         </div>
 
         {loading ? (
@@ -151,7 +183,9 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
           <div className="mt-12 flex justify-center">
             <div className="max-w-md rounded-2xl border-2 border-black bg-white px-6 py-5 text-center shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
               <p className="text-sm font-semibold text-[#B9375D]">{error}</p>
-              <p className="mt-2 text-xs text-[#3C3D37] text-opacity-70">Return to your account page to pick another match.</p>
+              <p className="mt-2 text-xs text-[#3C3D37] text-opacity-70">
+                Return to your account page to pick another match.
+              </p>
               <button
                 type="button"
                 onClick={() => router.refresh()}
@@ -163,6 +197,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
           </div>
         ) : detail && guidance && answerLabels ? (
           <section className="mt-10 space-y-10">
+            {/* header / meta */}
             <header className="text-center space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#B9375D]">
                 Your skin match snapshot
@@ -173,15 +208,23 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               <p className="text-sm text-[#3C3D37] text-opacity-70">
                 Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
               </p>
-              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">Completed {completedLabel}</p>
+
+              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
+                Completed {completedLabel}
+              </p>
             </header>
 
+            {/* profile + strategy */}
             <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
+              {/* skin profile card */}
               <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f0f5ff] to-[#F5BABB] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
                 <h3 className="text-lg font-bold text-[#3C3D37] mb-4">Your skin profile</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {profileItems.map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-black/30 bg-white/80 px-4 py-3">
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-black/30 bg-white/80 px-4 py-3"
+                    >
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B95E82] text-opacity-70">
                         {item.label}
                       </p>
@@ -191,6 +234,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 </div>
               </section>
 
+              {/* strategy notes card */}
               <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
                 <h3 className="text-lg font-bold text-[#1b2a50]">Strategy notes</h3>
                 {strategyNotes.length ? (
@@ -207,14 +251,22 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               </section>
             </div>
 
+            {/* ingredients + caution + email */}
             <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
+              {/* LEFT COLUMN: Ingredients to prioritise */}
               <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
                 <h3 className="text-lg font-bold text-[#33574a]">Ingredients to prioritise</h3>
                 {ingredientHighlights.length ? (
                   <ul className="mt-4 space-y-3">
                     {ingredientHighlights.map((entry) => (
-                      <li key={entry.ingredient} className="flex items-start gap-3 text-sm text-[#1f2d26]">
-                        <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#33574a]" aria-hidden />
+                      <li
+                        key={entry.ingredient}
+                        className="flex items-start gap-3 text-sm text-[#1f2d26]"
+                      >
+                        <span
+                          className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#33574a]"
+                          aria-hidden
+                        />
                         <div>
                           <p className="font-semibold">{entry.ingredient}</p>
                           <p className="text-sm text-[#1f2d26] text-opacity-70">{entry.reason}</p>
@@ -229,26 +281,77 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 )}
               </section>
 
-              <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
-                <h3 className="text-lg font-bold text-[#70410f]">Use with caution</h3>
-                {cautionItems.length ? (
-                  <ul className="mt-4 space-y-3">
-                    {cautionItems.map((entry) => (
-                      <li key={entry.ingredient} className="flex items-start gap-3 text-sm text-[#5f3111]">
-                        <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#b45a1b]" aria-hidden />
-                        <div>
-                          <p className="font-semibold">{entry.ingredient}</p>
-                          <p className="text-sm text-[#5f3111] text-opacity-75">{entry.reason}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 text-sm text-[#5f3111] text-opacity-75">
-                    Nothing major to avoid based on this profile—maintain balance and listen to your skin.
+              {/* RIGHT COLUMN: caution card + email card stacked */}
+              <div className="space-y-6">
+                {/* caution card */}
+                <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
+                  <h3 className="text-lg font-bold text-[#70410f]">Use with caution</h3>
+                  {cautionItems.length ? (
+                    <ul className="mt-4 space-y-3">
+                      {cautionItems.map((entry) => (
+                        <li
+                          key={entry.ingredient}
+                          className="flex items-start gap-3 text-sm text-[#5f3111]"
+                        >
+                          <span
+                            className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#b45a1b]"
+                            aria-hidden
+                          />
+                          <div>
+                            <p className="font-semibold">{entry.ingredient}</p>
+                            <p className="text-sm text-[#5f3111] text-opacity-75">{entry.reason}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 text-sm text-[#5f3111] text-opacity-75">
+                      Nothing major to avoid based on this profile—maintain balance and listen to your skin.
+                    </p>
+                  )}
+                </section>
+
+                {/* email summary card */}
+                <section className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4 text-center">
+                  <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
+                  <p className="text-sm text-[#1b2a50]/70">
+                    Get a copy of your routine roadmap delivered straight to your inbox.
                   </p>
-                )}
-              </section>
+
+                  <div className="space-y-3 text-left">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={(event) => setEmailInput(event.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full rounded-xl border border-[#1b2a50]/30 bg-white/90 px-4 py-2 text-sm text-[#1b2a50] shadow-[0_3px_0_rgba(0,0,0,0.12)] focus:border-[#1b2a50] focus:outline-none"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleEmailSummary}
+                      disabled={emailStatus === "sending" || !detail?.sessionId}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#1b2a50] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {emailStatus === "sending" ? "Sending..." : "Send summary"}
+                    </button>
+
+                    {emailStatus === "success" && emailMessage && (
+                      <p className="text-sm font-semibold text-[#1b2a50]">{emailMessage}</p>
+                    )}
+
+                    {emailStatus === "error" && emailMessage && (
+                      <p className="text-sm font-semibold text-[#B9375D]">{emailMessage}</p>
+                    )}
+
+                    {emailStatus === "idle" && !emailMessage && (
+                      <p className="text-xs text-[#1b2a50]/60">
+                        Leave the field blank to use your account email, or enter another address.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              </div>
             </div>
 
             {/* FIXED PRODUCT MATCHES SECTION */}
@@ -344,7 +447,9 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   );
 }
 
-const STEP_META_BY_KEY: Partial<Record<HistoryAnswerKey, StepMeta>> = Object.values(STEP_META).reduce(
+const STEP_META_BY_KEY: Partial<Record<HistoryAnswerKey, StepMeta>> = Object.values(
+  STEP_META
+).reduce(
   (acc, meta) => {
     acc[meta.key as HistoryAnswerKey] = meta;
     return acc;
@@ -415,7 +520,10 @@ function buildAnswerLabels(detail: QuizHistoryDetail): HistoryAnswerLabels {
     apply("eyeConcern", profile.eyeAreaConcerns[0] ?? labels.eyeConcern);
     apply("skinType", profile.skinType ?? labels.skinType);
     apply("sensitivity", profile.sensitivity ?? labels.sensitivity);
-    if (profile.pregnantOrBreastfeeding !== null && profile.pregnantOrBreastfeeding !== undefined) {
+    if (
+      profile.pregnantOrBreastfeeding !== null &&
+      profile.pregnantOrBreastfeeding !== undefined
+    ) {
       apply("pregnancy", profile.pregnantOrBreastfeeding ? "yes" : "no");
     }
     apply("budget", profile.budget ?? labels.budget);
@@ -427,7 +535,10 @@ function buildAnswerLabels(detail: QuizHistoryDetail): HistoryAnswerLabels {
 function buildProfileItems(profile: QuizProfile | null, answers: HistoryAnswerLabels) {
   const items: { label: string; value: string }[] = [];
   const append = (label: string, value: string | null) => {
-    items.push({ label, value: value && value.trim() ? capitalizeLabel(value) : "Not provided" });
+    items.push({
+      label,
+      value: value && value.trim() ? capitalizeLabel(value) : "Not provided",
+    });
   };
 
   if (profile) {
@@ -438,7 +549,12 @@ function buildProfileItems(profile: QuizProfile | null, answers: HistoryAnswerLa
     append("Eye area", profile.eyeAreaConcerns[0] ?? answers.eyeConcern);
     append("Skin type", profile.skinType ?? answers.skinType);
     append("Sensitivity", profile.sensitivity ?? answers.sensitivity);
-    append("Pregnancy / breastfeeding", formatPregnancyLabel(profile.pregnantOrBreastfeeding ?? answers.pregnancy));
+    append(
+      "Pregnancy / breastfeeding",
+      formatPregnancyLabel(
+        profile.pregnantOrBreastfeeding ?? answers.pregnancy
+      )
+    );
     append("Budget mindset", formatBudgetLabel(profile.budget ?? answers.budget));
     return items;
   }
@@ -460,7 +576,9 @@ function buildSummaryInsights(summary: QuizResultSummary) {
 
   if (summary.primaryConcerns.length) {
     const concerns = summary.primaryConcerns.join(" & ");
-    insights.push(`Product matches double down on ${concerns.toLowerCase()} support.`);
+    insights.push(
+      `Product matches double down on ${concerns.toLowerCase()} support.`
+    );
   }
 
   const categories = summary.categoryBreakdown;
@@ -468,7 +586,9 @@ function buildSummaryInsights(summary: QuizResultSummary) {
     const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
     const [topCategory, total] = sorted[0];
     insights.push(
-      `Expect a focus on ${capitalizeLabel(topCategory)} formulas (${total} hero pick${total === 1 ? "" : "s"}).`
+      `Expect a focus on ${capitalizeLabel(topCategory)} formulas (${total} hero pick${
+        total === 1 ? "" : "s"
+      }).`
     );
   }
 
@@ -516,7 +636,9 @@ function capitalizeLabel(text: string) {
     .replace(/[-_]+/g, " ")
     .split(" ")
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(
+      (part) => part.charAt(0).toUpperCase() + part.slice(1)
+    )
     .join(" ");
 }
 
@@ -525,7 +647,9 @@ function lookupChoiceLabel(key: HistoryAnswerKey, value: string | null) {
   const meta = STEP_META_BY_KEY[key];
   if (!meta) return capitalizeLabel(value);
   const match = meta.fallbackChoices.find(
-    (choice) => choice.value === value || choice.label.toLowerCase() === value.toLowerCase()
+    (choice) =>
+      choice.value === value ||
+      choice.label.toLowerCase() === value.toLowerCase()
   );
   if (match) return match.label;
   return capitalizeLabel(value);

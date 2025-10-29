@@ -4,7 +4,7 @@ import uuid
 from typing import Iterable
 from urllib.parse import quote, urlparse
 import hashlib
-
+import re
 import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -59,7 +59,7 @@ from .schemas import (
 router = Router(tags=["quiz"])
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
+EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 def _resolve_request_user(request):
     """
@@ -419,6 +419,38 @@ def history_profile_detail(request, profile_id: uuid.UUID):
     )
 
 
+@router.delete("/history/{history_id}", response=HistoryDeleteAck)
+def delete_history_item(request, history_id: uuid.UUID):
+    user = _resolve_request_user(request)
+    if not user or not user.is_authenticated:
+        raise HttpError(401, "Authentication required")
+
+    profile = (
+        SkinProfile.objects.select_related("session")
+        .filter(user=user)
+        .filter(Q(id=history_id) | Q(session_id=history_id))
+        .first()
+    )
+
+    if not profile:
+        raise HttpError(404, "Match history item not found")
+
+    session = profile.session
+    profile_id = profile.id
+    session_id = session.id if session else None
+
+    with transaction.atomic():
+        profile.delete()
+        if session:
+            session.delete()
+
+    return HistoryDeleteAck(
+        ok=True,
+        deleted_profile_id=profile_id,
+        deleted_session_id=session_id,
+    )
+
+
 @router.get("/session/{session_id}", response=SessionDetailOut)
 def session_detail(request, session_id: uuid.UUID):
     session = get_object_or_404(
@@ -543,6 +575,10 @@ def delete_product_review(request, product_id: uuid.UUID):
 def email_summary(request, payload: EmailSummaryIn):
     request_user = _resolve_request_user(request)
     target_email = (payload.email or "").strip()
+
+    if target_email:
+        if not EMAIL_REGEX.match(target_email):
+            raise HttpError(400, "Invalid email address")
 
     if not target_email:
         if request_user and getattr(request_user, "email", ""):
@@ -736,6 +772,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
     return {
         "summary": summary_payload,
         "recommendations": picks_payload,
+        "strategy_notes": strategy_notes,
     }
 
 

@@ -1,9 +1,9 @@
 import os
-import uuid
 from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
+import uuid
 
 try:
     import google.generativeai as genai  # type: ignore
@@ -17,6 +17,8 @@ from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
 from ninja import File, ModelSchema, NinjaAPI, Schema
+from ninja.errors import HttpError
+from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
@@ -43,6 +45,8 @@ else:
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
+
+import google.generativeai as genai
 
 
 api = NinjaAPI()
@@ -95,10 +99,8 @@ class tokenOut(Schema):
     token: Optional[str] = None
     message: str
 
-
 class GoogleLoginIn(Schema):
     id_token: str
-
 
 class ProfileOut(Schema):
     """
@@ -120,7 +122,6 @@ class ProfileOut(Schema):
     is_staff: bool
     is_superuser: bool
 
-
 class UserProfileSchema(ModelSchema):
     class Config:
         model = UserProfile
@@ -135,7 +136,6 @@ class ProfileUpdateIn(Schema):
     gender: Optional[str] = None
     avatar_url: Optional[str] = None
     remove_avatar: Optional[bool] = None
-
 
 class GenIn(Schema):
     prompt: str
@@ -168,6 +168,31 @@ def generate_text(prompt: str, temperature: float = 0.2) -> str:
             last_err = e
             continue
     raise last_err
+
+class FactTopicSummary(Schema):
+    id: uuid.UUID
+    slug: str
+    title: str
+    subtitle: Optional[str] = None
+    excerpt: Optional[str] = None
+    section: str
+    hero_image_url: Optional[str] = None
+    hero_image_alt: Optional[str] = None
+    view_count: int
+
+class FactContentBlockOut(Schema):
+    order: int
+    block_type: str
+    heading: Optional[str] = None
+    text: Optional[str] = None
+    image_url: Optional[str] = None
+    image_alt: Optional[str] = None
+
+
+class FactTopicDetailOut(FactTopicSummary):
+    content_blocks: List[FactContentBlockOut]
+    updated_at: datetime
+
 # --------------- Auth endpoints ---------------
 
 
@@ -414,32 +439,7 @@ def list_users(request, limit: int = 50, offset: int = 0):
 def api_root(request):
     return {"message": "Welcome to the API!"}
 
-# ------------------------------------------------------------------------------------
-
-class FactTopicSummary(Schema):
-    id: uuid.UUID
-    slug: str
-    title: str
-    subtitle: Optional[str] = None
-    excerpt: Optional[str] = None
-    section: str
-    hero_image_url: Optional[str] = None
-    hero_image_alt: Optional[str] = None
-    view_count: int
-
-
-class FactContentBlockOut(Schema):
-    order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
-
-
-class FactTopicDetailOut(FactTopicSummary):
-    content_blocks: List[FactContentBlockOut]
-    updated_at: datetime
+# -----------------------------skin fact---------------------------------------------
 
 @api.get("/facts/topics/popular", response=List[FactTopicSummary])
 def popular_facts(request, limit: int = 5):

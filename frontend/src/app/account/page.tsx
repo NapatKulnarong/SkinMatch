@@ -234,7 +234,7 @@ function AccountContent() {
           {/* RIGHT: MATCH HISTORY WITH MASCOT */}
           <div className="col-span-12 lg:col-span-8 relative">
             {/* Matchy Mascot - Positioned on top center of the Match History box */}
-            <div className="absolute -top-46 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <div className="absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
               <Image
                 src="/img/mascot/matchy_5.png"
                 alt="Matchy mascot"
@@ -686,6 +686,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                   <button
                     onClick={(e) => {
                       e.preventDefault();
+                      void handleDelete(item, key);
                       void handleDelete(item, key);
                     }}
                     disabled={isDeleting}

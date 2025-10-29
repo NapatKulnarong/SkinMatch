@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import type { FactContentBlock } from "@/lib/types";
+import Image from "next/image";
 
 export type PastelArticleProps = {
   blocks: FactContentBlock[];
@@ -72,18 +72,26 @@ function BlockSection({ block }: { block: FactContentBlock }) {
 function FigureImage({ src, alt }: { src: string; alt: string }) {
   return (
     <figure className="my-10">
-      <img
-        src={src}
-        alt={alt}
+      <div
         className="
           w-full
-          h-auto
           rounded-[16px]
           border-2 border-black
           shadow-[6px_8px_0_rgba(0,0,0,0.25)]
-          object-contain
+          overflow-hidden
         "
-      />
+      >
+        <Image
+          src={src}
+          alt={alt}
+          // you can tune these base dimensions; they just need to be defined
+          width={800}
+          height={600}
+          className="h-auto w-full object-contain"
+          priority
+        />
+      </div>
+
       {alt ? (
         <figcaption className="mt-3 text-center text-sm text-gray-600">
           {alt}
