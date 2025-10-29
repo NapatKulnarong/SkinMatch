@@ -4,7 +4,7 @@ import uuid
 from typing import Iterable
 from urllib.parse import quote, urlparse
 import hashlib
-
+import re
 import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -59,7 +59,7 @@ from .schemas import (
 router = Router(tags=["quiz"])
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
+EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 def _resolve_request_user(request):
     """
@@ -575,6 +575,10 @@ def delete_product_review(request, product_id: uuid.UUID):
 def email_summary(request, payload: EmailSummaryIn):
     request_user = _resolve_request_user(request)
     target_email = (payload.email or "").strip()
+
+    if target_email:
+        if not EMAIL_REGEX.match(target_email):
+            raise HttpError(400, "Invalid email address")
 
     if not target_email:
         if request_user and getattr(request_user, "email", ""):

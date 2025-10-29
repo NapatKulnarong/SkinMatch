@@ -2,6 +2,7 @@
 
 import FactRichText from "./FactRichText";
 import type { FactContentBlock } from "@/lib/types";
+import Image from "next/image";
 
 export default function ArticleBlock({
   block,
@@ -18,23 +19,34 @@ export default function ArticleBlock({
         </h2>
       ) : null}
 
-      {block.text ? (
-        <FactRichText text={block.text} />
-      ) : null}
+      {block.text ? <FactRichText text={block.text} /> : null}
 
       {block.imageUrl ? (
         <figure className="my-6">
-          <img
-            src={block.imageUrl}
-            alt={block.imageAlt ?? block.heading ?? ""}
+          <div
             className="
-              w-full h-auto
+              w-full
               rounded-[12px]
               border-2 border-black
               shadow-[6px_8px_0_rgba(0,0,0,0.25)]
               bg-white
+              overflow-hidden
             "
-          />
+          >
+            <Image
+              src={block.imageUrl}
+              alt={block.imageAlt ?? block.heading ?? ""}
+              width={800}
+              height={600}
+              className="
+                w-full
+                h-auto
+                object-contain
+              "
+              priority
+            />
+          </div>
+
           {block.imageAlt ? (
             <figcaption className="mt-2 text-center text-xs text-gray-600">
               {block.imageAlt}
