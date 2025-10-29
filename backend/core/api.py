@@ -154,13 +154,13 @@ def generate_text(prompt: str) -> str:
     We'll log internals so we can see what's going on with finish_reason.
     """
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     try:
         resp = model.generate_content(
             prompt,
             generation_config={
-                "temperature": 0.4,
+                "temperature": 0.2,
                 "max_output_tokens": 256,
             },
         )
