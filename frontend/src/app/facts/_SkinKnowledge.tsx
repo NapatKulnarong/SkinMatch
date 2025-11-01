@@ -109,7 +109,6 @@ export default function SkinKnowledge() {
                     alt=""
                     fill
                     priority={false}
-                    unoptimized={Boolean(topic.heroImageUrl?.startsWith("http"))}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 400px"
                   />

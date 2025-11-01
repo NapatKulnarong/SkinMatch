@@ -88,9 +88,6 @@ export default async function FactTopicPage({ params }: Params) {
                       src={item.heroImageUrl ?? FALLBACK_COVER}
                       alt={item.heroImageAlt ?? item.title}
                       fill
-                      unoptimized={Boolean(
-                        item.heroImageUrl?.startsWith("http")
-                      )}
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 600px"
                     />
