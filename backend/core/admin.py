@@ -19,8 +19,8 @@ class SkinFactContentBlockInline(admin.TabularInline):
         "image_alt",
     )
     ordering = ("order",)
-    show_change_link = False  # keep it inline, don't link out
-    readonly_fields = ()      # all editable
+    show_change_link = False
+    readonly_fields = ()
 
 
 @admin.register(SkinFactTopic)
@@ -43,11 +43,8 @@ class SkinFactTopicAdmin(admin.ModelAdmin):
     list_filter = ("section", "is_published")
     search_fields = ("title", "subtitle", "excerpt", "slug")
     ordering = ("-updated_at",)
-
-    # auto-generate slug from title on create
     prepopulated_fields = {"slug": ("title",)}
 
-    # What the editor sees when they open one topic
     fieldsets = (
         ("Content", {
             "fields": (
@@ -56,7 +53,7 @@ class SkinFactTopicAdmin(admin.ModelAdmin):
                 "subtitle",
                 "excerpt",
                 "section",
-            )
+            ),
         }),
         ("Hero Image", {
             "fields": (
@@ -69,13 +66,13 @@ class SkinFactTopicAdmin(admin.ModelAdmin):
                 "is_published",
                 "view_count",
                 "last_updated",
-            )
+            ),
         }),
         ("Timestamps", {
             "fields": (
                 "created_at",
                 "updated_at",
-            )
+            ),
         }),
     )
 
@@ -86,7 +83,6 @@ class SkinFactTopicAdmin(admin.ModelAdmin):
     )
 
     inlines = [SkinFactContentBlockInline]
-
 
 @admin.register(SkinFactView)
 class SkinFactViewAdmin(admin.ModelAdmin):

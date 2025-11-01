@@ -1,7 +1,7 @@
 import uuid
+
 from datetime import date
 from typing import Optional
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
@@ -269,24 +269,16 @@ class SkinFactContentBlock(models.Model):
         super().clean()
 
         block_type = self.block_type
-
-        if block_type == self.BlockType.HEADING:
+        if self.block_type == self.BlockType.HEADING:
             if not (self.heading or "").strip():
                 raise ValidationError("Heading blocks must have a heading title.")
 
-        if block_type in {self.BlockType.TEXT, self.BlockType.PARAGRAPH}:
+        if self.block_type == self.BlockType.TEXT:
             if not (self.text or "").strip():
                 raise ValidationError("Text blocks must include body text.")
-
-        has_image = bool(self.image and getattr(self.image, "name", ""))
-
-        if block_type == self.BlockType.IMAGE and not has_image:
-            raise ValidationError("Image blocks must include an uploaded image.")
-
-        if has_image and block_type in {self.BlockType.TEXT, self.BlockType.PARAGRAPH}:
-            if not (self.image_alt or "").strip():
-                raise ValidationError("Please provide image alt text for accessibility.")
-
+         # image validation (only check file type, not dimensions)
+        if self.image and not (self.image_alt or "").strip():
+            raise ValidationError("Please provide image alt text for accessibility.")
 
 
 class SkinFactView(models.Model):

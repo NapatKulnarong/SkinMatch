@@ -28,7 +28,6 @@ export default function PastelHero({ cover, title, subtitle }: PastelHeroProps) 
           src={cover}
           alt={subtitle || title}
           fill
-          unoptimized={cover.startsWith("http")}
           className="object-cover object-center opacity-80"
           sizes="(max-width: 768px) 100vw, 800px"
         />

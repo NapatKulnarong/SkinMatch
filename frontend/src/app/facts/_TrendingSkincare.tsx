@@ -107,7 +107,6 @@ export default function TrendingSkincare() {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 400px"
-                    unoptimized={Boolean(item.heroImageUrl?.startsWith("http"))}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
                   <div className="absolute inset-0 flex flex-col justify-end p-5 text-white">

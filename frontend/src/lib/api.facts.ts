@@ -20,7 +20,7 @@ type RawFactTopicSummary = {
 
 type RawFactContentBlock = {
   order: number;
-  block_type: "heading" | "text"; // UPDATED: matches backend now
+  block_type: "heading" | "text" | "paragraph" | "image";
   heading?: string | null;
   text?: string | null;
   image_url?: string | null;

@@ -106,7 +106,6 @@ export default function PopularTopics() {
               alt={current.title}
               fill
               priority
-              unoptimized={heroImage.startsWith("http")}
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 1200px"
             />
