@@ -744,14 +744,14 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#f0e9f7] to-[#e8d9f0] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <div className="mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#4a3a5a]">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#3C5B6F]">
                 Get Weekly Skincare Tips
               </h2>
               <p className="text-xs sm:text-sm text-[#4a3a5a]/70">
-                Join 10,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
+                Join 1,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
               </p>
             </div>
 
@@ -775,7 +775,7 @@ export default function HomePage() {
               <button
                 type="submit"
                 disabled={newsletterStatus === "loading"}
-                className="rounded-full border-2 border-black bg-[#7c5a8f] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
               </button>
