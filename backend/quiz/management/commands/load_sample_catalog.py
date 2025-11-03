@@ -116,6 +116,39 @@ INGREDIENTS: tuple[tuple[str, str, str], ...] = (
     ("turmeric", "Turmeric Root Extract", "Brightening antioxidant support"),
 )
 
+INGREDIENT_NOTES: dict[str, dict[str, str]] = {
+    "hyaluronic-acid": {
+        "helps_with": "Draws moisture into skin layers to keep complexion bouncy and hydrated.",
+        "avoid_with": "Strongly occlusive products that may trap bacteria without cleansing first.",
+        "side_effects": "Rare; overuse without sealing moisture can lead to dryness in low humidity environments.",
+    },
+    "niacinamide": {
+        "helps_with": "Balances oil production, strengthens barrier function, and refines pores.",
+        "avoid_with": "Very low pH vitamin C serums in the same step to prevent potential irritation.",
+        "side_effects": "May trigger temporary flushing in sensitive skin; start with lower concentrations.",
+    },
+    "salicylic-acid": {
+        "helps_with": "Clears congestion inside pores and smooths rough texture.",
+        "avoid_with": "Other strong exfoliating acids or topical retinoids in the same routine to reduce over-exfoliation.",
+        "side_effects": "Dryness or mild peeling, especially if used too frequently.",
+    },
+    "retinol": {
+        "helps_with": "Stimulates cell turnover to target wrinkles, texture, and post-acne marks.",
+        "avoid_with": "Benzoyl peroxide or strong exfoliating acids in the same routine.",
+        "side_effects": "Photosensitivity, dryness, and initial purging; always pair with SPF and moisturiser.",
+    },
+    "vitamin-c": {
+        "helps_with": "Brightens skin tone, supports collagen, and defends against free radicals.",
+        "avoid_with": "High pH niacinamide or direct acids immediately after application.",
+        "side_effects": "Tingling or sensitivity, especially with high L-ascorbic acid concentrations.",
+    },
+    "centella-asiatica": {
+        "helps_with": "Calms redness, supports wound healing, and reinforces the skin barrier.",
+        "avoid_with": "No major conflicts; layer after actives to soothe.",
+        "side_effects": "Rare; look for added essential oils that may irritate sensitive skin.",
+    },
+}
+
 KOREAN_PRODUCTS: list[ProductSeed] = [
     ProductSeed(
         brand="COSRX",
@@ -1779,14 +1812,22 @@ def _ensure_reference_data():
                 updates["common_name"] = common_name
             if ingredient.benefits != benefits:
                 updates["benefits"] = benefits
+            notes = INGREDIENT_NOTES.get(key, {})
+            for field, value in notes.items():
+                if getattr(ingredient, field) != value:
+                    updates[field] = value
             if updates:
                 Ingredient.objects.filter(pk=ingredient.pk).update(**updates)
                 ingredient.refresh_from_db(fields=list(updates.keys()))
         else:
+            notes = INGREDIENT_NOTES.get(key, {})
             ingredient = Ingredient.objects.create(
                 key=key,
                 common_name=common_name,
                 benefits=benefits,
+                helps_with=notes.get("helps_with", ""),
+                avoid_with=notes.get("avoid_with", ""),
+                side_effects=notes.get("side_effects", ""),
             )
         ingredient_map[key] = ingredient
 

@@ -55,6 +55,18 @@ class Ingredient(models.Model):
     common_name = models.CharField(max_length=120, unique=True)
     inci_name = models.CharField(max_length=200, blank=True)
     benefits = models.TextField(blank=True)
+    helps_with = models.TextField(
+        blank=True,
+        help_text="Free-form notes describing what this ingredient is known for helping.",
+    )
+    avoid_with = models.TextField(
+        blank=True,
+        help_text="List ingredients or product types to avoid combining with this ingredient.",
+    )
+    side_effects = models.TextField(
+        blank=True,
+        help_text="Potential concerns, side effects, or usage notes for this ingredient.",
+    )
 
     class Meta:
         ordering = ["common_name"]

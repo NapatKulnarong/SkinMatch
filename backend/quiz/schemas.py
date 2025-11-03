@@ -183,6 +183,48 @@ class MatchPickOut(Schema):
     review_count: int = 0
 
 
+class IngredientSummaryOut(Schema):
+    key: str
+    common_name: str
+    inci_name: Optional[str] = None
+    benefits: Optional[str] = None
+    helps_with: Optional[str] = None
+    avoid_with: Optional[str] = None
+    side_effects: Optional[str] = None
+    product_count: int = 0
+    popular_categories: List[str] = Field(default_factory=list)
+    top_concerns: List[str] = Field(default_factory=list)
+
+
+class IngredientProductOut(Schema):
+    product_id: uuid.UUID
+    slug: str
+    brand: str
+    product_name: str
+    category: str
+    summary: Optional[str] = None
+    hero_ingredients: Optional[str] = None
+    ingredient_order: int
+    ingredient_highlight: bool
+    price: Optional[float] = None
+    currency: str
+    average_rating: Optional[float] = None
+    review_count: int = 0
+    image_url: Optional[str] = None
+    image: Optional[str] = None
+    product_url: Optional[str] = None
+
+
+class IngredientSearchItemOut(Schema):
+    ingredient: IngredientSummaryOut
+    products: List[IngredientProductOut]
+
+
+class IngredientSearchOut(Schema):
+    query: str
+    results: List[IngredientSearchItemOut]
+
+
 class SessionDetailOut(Schema):
     session_id: uuid.UUID
     started_at: datetime

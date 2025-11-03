@@ -77,6 +77,15 @@ class ProductReviewAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ("common_name", "key")
     search_fields = ("common_name", "inci_name", "key")
+    fields = (
+        "key",
+        "common_name",
+        "inci_name",
+        "benefits",
+        "helps_with",
+        "avoid_with",
+        "side_effects",
+    )
 
 
 @admin.register(SkinConcern)
