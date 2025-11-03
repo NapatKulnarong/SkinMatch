@@ -1,5 +1,6 @@
 import os
 from datetime import date, datetime
+import logging
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
@@ -13,7 +14,8 @@ from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db import IntegrityError, transaction
+from django.core.mail import send_mail
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
 from ninja import File, ModelSchema, NinjaAPI, Schema
@@ -25,6 +27,7 @@ from .models import (
     SkinFactContentBlock,
     SkinFactTopic,
     SkinFactView,
+    NewsletterSubscriber,
 )
 from pydantic import ConfigDict, field_validator, model_validator
 
@@ -43,6 +46,9 @@ else:
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
+
+
+logger = logging.getLogger(__name__)
 
 
 api = NinjaAPI()
@@ -188,6 +194,95 @@ class FactContentBlockOut(Schema):
 class FactTopicDetailOut(FactTopicSummary):
     content_blocks: List[FactContentBlockOut]
     updated_at: datetime
+
+
+class NewsletterSubscribeIn(Schema):
+    email: EmailStr
+    source: Optional[str] = None
+
+
+class NewsletterSubscribeOut(Schema):
+    ok: bool
+    message: str
+    already_subscribed: bool = False
+
+# --------------- Newsletter ---------------
+
+
+@api.post("/newsletter/subscribe", response=NewsletterSubscribeOut)
+def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
+    email_value = str(payload.email or "").strip().lower()
+    if not email_value:
+        raise HttpError(400, "Email address is required.")
+
+    source_value = (payload.source or "").strip()[:80]
+    metadata = {
+        "user_agent": (request.headers.get("User-Agent") or "")[:200],
+        "referer": (request.headers.get("Referer") or "")[:200],
+        "ip": request.META.get("REMOTE_ADDR"),
+    }
+
+    try:
+        subscriber, created = NewsletterSubscriber.objects.get_or_create(
+            email=email_value,
+            defaults={
+                "source": source_value,
+                "metadata": metadata,
+            },
+        )
+    except IntegrityError:
+        created = False
+        subscriber = NewsletterSubscriber.objects.filter(email=email_value).first()
+    except DatabaseError as exc:
+        logger.exception("Newsletter table unavailable during subscribe: %s", exc)
+        raise HttpError(503, "Newsletter sign-ups are temporarily unavailable. Please try again soon.")
+
+    if subscriber is None:
+        logger.error("Newsletter subscription failed to persist for %s", email_value)
+        raise HttpError(500, "We couldn't save your subscription. Please try again soon.")
+
+    if created:
+        try:
+            sender = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@skinmatch.local"
+            send_mail(
+                subject="Welcome to SkinMatch weekly skincare tips!",
+                message=(
+                    "Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, "
+                    "product routines, and community wins tailored for healthy, happy skin.\n\n"
+                    "We're excited to share the glow with you!\n"
+                    "- The SkinMatch Team"
+                ),
+                from_email=sender,
+                recipient_list=[email_value],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.warning("Unable to send newsletter confirmation email: %s", exc)
+
+        return {
+            "ok": True,
+            "message": "Thanks! You're now subscribed to weekly skincare tips.",
+            "already_subscribed": False,
+        }
+
+    updated = False
+    if source_value and subscriber and subscriber.source != source_value:
+        subscriber.source = source_value
+        updated = True
+    if subscriber and metadata and metadata != subscriber.metadata:
+        merged_metadata = dict(subscriber.metadata or {})
+        merged_metadata.update({k: v for k, v in metadata.items() if v})
+        if merged_metadata != subscriber.metadata:
+            subscriber.metadata = merged_metadata
+            updated = True
+    if subscriber and updated:
+        subscriber.save(update_fields=["source", "metadata"])
+
+    return {
+        "ok": True,
+        "message": "You're already subscribed. Thanks for staying with us!",
+        "already_subscribed": True,
+    }
 
 # --------------- Auth endpoints ---------------
 

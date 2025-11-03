@@ -539,14 +539,18 @@ def _initials_from_name(name: str) -> str:
 @router.get("/feedback/highlights", response=list[FeedbackOut])
 def list_feedback_highlights(request, limit: int = 6):
     capped_limit = max(1, min(limit, 12))
-    queryset = (
-        QuizFeedback.objects.select_related("session__user")
-        .filter(rating__isnull=False)
-        .exclude(message__isnull=True)
-        .exclude(message__exact="")
-        .order_by("-created_at")[:capped_limit]
-    )
-    return [_serialize_feedback(feedback) for feedback in queryset]
+    try:
+        queryset = (
+            QuizFeedback.objects.select_related("session__user")
+            .filter(rating__isnull=False)
+            .exclude(message__isnull=True)
+            .exclude(message__exact="")
+            .order_by("-created_at")[:capped_limit]
+        )
+        return [_serialize_feedback(feedback) for feedback in queryset]
+    except Exception as error:
+        logger.warning("Unable to load feedback highlights: %s", error)
+        return []
 
 
 def _serialize_feedback(feedback: QuizFeedback) -> dict:

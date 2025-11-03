@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
+import { subscribeToNewsletter } from "@/lib/api.newsletter";
 import {
   getAuthToken,
   getStoredProfile,
@@ -401,6 +402,10 @@ export default function HomePage() {
       ? `${SUGGESTION_LIST_ID}-${activeSuggestionIndex}`
       : undefined;
   const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newsletterMessage, setNewsletterMessage] = useState<string | null>(null);
+  const newsletterFeedbackId = newsletterMessage ? "newsletter-feedback" : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -446,6 +451,38 @@ export default function HomePage() {
       router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
     },
     [closeSuggestions, router]
+  );
+
+  const handleNewsletterSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const trimmed = newsletterEmail.trim();
+      if (!trimmed) {
+        setNewsletterStatus("error");
+        setNewsletterMessage("Please enter your email address.");
+        return;
+      }
+
+      setNewsletterStatus("loading");
+      setNewsletterMessage(null);
+
+      try {
+        const response = await subscribeToNewsletter(trimmed, "homepage");
+        setNewsletterStatus("success");
+        setNewsletterMessage(response.message);
+        if (!response.alreadySubscribed) {
+          setNewsletterEmail("");
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "We couldn't add you just now. Please try again in a moment.";
+        setNewsletterStatus("error");
+        setNewsletterMessage(message);
+      }
+    },
+    [newsletterEmail]
   );
 
   return (
@@ -718,23 +755,48 @@ export default function HomePage() {
               </p>
             </div>
 
-            <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+            <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSubmit} noValidate>
               <input
                 type="email"
+                value={newsletterEmail}
+                onChange={(event) => {
+                  setNewsletterEmail(event.target.value);
+                  if (newsletterStatus !== "idle") {
+                    setNewsletterStatus("idle");
+                    setNewsletterMessage(null);
+                  }
+                }}
                 placeholder="your.email@example.com"
+                aria-label="Email address"
+                aria-describedby={newsletterFeedbackId}
+                aria-invalid={newsletterStatus === "error"}
                 className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
               />
               <button
                 type="submit"
-                className="rounded-full border-2 border-black bg-[#7c5a8f] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
+                disabled={newsletterStatus === "loading"}
+                className="rounded-full border-2 border-black bg-[#7c5a8f] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Subscribe
+                {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
               </button>
             </form>
 
-            <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
-              No spam, unsubscribe anytime. We respect your privacy.
-            </p>
+            <div className="space-y-1" aria-live="polite" aria-atomic="true">
+              {newsletterMessage && (
+                <p
+                  id="newsletter-feedback"
+                  className={`text-[11px] sm:text-xs font-semibold ${
+                    newsletterStatus === "error" ? "text-[#B9375D]" : "text-[#4a3a5a]"
+                  }`}
+                  role="status"
+                >
+                  {newsletterMessage}
+                </p>
+              )}
+              <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
+                No spam, unsubscribe anytime. We respect your privacy.
+              </p>
+            </div>
           </div>
         </section>
       </PageContainer>
