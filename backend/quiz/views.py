@@ -9,7 +9,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
@@ -23,8 +23,11 @@ from core.auth import decode_token
 from .models import (
     Answer,
     Choice,
+    Ingredient,
     MatchPick,
     Product,
+    ProductIngredient,
+    ProductConcern,
     ProductReview,
     Question,
     QuizFeedback,
@@ -43,6 +46,7 @@ from .schemas import (
     HistoryDeleteAck,
     FeedbackAck,
     FeedbackIn,
+    IngredientSearchOut,
     MatchPickOut,
     QuestionOut,
     QuizResultSummary,
@@ -197,6 +201,169 @@ def _ensure_default_questions() -> None:
                 )
             if desired_values:
                 question.choices.exclude(value__in=desired_values).delete()
+
+
+def _category_label(category: str | None) -> str:
+    if not category:
+        return ""
+    try:
+        return Product.Category(category).label
+    except ValueError:
+        return category.replace("_", " ").replace("-", " ").title()
+
+
+@router.get("/ingredients/search", response=IngredientSearchOut)
+def ingredient_quick_search(
+    request,
+    q: str,
+    limit: int = 12,
+    ingredient_limit: int = 5,
+):
+    query = (q or "").strip()
+    if not query:
+        raise HttpError(400, "Ingredient query cannot be blank.")
+
+    product_limit = max(1, min(limit, 24))
+    ingredient_cap = max(1, min(ingredient_limit, 10))
+    slug_candidate = slugify(query)
+
+    filters = Q(common_name__icontains=query) | Q(inci_name__icontains=query)
+    if slug_candidate:
+        filters |= Q(key__icontains=slug_candidate)
+
+    product_prefetch = Prefetch(
+        "productingredient_set",
+        queryset=(
+            ProductIngredient.objects.filter(product__is_active=True)
+            .select_related("product")
+            .order_by("order", "product__brand", "product__name")[:product_limit]
+        ),
+        to_attr="matching_links",
+    )
+
+    ingredients = list(
+        Ingredient.objects.filter(filters)
+        .annotate(
+            product_count=Count(
+                "products",
+                filter=Q(products__is_active=True),
+                distinct=True,
+            )
+        )
+        .filter(product_count__gt=0)
+        .prefetch_related(product_prefetch)
+    )
+
+    if not ingredients:
+        return {"query": query, "results": []}
+
+    query_lower = query.lower()
+    slug_lower = slug_candidate.lower() if slug_candidate else ""
+
+    scored: list[tuple[Ingredient, int, int]] = []
+    for ingredient in ingredients:
+        score = 0
+        common_lower = ingredient.common_name.lower()
+        if common_lower == query_lower:
+            score += 6
+        elif common_lower.startswith(query_lower):
+            score += 2
+        if ingredient.inci_name and ingredient.inci_name.lower() == query_lower:
+            score += 4
+        if slug_lower and ingredient.key.lower() == slug_lower:
+            score += 5
+        scored.append((ingredient, score, int(ingredient.product_count or 0)))
+
+    scored.sort(
+        key=lambda item: (
+            -item[1],
+            -item[2],
+            item[0].common_name.lower(),
+        )
+    )
+
+    trimmed = scored[:ingredient_cap]
+
+    def to_float(value):
+        if value is None:
+            return None
+        return float(value)
+
+    results_payload: list[dict] = []
+    for ingredient, _score, _count in trimmed:
+        category_counts = (
+            Product.objects.filter(
+                productingredient__ingredient=ingredient,
+                is_active=True,
+            )
+            .values("category")
+            .annotate(total=Count("id", distinct=True))
+            .order_by("-total", "category")[:3]
+        )
+        popular_categories = [
+            _category_label(row["category"]) for row in category_counts if row.get("category")
+        ]
+
+        concern_counts = (
+            ProductConcern.objects.filter(
+                product__productingredient__ingredient=ingredient,
+                product__is_active=True,
+            )
+            .values("concern__name")
+            .annotate(total=Count("product_id", distinct=True))
+            .order_by("-total", "concern__name")[:4]
+        )
+        top_concerns = [
+            row["concern__name"] for row in concern_counts if row.get("concern__name")
+        ]
+
+        product_entries: list[dict] = []
+        for link in getattr(ingredient, "matching_links", []):
+            product = link.product
+            image_url = _product_image_url(product)
+            product_url = _sanitize_product_url(product.product_url)
+            price_value = to_float(product.price)
+            if price_value == 0:
+                price_value = None
+            product_entries.append(
+                {
+                    "product_id": product.id,
+                    "slug": product.slug,
+                    "brand": product.brand,
+                    "product_name": product.name,
+                    "category": product.category,
+                    "summary": product.summary or None,
+                    "hero_ingredients": product.hero_ingredients or None,
+                    "ingredient_order": link.order,
+                    "ingredient_highlight": bool(link.highlight),
+                    "price": price_value,
+                    "currency": product.currency,
+                    "average_rating": to_float(product.rating),
+                    "review_count": product.review_count,
+                    "image_url": image_url,
+                    "image": product.image or None,
+                    "product_url": product_url,
+                }
+            )
+        results_payload.append(
+            {
+                "ingredient": {
+                    "key": ingredient.key,
+                    "common_name": ingredient.common_name,
+                    "inci_name": ingredient.inci_name or None,
+                    "benefits": ingredient.benefits or None,
+                    "helps_with": ingredient.helps_with or None,
+                    "avoid_with": ingredient.avoid_with or None,
+                    "side_effects": ingredient.side_effects or None,
+                    "product_count": int(ingredient.product_count or 0),
+                    "popular_categories": popular_categories,
+                    "top_concerns": top_concerns,
+                },
+                "products": product_entries,
+            }
+        )
+
+    return {"query": query, "results": results_payload}
 
 
 @router.get("/questions", response=list[QuestionOut])
