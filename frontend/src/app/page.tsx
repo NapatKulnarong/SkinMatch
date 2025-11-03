@@ -18,7 +18,7 @@ import {
   PROFILE_EVENT,
   type StoredProfile,
 } from "@/lib/auth-storage";
-import { fetchQuizHistory } from "@/lib/api.quiz";
+import { fetchFeedbackHighlights, fetchQuizHistory, type FeedbackHighlight } from "@/lib/api.quiz";
 import {
   QUIZ_ANSWERS_STORAGE_KEY,
   QUIZ_SESSION_STORAGE_KEY,
@@ -124,36 +124,88 @@ function QuizCtaButton() {
   );
 }
 
-const TESTIMONIALS = [
+type SuccessStory = {
+  id?: string;
+  name: string;
+  initials: string;
+  location: string;
+  rating: number;
+  text: string;
+  badge: string;
+};
+
+const DEFAULT_SUCCESS_STORIES: SuccessStory[] = [
   {
+    id: "default-1",
     name: "Sarah K.",
+    initials: "SK",
     location: "Bangkok, Thailand",
     rating: 5,
     text: "Finally found products that work with my sensitive skin! The ingredient insights were exactly what I needed.",
-    avatar: "SK",
-    result: "Reduced redness by 70%"
+    badge: "Reduced redness by 70%",
   },
   {
+    id: "default-2",
     name: "Michael T.",
+    initials: "MT",
     location: "Chiang Mai, Thailand",
     rating: 5,
     text: "The AI recommendations matched my skin concerns perfectly. My acne cleared up in just 3 weeks!",
-    avatar: "MT",
-    result: "Clear skin in 3 weeks"
+    badge: "Clear skin in 3 weeks",
   },
   {
+    id: "default-3",
     name: "Ploy W.",
+    initials: "PW",
     location: "Phuket, Thailand",
     rating: 5,
     text: "Love how it considers my budget and pregnancy-safe ingredients. Makes shopping so much easier!",
-    avatar: "PW",
-    result: "Safe & effective routine"
-  }
+    badge: "Safe & effective routine",
+  },
 ];
+
+const FALLBACK_LOCATION = "SkinMatch community";
+
+const mapHighlightToStory = (highlight: FeedbackHighlight): SuccessStory => ({
+  id: highlight.id,
+  name: highlight.displayName,
+  initials: highlight.initials || highlight.displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "SM",
+  location: highlight.location ?? FALLBACK_LOCATION,
+  rating: highlight.rating ?? 5,
+  text: highlight.message,
+  badge: highlight.badge ?? "Shared by our community",
+});
 
 export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFeedback = async () => {
+      try {
+        const highlights = await fetchFeedbackHighlights(3);
+        if (!cancelled && highlights.length) {
+          setSuccessStories(highlights.map(mapHighlightToStory));
+        }
+      } catch (error) {
+        console.warn("Failed to load feedback highlights", error);
+      }
+    };
+
+    loadFeedback();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleIngredientSearch = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -329,42 +381,46 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((testimonial, index) => (
+            {successStories.map((story, index) => {
+              const ratingValue = Math.max(0, Math.min(5, Math.round(story.rating ?? 5)));
+              const key = story.id ?? `${story.name}-${index}`;
+              return (
               <article
-                key={index}
+                key={key}
                 className="rounded-2xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)]"
               >
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-black bg-gradient-to-br from-[#f8d1d4] to-[#d8949a] text-sm sm:text-base font-bold text-[#5a2a3a]">
-                        {testimonial.avatar}
+                        {story.initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-sm sm:text-base text-[#3C3D37] truncate">{testimonial.name}</p>
-                        <p className="text-[10px] sm:text-xs text-[#3C3D37]/60 truncate">{testimonial.location}</p>
+                        <p className="font-bold text-sm sm:text-base text-[#3C3D37] truncate">{story.name}</p>
+                        <p className="text-[10px] sm:text-xs text-[#3C3D37]/60 truncate">{story.location}</p>
                       </div>
                     </div>
                     <div className="flex gap-0.5 flex-shrink-0">
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
+                      {Array.from({ length: ratingValue }).map((_, i) => (
                         <StarIcon key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-[#f59e0b]" />
                       ))}
                     </div>
                   </div>
 
                   <p className="text-xs sm:text-sm leading-relaxed text-[#3C3D37]/80">
-                    &ldquo;{testimonial.text}&rdquo;
+                    &ldquo;{story.text}&rdquo;
                   </p>
 
                   <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
                     <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#4a6b47]" />
                     <span className="text-[10px] sm:text-xs font-semibold text-[#4a6b47]">
-                      {testimonial.result}
+                      {story.badge}
                     </span>
                   </div>
                 </div>
               </article>
-            ))}
+            );
+            })}
           </div>
         </section>
 

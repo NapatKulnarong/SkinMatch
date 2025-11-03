@@ -116,6 +116,17 @@ type RawSessionDetail = {
   profile: RawProfile | null;
 };
 
+type RawFeedbackHighlight = {
+  id: string;
+  created_at: string;
+  rating?: number | string | null;
+  message: string;
+  display_name: string;
+  initials: string;
+  location?: string | null;
+  badge?: string | null;
+};
+
 type RawHistoryDetail = {
   session_id: string | null;
   completed_at: string;
@@ -276,6 +287,25 @@ export type QuizSessionDetail = {
   profile: QuizProfile | null;
 };
 
+export type FeedbackHighlight = {
+  id: string;
+  createdAt: string;
+  rating: number | null;
+  message: string;
+  displayName: string;
+  initials: string;
+  location: string | null;
+  badge: string | null;
+};
+
+export type SubmitFeedbackPayload = {
+  sessionId: string;
+  rating: number;
+  message?: string;
+  metadata?: Record<string, string>;
+  contactEmail?: string;
+};
+
 const mapChoice = (raw: RawChoice): QuizChoice => ({
   id: raw.id,
   label: raw.label,
@@ -330,6 +360,27 @@ const mapRecommendation = (raw: RawRecommendation): QuizRecommendation => ({
   averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
   reviewCount: raw.review_count ?? 0,
 });
+
+const mapFeedbackHighlight = (raw: RawFeedbackHighlight): FeedbackHighlight => {
+  let rating: number | null = null;
+  if (typeof raw.rating === "number") {
+    rating = raw.rating;
+  } else if (typeof raw.rating === "string" && raw.rating.trim()) {
+    const parsed = Number(raw.rating);
+    rating = Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return {
+    id: raw.id,
+    createdAt: raw.created_at,
+    rating,
+    message: raw.message,
+    displayName: raw.display_name,
+    initials: raw.initials,
+    location: raw.location ?? null,
+    badge: raw.badge ?? null,
+  };
+};
 
 const mapSummary = (raw: RawFinalizeSummary): QuizResultSummary => ({
   primaryConcerns: raw.primary_concerns ?? [],
@@ -598,4 +649,42 @@ export async function emailQuizSummary(sessionId: string, email?: string): Promi
     const errorBody = await res.text();
     throw new Error(errorBody || "We couldn't email your summary just yet.");
   }
+}
+
+export async function submitQuizFeedback(payload: SubmitFeedbackPayload): Promise<void> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/feedback`, {
+    method: "POST",
+    headers: {
+      ...withAuth({ "Content-Type": "application/json" }),
+    },
+    body: JSON.stringify({
+      session_id: payload.sessionId,
+      rating: payload.rating,
+      message: payload.message ?? "",
+      metadata: payload.metadata ?? {},
+      contact_email: payload.contactEmail ?? null,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "We couldn't save your feedback just yet.");
+  }
+}
+
+export async function fetchFeedbackHighlights(limit = 3): Promise<FeedbackHighlight[]> {
+  const base = getApiBase();
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${base}/quiz/feedback/highlights?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "Failed to load community feedback.");
+  }
+
+  const data: RawFeedbackHighlight[] = await res.json();
+  return data.map(mapFeedbackHighlight);
 }

@@ -10,13 +10,15 @@ import { STEP_META, type StepMeta } from "@/app/quiz/_config";
 import { buildGuidance } from "@/app/quiz/result/_guidance";
 import {
   fetchQuizHistoryDetail,
+  submitQuizFeedback,
+  emailQuizSummary,
   type QuizHistoryDetail,
   type QuizProfile,
   type QuizRecommendation,
   type QuizResultSummary,
 } from "@/lib/api.quiz";
-import { getAuthToken } from "@/lib/auth-storage";
-import { emailQuizSummary } from "@/lib/api.quiz";
+import { getAuthToken, getStoredProfile } from "@/lib/auth-storage";
+import { buildFeedbackMetadata } from "@/lib/feedback";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -34,6 +36,9 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [shareName, setShareName] = useState<boolean>(true);
 
   // email form state (used for "Email this summary" box)
   const [emailInput, setEmailInput] = useState("");
@@ -148,14 +153,44 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       alert("Please select a rating before submitting.");
       return;
     }
-    
-    // TODO: Implement API call to submit feedback
-    console.log("Submitting feedback:", { profileId, rating, feedback });
-    
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackSubmitted(false);
-    }, 3000);
+    const sessionId = detail?.sessionId;
+    if (!sessionId) {
+      alert("We couldn't find this match session. Please refresh and try again.");
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackError(null);
+    try {
+      const storedProfile = getStoredProfile();
+      const badge = detail?.summary?.primaryConcerns?.[0] ?? detail?.profile?.primaryConcerns?.[0] ?? null;
+      const metadata = buildFeedbackMetadata({
+        profile: storedProfile,
+        badge,
+        source: "match-detail",
+        anonymize: !shareName,
+      });
+
+      await submitQuizFeedback({
+        sessionId,
+        rating,
+        message: feedback,
+        metadata,
+      });
+
+      setFeedbackSubmitted(true);
+      setFeedback("");
+      setRating(0);
+      setShareName(true);
+      setTimeout(() => {
+        setFeedbackSubmitted(false);
+      }, 4000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      setFeedbackError(message);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   return (
@@ -429,14 +464,31 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                     />
                   </div>
 
+                  <label className="flex items-start gap-2 text-xs font-semibold text-[#3C3D37]">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-black text-[#B9375D] focus:ring-[#B9375D]"
+                      checked={shareName}
+                      onChange={(event) => setShareName(event.target.checked)}
+                    />
+                    <span>
+                      {shareName
+                        ? "Share my profile name on the community wall"
+                        : "Post anonymously on the community wall"}
+                    </span>
+                  </label>
+
                   <button
                     type="button"
                     onClick={handleSubmitFeedback}
-                    disabled={rating === 0}
+                    disabled={rating === 0 || isSubmittingFeedback}
                     className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                   >
-                    Submit feedback
+                    {isSubmittingFeedback ? "Sending..." : "Submit feedback"}
                   </button>
+                  {feedbackError ? (
+                    <p className="text-sm font-semibold text-red-600">{feedbackError}</p>
+                  ) : null}
                 </div>
               )}
             </section>

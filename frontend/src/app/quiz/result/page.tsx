@@ -7,7 +7,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
-import { emailQuizSummary } from "@/lib/api.quiz";
+import { emailQuizSummary, submitQuizFeedback } from "@/lib/api.quiz";
+import { getStoredProfile } from "@/lib/auth-storage";
+import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
@@ -29,6 +31,9 @@ export default function QuizResultPage() {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [shareName, setShareName] = useState<boolean>(true);
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
@@ -110,15 +115,44 @@ export default function QuizResultPage() {
       alert("Please select a rating before submitting.");
       return;
     }
-    
-    // TODO: Implement API call to submit feedback
-    console.log("Submitting feedback:", { sessionId: result?.sessionId, rating, feedback });
-    
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackSubmitted(false);
-    }, 3000);
-  }, [rating, feedback, result?.sessionId]);
+    if (!result?.sessionId) {
+      alert("We couldn't find this match session. Please refresh and try again.");
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackError(null);
+    try {
+      const storedProfile = getStoredProfile();
+      const badge = result?.summary.primaryConcerns?.[0] ?? result?.profile?.primaryConcerns?.[0] ?? null;
+      const metadata = buildFeedbackMetadata({
+        profile: storedProfile,
+        badge,
+        source: "quiz-result",
+        anonymize: !shareName,
+      });
+
+      await submitQuizFeedback({
+        sessionId: result.sessionId,
+        rating,
+        message: feedback,
+        metadata,
+      });
+
+      setFeedbackSubmitted(true);
+      setFeedback("");
+      setRating(0);
+      setShareName(true);
+      setTimeout(() => {
+        setFeedbackSubmitted(false);
+      }, 4000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      setFeedbackError(message);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  }, [feedback, rating, result?.profile?.primaryConcerns, result?.sessionId, result?.summary.primaryConcerns, shareName]);
 
   if (!hasPrimary) {
     return (
@@ -376,14 +410,31 @@ export default function QuizResultPage() {
                   />
                 </div>
 
+                <label className="flex items-start gap-2 text-xs font-semibold text-[#3C3D37]">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-black text-[#B9375D] focus:ring-[#B9375D]"
+                    checked={shareName}
+                    onChange={(event) => setShareName(event.target.checked)}
+                  />
+                  <span>
+                    {shareName
+                      ? "Share my profile name on the community wall"
+                      : "Post anonymously on the community wall"}
+                  </span>
+                </label>
+
                 <button
                   type="button"
                   onClick={handleSubmitFeedback}
-                  disabled={rating === 0}
+                  disabled={rating === 0 || isSubmittingFeedback}
                   className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                 >
-                  Submit feedback
+                  {isSubmittingFeedback ? "Sending..." : "Submit feedback"}
                 </button>
+                {feedbackError ? (
+                  <p className="text-sm font-semibold text-red-600">{feedbackError}</p>
+                ) : null}
               </div>
             )}
           </div>
