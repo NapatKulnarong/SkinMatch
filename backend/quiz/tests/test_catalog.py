@@ -224,7 +224,6 @@ def test_recommendation_prefers_uploaded_product_image(tmp_path, settings):
         price=Decimal("650.00"),
         currency=Product.Currency.THB,
         product_url="https://store.example.com/products/123",
-        image_url="https://example.com/fallback.jpg",
         is_active=True,
     )
 

@@ -964,10 +964,6 @@ def _product_image_url(product: Product) -> str | None:
             return image_value
         relative_path = image_value.lstrip("/")
         return f"{settings.MEDIA_URL.rstrip('/')}/{relative_path}"
-
-    url = (product.image_url or "").strip()
-    if url:
-        return url
     return _placeholder_image_data(product)
 
 
@@ -1131,6 +1127,7 @@ def _map_history_summary(raw: dict | None) -> QuizResultSummary:
 
 def _serialize_pick(pick: MatchPick) -> MatchPickOut:
     product = getattr(pick, "product", None)
+    image_url = pick.image_url or (_product_image_url(product) if product else None)
     return MatchPickOut(
         product_id=str(pick.product_id),
         slug=pick.product_slug,
@@ -1143,7 +1140,7 @@ def _serialize_pick(pick: MatchPick) -> MatchPickOut:
         currency=pick.currency,
         ingredients=list(pick.ingredients or []),
         rationale=pick.rationale or {},
-        image_url=getattr(product, "image_url", None),
+        image_url=image_url,
         product_url=getattr(product, "product_url", None),
         average_rating=_decimal_to_float(getattr(product, "rating", None)),
         review_count=getattr(product, "review_count", 0) or 0,

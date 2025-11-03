@@ -123,7 +123,6 @@ class Product(models.Model):
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.USD)
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     review_count = models.PositiveIntegerField(default=0)
-    image_url = models.URLField(blank=True)
     image = models.TextField(
         blank=True,
         default="",
