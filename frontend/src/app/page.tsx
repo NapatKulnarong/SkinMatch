@@ -490,7 +490,7 @@ export default function HomePage() {
       <Navbar />
       <PageContainer className="relative flex flex-col gap-8 sm:gap-12 pt-24 sm:pt-32 pb-12 sm:pb-16">
         {/* Hero Section */}
-        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#fff1dd] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
           <div className="grid items-center gap-6 sm:gap-8 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[1.05fr_0.95fr]">
             <div className="order-1 space-y-4 sm:space-y-6 text-center md:order-2 md:text-left">
               <div className="space-y-2 sm:space-y-3">
@@ -517,7 +517,7 @@ export default function HomePage() {
 
             <div className="order-2 flex justify-center md:order-1">
               <Image
-                src="/img/mascot/matchy_magnifier.png"
+                src="/img/mascot/matchy_match.gif"
                 alt="Matchy the SkinMatch mascot giving a friendly wave"
                 width={360}
                 height={270}
