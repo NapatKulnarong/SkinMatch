@@ -254,9 +254,22 @@ function AccountContent() {
           </div>
 
           {/* SECOND ROW - Wishlist */}
-          <div className="col-span-12 lg:col-span-5">
-            <Panel title="Wishlist" tall emptyMessage="Save your favorite products here." />
-          </div>
+          <div className="col-span-12 lg:col-span-5 relative">
+  {/* Panel */}
+  <Panel title="Wishlist" tall emptyMessage="Save your favorite products here." />
+  
+  {/* Matchy mascot - positioned relative to the panel */}
+  <div className="absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
+    <Image
+      src="/img/mascot/matchy_7.png"
+      alt="Matchy mascot"
+      width={200}
+      height={200}
+      className="w-[180px] sm:w-[300px] drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)]"
+      priority
+    />
+  </div>
+</div>
         </section>
       </PageContainer>
     </main>
