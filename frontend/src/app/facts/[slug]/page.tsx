@@ -28,6 +28,7 @@ export default async function FactTopicPage({ params }: Params) {
           cover={cover}
           title={topic.title}
           subtitle={topic.subtitle || topic.excerpt || ""}
+          alt={topic.heroImageAlt}
         />
 
         {/* ARTICLE CARD */}

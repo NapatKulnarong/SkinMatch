@@ -103,7 +103,7 @@ export default function PopularTopics() {
           <div className="relative h-[420px] md:h-[480px]">
             <Image
               src={heroImage}
-              alt={current.title}
+              alt={current.heroImageAlt ?? current.title}
               fill
               priority
               className="object-cover"

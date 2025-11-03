@@ -236,7 +236,7 @@ function AccountContent() {
             {/* Matchy Mascot - Positioned on top center of the Match History box */}
             <div className="absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
               <Image
-                src="/img/mascot/matchy_5.png"
+                src="/img/mascot/matchy_hourglass.png"
                 alt="Matchy mascot"
                 width={200}
                 height={200}
@@ -248,14 +248,22 @@ function AccountContent() {
             <MatchHistoryPanel token={authToken} />
           </div>
 
-          {/* SECOND ROW - Recent Activity */}
-          <div className="col-span-12 lg:col-span-7">
-            <Panel title="Recent Activity" tall emptyMessage="Your recent skincare activity will appear here." />
-          </div>
-
           {/* SECOND ROW - Wishlist */}
-          <div className="col-span-12 lg:col-span-5">
-            <Panel title="Wishlist" tall emptyMessage="Save your favorite products here." />
+          <div className="col-span-12 lg:col-span-12 relative">
+          {/* Panel */}
+          <Panel title="Wishlist" tall emptyMessage="Save your favorite products here." />
+  
+          {/* Matchy mascot - positioned relative to the panel */}
+            <div className="absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
+              <Image
+                src="/img/mascot/matchy_heart.png"
+                alt="Matchy mascot"
+                width={200}
+                height={200}
+                className="w-[180px] sm:w-[300px] drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)]"
+                priority
+              />
+            </div>
           </div>
         </section>
       </PageContainer>
@@ -490,7 +498,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
             {actionError}
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mt-4 mr-1">
           {visibleHistory.map((item, index) => {
             const key = item.sessionId ?? item.profileId ?? `${item.completedAt}-${index}`;
             const completedDate = new Date(item.completedAt);

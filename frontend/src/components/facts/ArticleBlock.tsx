@@ -35,7 +35,7 @@ export default function ArticleBlock({
           >
             <Image
               src={block.imageUrl}
-              alt={block.imageAlt ?? block.heading ?? ""}
+              alt={block.imageAlt ?? block.heading ?? "Content image"}
               width={800}
               height={600}
               className="

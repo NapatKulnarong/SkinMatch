@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
@@ -36,9 +35,10 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
+  const [shareName, setShareName] = useState(true);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [shareName, setShareName] = useState<boolean>(true);
 
   // email form state (used for "Email this summary" box)
   const [emailInput, setEmailInput] = useState("");
@@ -148,14 +148,13 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       })
     : "";
 
-  const handleSubmitFeedback = async () => {
+  const handleSubmitFeedback = useCallback(async () => {
     if (rating === 0) {
-      alert("Please select a rating before submitting.");
+      setFeedbackError("Please select a rating before submitting.");
       return;
     }
-    const sessionId = detail?.sessionId;
-    if (!sessionId) {
-      alert("We couldn't find this match session. Please refresh and try again.");
+    if (!detail?.sessionId) {
+      setFeedbackError("We couldn't find this quiz session. Please refresh and try again.");
       return;
     }
 
@@ -163,50 +162,41 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
     setFeedbackError(null);
     try {
       const storedProfile = getStoredProfile();
-      const badge = detail?.summary?.primaryConcerns?.[0] ?? detail?.profile?.primaryConcerns?.[0] ?? null;
+      const trimmedMessage = feedback.trim();
       const metadata = buildFeedbackMetadata({
-        profile: storedProfile,
-        badge,
+        profile: shareName ? storedProfile : null,
+        anonymize: anonymizeFeedback || !shareName,
         source: "match-detail",
-        anonymize: !shareName,
       });
 
       await submitQuizFeedback({
-        sessionId,
+        sessionId: detail.sessionId,
         rating,
-        message: feedback,
+        message: trimmedMessage || undefined,
         metadata,
       });
 
-      setFeedbackSubmitted(true);
-      setFeedback("");
       setRating(0);
-      setShareName(true);
+      setHoverRating(0);
+      setFeedback("");
+      setFeedbackSubmitted(true);
       setTimeout(() => {
         setFeedbackSubmitted(false);
-      }, 4000);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      }, 3000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "We couldn't send your feedback right now. Please try again.";
       setFeedbackError(message);
     } finally {
       setIsSubmittingFeedback(false);
     }
-  };
+  }, [anonymizeFeedback, detail?.sessionId, feedback, rating, shareName]);
 
   return (
     <main className="min-h-screen bg-[#FFF6E9]">
       <Navbar />
       <PageContainer className="pt-32 pb-16">
-        {/* top nav row */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#3C3D37] hover:underline"
-          >
-            ← Back to account
-          </Link>
-        </div>
-
+        
         {loading ? (
           <div className="mt-12 flex justify-center">
             <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-center shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
@@ -244,9 +234,11 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
               </p>
 
-              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
-                Completed {completedLabel}
-              </p>
+              <div className="inline-block border-1 border-black bg-white rounded-full px-4 py-1">
+                <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
+                  Completed on {completedLabel}
+                </p>
+              </div>
             </header>
 
             {/* profile + strategy */}
@@ -350,7 +342,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 <section className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4 text-center">
                   <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
                   <p className="text-sm text-[#1b2a50]/70">
-                    Get a copy of your routine roadmap delivered straight to your inbox.
+                    Get a copy of your SkinProfile delivered straight to your inbox.
                   </p>
 
                   <div className="space-y-3 text-left">
@@ -412,7 +404,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               ) : (
                 <div className="space-y-6">
                   <div>
-                    <p className="text-sm font-semibold text-[#3C3D37] mb-3">How would you rate this skin match?</p>
                     <div className="flex items-center gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -442,12 +433,34 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                           </svg>
                         </button>
                       ))}
-                      {rating > 0 && (
-                        <span className="ml-2 text-sm font-semibold text-[#3C3D37]">
-                          {rating} {rating === 1 ? "star" : "stars"}
-                        </span>
-                      )}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0_rgba(0,0,0,0.1)] sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[#3C3D37]">Submit feedback anonymously</p>
+                      <p className="text-xs text-[#3C3D37]/70">
+                        Keep your story in the mix while hiding your name on testimonials.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={anonymizeFeedback}
+                      onClick={() => setAnonymizeFeedback((prev) => !prev)}
+                      className={`relative inline-flex h-9 w-16 items-center rounded-full border-2 border-black transition ${
+                        anonymizeFeedback ? "bg-[#B9375D]" : "bg-white"
+                      }`}
+                    >
+                      <span className="sr-only">
+                        {anonymizeFeedback ? "Anonymous feedback enabled" : "Anonymous feedback disabled"}
+                      </span>
+                      <span
+                        className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-transform ${
+                          anonymizeFeedback ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
                   </div>
 
                   <div>

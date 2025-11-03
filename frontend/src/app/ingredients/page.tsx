@@ -36,13 +36,34 @@ const formatPrice = (price: number | null, currency: string) => {
   }
 };
 
+type SearchParamsShape = Record<string, string | string[] | undefined> | URLSearchParams;
+
+type AwaitableSearchParams =
+  | Promise<SearchParamsShape>
+  | SearchParamsShape
+  | undefined;
+
 type PageProps = {
-  searchParams?: { q?: string | string[] };
+  searchParams?: AwaitableSearchParams;
 };
 
+const isPromise = <T,>(value: unknown): value is Promise<T> =>
+  typeof value === "object" &&
+  value !== null &&
+  "then" in value &&
+  typeof (value as { then?: unknown }).then === "function";
+
 export default async function IngredientSearchPage({ searchParams }: PageProps) {
-  const param = searchParams?.q;
-  const queryValue = Array.isArray(param) ? param[0] ?? "" : param ?? "";
+  const resolvedSearchParams = isPromise<SearchParamsShape>(searchParams)
+    ? await searchParams
+    : searchParams;
+  const searchParamValue =
+    resolvedSearchParams instanceof URLSearchParams
+      ? resolvedSearchParams.getAll("q")
+      : resolvedSearchParams?.q;
+  const queryValue = Array.isArray(searchParamValue)
+    ? searchParamValue[0] ?? ""
+    : searchParamValue ?? "";
   const query = queryValue.trim();
 
   let result: IngredientSearchItem[] = [];

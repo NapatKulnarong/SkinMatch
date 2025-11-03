@@ -534,13 +534,6 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
 
 
 def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
-    print(f"Block {block.order}: has image? {bool(block.image)}")
-    if block.image:
-        print(f"  Image name: {block.image.name}")
-        try:
-            print(f"  Image URL: {block.image.url}")
-        except Exception as e:
-            print(f"  Error getting URL: {e}")
     return FactContentBlockOut(
         order=block.order,
         block_type=block.block_type,

@@ -1,5 +1,5 @@
 // src/components/Navbar.tsx
-"use client"; // means "Run this code in the browser instead of only on the server."
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -17,15 +17,22 @@ export default function Navbar() {
   const headerRef = useRef<HTMLElement | null>(null);
   const setNavWidth = useNavWidthSetter();
 
-  // same look/size as your Button (flat)
   const pillBase =
-    "h-9 px-4 flex items-center justify-center rounded-full font-semibold text-sm transition";
+    "h-9 px-4 flex items-center justify-center rounded-full font-semibold text-sm transition-colors duration-200";
 
   const activeStyles: Record<string, string> = {
     orange: "bg-[#f4bc78] text-black",
     green:  "bg-[#acdb93] text-black",
     blue:   "bg-[#94c6ef] text-black",
   };
+
+  // Hover styles for each color
+  const hoverStyles: Record<string, string> = {
+    orange: "hover:bg-[#f4bc78] hover:text-black",
+    green:  "hover:bg-[#acdb93] hover:text-black",
+    blue:   "hover:bg-[#94c6ef] hover:text-black",
+  };
+
   const inactive = "bg-gray-200 text-black";
 
   const links = [
@@ -97,6 +104,7 @@ export default function Navbar() {
       setNavWidth(null);
     };
   }, [setNavWidth]);
+
   const loginLabel = (() => {
     if (!profile) return "Login / Sign Up";
     const parts = [profile.first_name, profile.last_name].filter(
@@ -117,12 +125,14 @@ export default function Navbar() {
       ref={headerRef}
       className="absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-20"
     >
-      {/* Logo on the left (unchanged) */}
+      {/* Logo on the left */}
       <div className="flex items-center space-x-2">
-        <Image src="/logo.png" alt="SkinMatch Logo" width={130} height={130} />
+        <Link href="/">
+          <Image src="/logo.png" alt="SkinMatch Logo" width={130} height={130} />
+        </Link>
       </div>
 
-      {/* Center nav (unchanged) */}
+      {/* Center nav */}
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2 border-2 border-black rounded-full px-3 py-2 bg-white shadow-[2px_3px_0px_rgba(0,0,0,0.3)]">
           {links.map(({ href, label, color }) => (
@@ -130,27 +140,31 @@ export default function Navbar() {
               key={href}
               href={href}
               aria-current={isActive(href) ? "page" : undefined}
-              className={`${pillBase} ${isActive(href) ? activeStyles[color] : inactive}`}
+              className={`${pillBase} ${
+                isActive(href) 
+                  ? activeStyles[color] 
+                  : `${inactive} ${hoverStyles[color]}`
+              }`}
             >
               {label}
             </Link>
           ))}
         </div>
 
-        {/* LOGIN BAR — matches your mockup */}
+        {/* LOGIN BAR */}
         <div className="flex items-center gap-2 border-2 border-black rounded-full px-3 py-2 bg-white shadow-[2px_3px_0px_rgba(0,0,0,0.3)]">
-          {/* Inner pill that turns purple when on /login */}
           <Link
             href={loginHref}
             aria-current={isActive(loginHref) ? "page" : undefined}
             className={`${pillBase} ${
-              isActive(loginHref) ? "bg-[#c7b6ea] text-black" : "bg-gray-200 text-black"
+              isActive(loginHref) 
+                ? "bg-[#c7b6ea] text-black" 
+                : "bg-gray-200 text-black hover:bg-[#c7b6ea]"
             }`}
           >
             {loginLabel}
           </Link>
 
-          {/* Small avatar INSIDE the bar (right side) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={avatarSrc}
