@@ -4,12 +4,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { GlobeAltIcon, CameraIcon } from "@heroicons/react/24/outline";
 
 import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
+import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import {
   getAuthToken,
   getStoredProfile,
@@ -149,23 +151,33 @@ const TESTIMONIALS = [
   }
 ];
 
-const TRENDING_INGREDIENTS = [
-  { name: "Niacinamide", benefit: "Brightening & pore refining" },
-  { name: "Hyaluronic Acid", benefit: "Deep hydration" },
-  { name: "Retinol", benefit: "Anti-aging powerhouse" },
-  { name: "Vitamin C", benefit: "Radiance boost" }
-];
-
 export default function HomePage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleIngredientSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // TODO: Navigate to ingredient search page
-      console.log("Searching for:", searchQuery);
-    }
-  };
+  const handleIngredientSearch = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const trimmed = searchQuery.trim();
+      if (!trimmed) {
+        return;
+      }
+      router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
+    },
+    [router, searchQuery]
+  );
+
+  const handleTrendingSelect = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return;
+      }
+      router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
+    },
+    [router]
+  );
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
@@ -221,7 +233,7 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/30 bg-[#4a6b47]/10 px-3 py-1">
                 <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a6b47]" />
                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#4a6b47]">
-                  Coming Soon
+                  Now Live
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-[#2d4a2b]/70">
@@ -235,13 +247,13 @@ export default function HomePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search any ingredient (e.g., hyaluronic acid)..."
-                disabled
-                className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b] opacity-60 cursor-not-allowed"
+                aria-label="Search skincare ingredients"
+                autoComplete="off"
+                className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
               />
               <button
                 type="submit"
-                disabled
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] opacity-60 cursor-not-allowed"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[2px] hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
               >
                 <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
@@ -252,8 +264,9 @@ export default function HomePage() {
               {TRENDING_INGREDIENTS.map((ingredient) => (
                 <button
                   key={ingredient.name}
-                  disabled
-                  className="rounded-full border border-black/20 bg-white px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-[#4a6b47] opacity-60 cursor-not-allowed"
+                  type="button"
+                  onClick={() => handleTrendingSelect(ingredient.name)}
+                  className="rounded-full border border-black/20 bg-white px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-[#4a6b47] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
                 >
                   {ingredient.name}
                 </button>
