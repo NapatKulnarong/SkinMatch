@@ -5,14 +5,19 @@ import SkinKnowledge from "@/app/facts/_SkinKnowledge";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  default: (props: ComponentProps<"img">) => <img {...props} />,
+  // eslint-disable-next-line @next/next/no-img-element
+  default: (props: ComponentProps<"img">) => {
+    const { priority, fill, alt, ...rest } = props;
+    void priority;
+    void fill;
+    return <img alt={alt ?? ""} {...rest} />;
+  },
 }));
 
 const mockFetch = (topics: unknown) =>
   jest.spyOn(global, "fetch").mockResolvedValue({
     ok: true,
-    json: async () => ({ topics }),
+    json: async () => topics,
   } as Response);
 
 describe("SkinKnowledge imagery", () => {
@@ -26,22 +31,25 @@ describe("SkinKnowledge imagery", () => {
         slug: "moisturizer",
         title: "Moisturizer Guide",
         subtitle: "Hydration tips",
-        heroImageUrl: "http://backend:8000/media/topics/moisturizer.jpg",
-        heroImageAlt: "Moisturizer bottles",
+        section: "knowledge",
+        hero_image_url: "http://backend:8000/media/topics/moisturizer.jpg",
+        hero_image_alt: "Moisturizer bottles",
       },
       {
         slug: "cleanser",
         title: "Cleanser Basics",
         subtitle: "Clean skin",
-        heroImageUrl: null,
-        heroImageAlt: null,
+        section: "knowledge",
+        hero_image_url: null,
+        hero_image_alt: null,
       },
       {
         slug: "serum",
         title: "Serum Power",
         subtitle: "Active ingredients",
-        heroImageUrl: "http://backend:8000/media/topics/serum.jpg",
-        heroImageAlt: "Serum bottles",
+        section: "knowledge",
+        hero_image_url: "http://backend:8000/media/topics/serum.jpg",
+        hero_image_alt: "Serum bottles",
       },
     ]);
 
@@ -65,15 +73,17 @@ describe("SkinKnowledge imagery", () => {
         slug: "topic-1",
         title: "Topic 1",
         subtitle: "First topic",
-        heroImageUrl: null,
-        heroImageAlt: null,
+        section: "knowledge",
+        hero_image_url: null,
+        hero_image_alt: null,
       },
       {
         slug: "topic-2",
         title: "Topic 2",
         subtitle: "Second topic",
-        heroImageUrl: "http://backend:8000/media/topics/topic-2.jpg",
-        heroImageAlt: "Topic 2 hero",
+        section: "knowledge",
+        hero_image_url: "http://backend:8000/media/topics/topic-2.jpg",
+        hero_image_alt: "Topic 2 hero",
       },
     ]);
 

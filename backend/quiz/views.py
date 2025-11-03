@@ -29,9 +29,12 @@ from .models import (
     ProductIngredient,
     ProductConcern,
     ProductReview,
+    RestrictionTag,
     Question,
     QuizFeedback,
     QuizSession,
+    SkinConcern,
+    SkinTypeTag,
 )
 from .ai import generate_strategy_notes
 from .catalog_loader import ensure_sample_catalog
@@ -50,6 +53,7 @@ from .schemas import (
     IngredientSearchOut,
     IngredientSuggestionResponse,
     MatchPickOut,
+    ProductDetailOut,
     QuestionOut,
     QuizResultSummary,
     EmailSummaryAck,
@@ -535,14 +539,18 @@ def _initials_from_name(name: str) -> str:
 @router.get("/feedback/highlights", response=list[FeedbackOut])
 def list_feedback_highlights(request, limit: int = 6):
     capped_limit = max(1, min(limit, 12))
-    queryset = (
-        QuizFeedback.objects.select_related("session__user")
-        .filter(rating__isnull=False)
-        .exclude(message__isnull=True)
-        .exclude(message__exact="")
-        .order_by("-created_at")[:capped_limit]
-    )
-    return [_serialize_feedback(feedback) for feedback in queryset]
+    try:
+        queryset = (
+            QuizFeedback.objects.select_related("session__user")
+            .filter(rating__isnull=False)
+            .exclude(message__isnull=True)
+            .exclude(message__exact="")
+            .order_by("-created_at")[:capped_limit]
+        )
+        return [_serialize_feedback(feedback) for feedback in queryset]
+    except Exception as error:
+        logger.warning("Unable to load feedback highlights: %s", error)
+        return []
 
 
 def _serialize_feedback(feedback: QuizFeedback) -> dict:
@@ -868,6 +876,83 @@ def session_detail(request, session_id: uuid.UUID):
         completed_at=session.completed_at,
         picks=picks,
         profile=profile,
+    )
+
+
+@router.get("/products/{product_id}", response=ProductDetailOut)
+def product_detail(request, product_id: uuid.UUID):
+    product = get_object_or_404(
+        Product.objects.filter(id=product_id, is_active=True).prefetch_related(
+            Prefetch(
+                "productingredient_set",
+                queryset=ProductIngredient.objects.select_related("ingredient").order_by("order", "ingredient__common_name"),
+                to_attr="prefetched_ingredient_links",
+            ),
+            Prefetch(
+                "concerns",
+                queryset=SkinConcern.objects.all().order_by("name"),
+                to_attr="prefetched_concerns",
+            ),
+            Prefetch(
+                "skin_types",
+                queryset=SkinTypeTag.objects.all().order_by("name"),
+                to_attr="prefetched_skin_types",
+            ),
+            Prefetch(
+                "restrictions",
+                queryset=RestrictionTag.objects.all().order_by("name"),
+                to_attr="prefetched_restrictions",
+            ),
+        )
+    )
+
+    ingredient_entries: list[dict] = []
+    for link in getattr(product, "prefetched_ingredient_links", []):
+        ingredient = getattr(link, "ingredient", None)
+        if not ingredient:
+            continue
+        ingredient_entries.append(
+            {
+                "name": ingredient.common_name,
+                "inci_name": ingredient.inci_name or None,
+                "highlight": bool(link.highlight),
+                "order": link.order,
+            }
+        )
+
+    hero_ingredients_raw = product.hero_ingredients or ""
+    hero_ingredients = [part.strip() for part in hero_ingredients_raw.split(",") if part and part.strip()]
+    if not hero_ingredients and ingredient_entries:
+        hero_ingredients = [entry["name"] for entry in ingredient_entries[:3]]
+
+    price_value = _decimal_to_float(product.price)
+    if price_value is not None and price_value <= 0:
+        price_value = None
+
+    image_url = _product_image_url(product)
+    product_url = _sanitize_product_url(product.product_url)
+
+    return ProductDetailOut(
+        product_id=product.id,
+        slug=product.slug,
+        brand=product.brand,
+        product_name=product.name,
+        category=product.category,
+        category_label=_category_label(product.category),
+        summary=product.summary or None,
+        description=product.description or None,
+        hero_ingredients=hero_ingredients,
+        ingredients=sorted(ingredient_entries, key=lambda entry: entry["order"]),
+        concerns=[concern.name for concern in getattr(product, "prefetched_concerns", [])],
+        skin_types=[stype.name for stype in getattr(product, "prefetched_skin_types", [])],
+        restrictions=[tag.name for tag in getattr(product, "prefetched_restrictions", [])],
+        price=price_value,
+        currency=product.currency,
+        average_rating=_decimal_to_float(product.rating),
+        review_count=product.review_count,
+        image_url=image_url,
+        product_url=product_url,
+        affiliate_url=product_url,
     )
 
 

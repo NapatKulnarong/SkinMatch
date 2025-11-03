@@ -6,14 +6,19 @@ import TrendingSkincare from "@/app/facts/_TrendingSkincare";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  default: (props: ComponentProps<"img">) => <img {...props} />,
+  // eslint-disable-next-line @next/next/no-img-element
+  default: (props: ComponentProps<"img">) => {
+    const { priority, fill, alt, ...rest } = props;
+    void priority;
+    void fill;
+    return <img alt={alt ?? ""} {...rest} />;
+  },
 }));
 
 const mockFetch = (topics: unknown) =>
   jest.spyOn(global, "fetch").mockResolvedValue({
     ok: true,
-    json: async () => ({ topics }),
+    json: async () => topics,
   } as Response);
 
 describe("FactCheck imagery", () => {
@@ -27,15 +32,17 @@ describe("FactCheck imagery", () => {
         slug: "myth-pores",
         title: "Myth: Pores Open and Close",
         subtitle: "The truth about pores",
-        heroImageUrl: "http://backend:8000/media/factcheck/pores.jpg",
-        heroImageAlt: "Skin pores closeup",
+        section: "fact_check",
+        hero_image_url: "http://backend:8000/media/factcheck/pores.jpg",
+        hero_image_alt: "Skin pores closeup",
       },
       {
         slug: "myth-toothpaste",
         title: "Myth: Toothpaste for Acne",
         subtitle: "Does it really work?",
-        heroImageUrl: "http://backend:8000/media/factcheck/acne.jpg",
-        heroImageAlt: "Acne treatment",
+        section: "fact_check",
+        hero_image_url: "http://backend:8000/media/factcheck/acne.jpg",
+        hero_image_alt: "Acne treatment",
       },
     ]);
 
@@ -60,22 +67,25 @@ describe("TrendingSkincare imagery", () => {
         slug: "hyaluronic-acid",
         title: "Hyaluronic Acid",
         subtitle: "Hydration hero",
-        heroImageUrl: "http://backend:8000/media/trending/ha.jpg",
-        heroImageAlt: "Hyaluronic acid serum",
+        section: "trending",
+        hero_image_url: "http://backend:8000/media/trending/ha.jpg",
+        hero_image_alt: "Hyaluronic acid serum",
       },
       {
         slug: "niacinamide",
         title: "Niacinamide",
         subtitle: "Multi-tasker",
-        heroImageUrl: null,
-        heroImageAlt: null,
+        section: "trending",
+        hero_image_url: null,
+        hero_image_alt: null,
       },
       {
         slug: "peptides",
         title: "Peptides",
         subtitle: "Anti-aging",
-        heroImageUrl: "http://backend:8000/media/trending/peptides.jpg",
-        heroImageAlt: "Peptide serum",
+        section: "trending",
+        hero_image_url: "http://backend:8000/media/trending/peptides.jpg",
+        hero_image_alt: "Peptide serum",
       },
     ]);
 

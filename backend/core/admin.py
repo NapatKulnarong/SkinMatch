@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView
+from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView, NewsletterSubscriber
 
 
 class SkinFactContentBlockInline(admin.TabularInline):
@@ -109,3 +109,11 @@ class SkinFactViewAdmin(admin.ModelAdmin):
         "viewed_at",
     )
     ordering = ("-viewed_at",)
+
+
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ("email", "source", "subscribed_at")
+    search_fields = ("email", "source")
+    list_filter = ("source", "subscribed_at")
+    ordering = ("-subscribed_at",)

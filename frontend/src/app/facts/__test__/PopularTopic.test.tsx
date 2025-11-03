@@ -9,8 +9,15 @@ import "@testing-library/jest-dom";
 jest.mock("@/lib/api.facts");
 jest.mock("next/image", () => ({
   __esModule: true,
-  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  default: (props: ComponentProps<"img">) => <img {...props} />,
+  default: (props: ComponentProps<"img">) => {
+    const { priority, fill, alt, ...rest } = props;
+    void priority;
+    void fill;
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img alt={alt ?? ""} {...rest} />
+    );
+  },
 }));
 
 const mockedFetchPopularTopics = fetchPopularTopics as jest.MockedFunction<typeof fetchPopularTopics>;
