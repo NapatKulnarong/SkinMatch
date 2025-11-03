@@ -394,6 +394,12 @@ class QuizFeedback(models.Model):
     )
     contact_email = models.EmailField(blank=True)
     message = models.TextField()
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Optional star rating from 1 to 5.",
+    )
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -401,6 +407,7 @@ class QuizFeedback(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["created_at"]),
+            models.Index(fields=["rating", "created_at"]),
         ]
 
     def __str__(self) -> str:

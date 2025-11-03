@@ -236,8 +236,20 @@ class SessionDetailOut(Schema):
 class FeedbackIn(Schema):
     session_id: Optional[uuid.UUID] = None
     contact_email: Optional[str] = None
-    message: str
+    message: Optional[str] = None
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
     metadata: dict = {}
+
+
+class FeedbackOut(Schema):
+    id: uuid.UUID
+    created_at: datetime
+    rating: Optional[int] = None
+    message: str
+    display_name: str
+    initials: str
+    location: Optional[str] = None
+    badge: Optional[str] = None
 
 
 class FeedbackAck(Schema):

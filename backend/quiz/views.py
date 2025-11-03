@@ -46,6 +46,7 @@ from .schemas import (
     HistoryDeleteAck,
     FeedbackAck,
     FeedbackIn,
+    FeedbackOut,
     IngredientSearchOut,
     MatchPickOut,
     QuestionOut,
@@ -71,10 +72,6 @@ def _resolve_request_user(request):
     Works for session auth (request.user) and raw Bearer tokens (Authorization header)
     so quiz endpoints can stay optional-auth while still binding sessions to users.
     """
-    user = getattr(request, "user", None)
-    if user and getattr(user, "is_authenticated", False):
-        return user
-
     auth_header = ""
     if hasattr(request, "headers"):
         auth_header = request.headers.get("Authorization", "") or ""
@@ -88,7 +85,11 @@ def _resolve_request_user(request):
             try:
                 return User.objects.get(id=data["user_id"])
             except User.DoesNotExist:
-                return None
+                pass
+
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False):
+        return user
     return None
 
 DEFAULT_QUIZ_FLOW: list[dict] = [
@@ -398,13 +399,125 @@ def submit_feedback(request, payload: FeedbackIn):
     session = None
     if payload.session_id:
         session = get_object_or_404(QuizSession, id=payload.session_id)
+    metadata = _sanitize_feedback_metadata(payload.metadata)
+    message = _compose_feedback_message(payload.message, payload.rating)
     feedback = QuizFeedback.objects.create(
         session=session,
         contact_email=payload.contact_email or "",
-        message=payload.message.strip(),
-        metadata=payload.metadata or {},
+        message=message,
+        rating=payload.rating,
+        metadata=metadata,
     )
     return FeedbackAck(ok=bool(feedback))
+
+
+def _sanitize_feedback_metadata(metadata: dict | None) -> dict[str, str]:
+    if not isinstance(metadata, dict):
+        return {}
+    sanitized: dict[str, str] = {}
+    for key, value in metadata.items():
+        if value is None:
+            continue
+        key_str = str(key)
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if cleaned:
+                sanitized[key_str] = cleaned
+        elif isinstance(value, (int, float)):
+            sanitized[key_str] = str(value)
+    return sanitized
+
+
+def _compose_feedback_message(raw_message: str | None, rating: int | None) -> str:
+    message = (raw_message or "").strip()
+    if message:
+        return message
+    if rating:
+        suffix = "s" if rating != 1 else ""
+        return f"Rated {rating} star{suffix}."
+    return "Feedback submitted."
+
+
+def _initials_from_name(name: str) -> str:
+    cleaned = name.replace("_", " ").strip()
+    if not cleaned:
+        return "SM"
+    parts = [part for part in cleaned.split() if part]
+    if not parts:
+        return "SM"
+    if len(parts) == 1:
+        token = parts[0]
+        return (token[:2] if len(token) > 1 else token[0]).upper()
+    return (parts[0][0] + parts[1][0]).upper()
+
+
+@router.get("/feedback/highlights", response=list[FeedbackOut])
+def list_feedback_highlights(request, limit: int = 6):
+    capped_limit = max(1, min(limit, 12))
+    queryset = (
+        QuizFeedback.objects.select_related("session__user")
+        .filter(rating__isnull=False)
+        .exclude(message__isnull=True)
+        .exclude(message__exact="")
+        .order_by("-created_at")[:capped_limit]
+    )
+    return [_serialize_feedback(feedback) for feedback in queryset]
+
+
+def _serialize_feedback(feedback: QuizFeedback) -> dict:
+    metadata = _sanitize_feedback_metadata(feedback.metadata if isinstance(feedback.metadata, dict) else {})
+    display_name = (metadata.get("display_name") or metadata.get("name") or "").strip()
+
+    user = None
+    if feedback.session_id:
+        user = getattr(feedback.session, "user", None)
+
+    if not display_name and user is not None:
+        first = (user.first_name or "").strip()
+        last = (user.last_name or "").strip()
+        if first and last:
+            display_name = f"{first} {last[0]}."
+        elif first:
+            display_name = first
+        elif last:
+            display_name = last
+        else:
+            display_name = getattr(user, "username", "") or getattr(user, "email", "")
+
+    if not display_name:
+        display_name = "SkinMatch member"
+
+    initials = (metadata.get("initials") or "").strip() or _initials_from_name(display_name)
+    location = (metadata.get("location") or "").strip() or None
+    badge = (metadata.get("badge") or "").strip() or None
+
+    anonymous_flag = (metadata.get("anonymous") or "").strip().lower()
+    is_anonymous = anonymous_flag in {"1", "true", "yes", "anon"}
+
+    if is_anonymous:
+        display_name = "SkinMatch member"
+        initials = "SM"
+        location = None
+
+    if not badge and feedback.session_id:
+        snapshot = getattr(feedback.session, "profile_snapshot", {}) or {}
+        if isinstance(snapshot, dict):
+            primary = snapshot.get("primary_concerns")
+            if isinstance(primary, list) and primary:
+                badge = str(primary[0])
+
+    message = feedback.message.strip()
+
+    return {
+        "id": feedback.id,
+        "created_at": feedback.created_at,
+        "rating": feedback.rating,
+        "message": message,
+        "display_name": display_name,
+        "initials": initials,
+        "location": location,
+        "badge": badge,
+    }
 
 
 @router.post("/answer", response=AnswerAck)
