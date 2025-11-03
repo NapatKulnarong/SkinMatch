@@ -303,7 +303,6 @@ export type SubmitFeedbackPayload = {
   rating: number;
   message?: string;
   metadata?: Record<string, string>;
-  contactEmail?: string;
 };
 
 const mapChoice = (raw: RawChoice): QuizChoice => ({
@@ -663,7 +662,6 @@ export async function submitQuizFeedback(payload: SubmitFeedbackPayload): Promis
       rating: payload.rating,
       message: payload.message ?? "",
       metadata: payload.metadata ?? {},
-      contact_email: payload.contactEmail ?? null,
     }),
   });
 

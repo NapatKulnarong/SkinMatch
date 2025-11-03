@@ -235,7 +235,6 @@ class SessionDetailOut(Schema):
 
 class FeedbackIn(Schema):
     session_id: Optional[uuid.UUID] = None
-    contact_email: Optional[str] = None
     message: Optional[str] = None
     rating: Optional[int] = Field(default=None, ge=1, le=5)
     metadata: dict = {}

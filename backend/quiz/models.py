@@ -392,7 +392,6 @@ class QuizFeedback(models.Model):
         null=True,
         blank=True,
     )
-    contact_email = models.EmailField(blank=True)
     message = models.TextField()
     rating = models.PositiveSmallIntegerField(
         null=True,
@@ -411,5 +410,6 @@ class QuizFeedback(models.Model):
         ]
 
     def __str__(self) -> str:
-        base = self.contact_email or "anonymous"
-        return f"Feedback from {base} at {self.created_at:%Y-%m-%d %H:%M}"
+        metadata = self.metadata if isinstance(self.metadata, dict) else {}
+        display = metadata.get("display_name") or metadata.get("name") or "anonymous"
+        return f"Feedback from {display} at {self.created_at:%Y-%m-%d %H:%M}"

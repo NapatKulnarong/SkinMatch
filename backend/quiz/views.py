@@ -403,7 +403,6 @@ def submit_feedback(request, payload: FeedbackIn):
     message = _compose_feedback_message(payload.message, payload.rating)
     feedback = QuizFeedback.objects.create(
         session=session,
-        contact_email=payload.contact_email or "",
         message=message,
         rating=payload.rating,
         metadata=metadata,

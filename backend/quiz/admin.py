@@ -26,8 +26,8 @@ class QuizSessionAdmin(admin.ModelAdmin):
 
 @admin.register(QuizFeedback)
 class QuizFeedbackAdmin(admin.ModelAdmin):
-    list_display = ("contact_email", "session", "rating", "created_at")
-    search_fields = ("contact_email", "message")
+    list_display = ("session", "rating", "created_at")
+    search_fields = ("message",)
     list_filter = ("created_at", "rating")
     readonly_fields = ("created_at",)
 
