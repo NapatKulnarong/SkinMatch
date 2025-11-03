@@ -34,7 +34,6 @@ export default function QuizResultPage() {
   const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [shareName, setShareName] = useState<boolean>(true);
   const [activeRecommendation, setActiveRecommendation] = useState<QuizRecommendation | null>(null);
   const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
   const [productDetailLoading, setProductDetailLoading] = useState(false);
@@ -56,7 +55,7 @@ export default function QuizResultPage() {
 
   const ingredientHighlights = useMemo(() => {
     const highlights: { ingredient: string; reason: string }[] = [];
-    const topIngredients = result?.summary.topIngredients ?? [];
+    const topIngredients = result?.summary?.topIngredients ?? [];
     topIngredients.forEach((ingredient) => {
       if (!ingredient) return;
       highlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
@@ -67,7 +66,7 @@ export default function QuizResultPage() {
       }
     });
     return highlights.slice(0, 6);
-  }, [guidance.lookFor, result?.summary.topIngredients]);
+  }, [guidance.lookFor, result?.summary?.topIngredients]);
 
   const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];
@@ -179,20 +178,6 @@ export default function QuizResultPage() {
       alert("Please select a rating before submitting.");
       return;
     }
-    
-    // TODO: Implement API call to submit feedback
-    console.log("Submitting feedback:", {
-      sessionId: result?.sessionId,
-      rating,
-      feedback,
-      anonymous: anonymizeFeedback,
-    });
-    
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackSubmitted(false);
-    }, 3000);
-  }, [anonymizeFeedback, rating, feedback, result?.sessionId]);
     if (!result?.sessionId) {
       alert("We couldn't find this match session. Please refresh and try again.");
       return;
@@ -202,12 +187,12 @@ export default function QuizResultPage() {
     setFeedbackError(null);
     try {
       const storedProfile = getStoredProfile();
-      const badge = result?.summary.primaryConcerns?.[0] ?? result?.profile?.primaryConcerns?.[0] ?? null;
+      const badge = result?.summary?.primaryConcerns?.[0] ?? result?.profile?.primaryConcerns?.[0] ?? null;
       const metadata = buildFeedbackMetadata({
         profile: storedProfile,
         badge,
         source: "quiz-result",
-        anonymize: !shareName,
+        anonymize: anonymizeFeedback,
       });
 
       await submitQuizFeedback({
@@ -220,7 +205,7 @@ export default function QuizResultPage() {
       setFeedbackSubmitted(true);
       setFeedback("");
       setRating(0);
-      setShareName(true);
+      setAnonymizeFeedback(false);
       setTimeout(() => {
         setFeedbackSubmitted(false);
       }, 4000);
@@ -230,7 +215,7 @@ export default function QuizResultPage() {
     } finally {
       setIsSubmittingFeedback(false);
     }
-  }, [feedback, rating, result?.profile?.primaryConcerns, result?.sessionId, result?.summary.primaryConcerns, shareName]);
+  }, [anonymizeFeedback, feedback, rating, result?.profile?.primaryConcerns, result?.sessionId, result?.summary?.primaryConcerns]);
 
   if (!hasPrimary) {
     return (
@@ -508,20 +493,6 @@ export default function QuizResultPage() {
                     className="w-full rounded-2xl border-2 border-black px-4 py-3 text-sm text-[#3C3D37] placeholder-[#3C3D37] placeholder-opacity-40 focus:outline-none focus:ring-2 focus:ring-[#B9375D] shadow-[2px_3px_0_rgba(0,0,0,0.1)]"
                   />
                 </div>
-
-                <label className="flex items-start gap-2 text-xs font-semibold text-[#3C3D37]">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-black text-[#B9375D] focus:ring-[#B9375D]"
-                    checked={shareName}
-                    onChange={(event) => setShareName(event.target.checked)}
-                  />
-                  <span>
-                    {shareName
-                      ? "Share my profile name on the community wall"
-                      : "Post anonymously on the community wall"}
-                  </span>
-                </label>
 
                 <button
                   type="button"

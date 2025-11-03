@@ -41,7 +41,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [shareName, setShareName] = useState<boolean>(true);
   const [activeRecommendation, setActiveRecommendation] = useState<QuizRecommendation | null>(null);
   const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
   const [productDetailLoading, setProductDetailLoading] = useState(false);
@@ -244,7 +243,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
         profile: storedProfile,
         badge,
         source: "match-detail",
-        anonymize: !shareName,
+        anonymize: false,
       });
 
       await submitQuizFeedback({
@@ -257,7 +256,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       setFeedbackSubmitted(true);
       setFeedback("");
       setRating(0);
-      setShareName(true);
       setTimeout(() => {
         setFeedbackSubmitted(false);
       }, 4000);
@@ -560,20 +558,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                       className="w-full rounded-2xl border-2 border-black px-4 py-3 text-sm text-[#3C3D37] placeholder-[#3C3D37] placeholder-opacity-40 focus:outline-none focus:ring-2 focus:ring-[#B9375D] shadow-[2px_3px_0_rgba(0,0,0,0.1)]"
                     />
                   </div>
-
-                  <label className="flex items-start gap-2 text-xs font-semibold text-[#3C3D37]">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-black text-[#B9375D] focus:ring-[#B9375D]"
-                      checked={shareName}
-                      onChange={(event) => setShareName(event.target.checked)}
-                    />
-                    <span>
-                      {shareName
-                        ? "Share my profile name on the community wall"
-                        : "Post anonymously on the community wall"}
-                    </span>
-                  </label>
 
                   <button
                     type="button"

@@ -4,6 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { GlobeAltIcon, CameraIcon } from "@heroicons/react/24/outline";
@@ -161,17 +162,13 @@ const DEFAULT_SUCCESS_STORIES: SuccessStory[] = [
     location: "Phuket, Thailand",
     rating: 5,
     text: "Love how it considers my budget and pregnancy-safe ingredients. Makes shopping so much easier!",
-    avatar: "PW",
-    result: "Safe & effective routine"
-  }
+    badge: "Safe & effective routine",
+  },
 ];
 
 const SUGGESTION_DEBOUNCE_MS = 180;
 const SUGGESTION_LIMIT = 8;
 const SUGGESTION_LIST_ID = "ingredient-search-suggestions";
-    badge: "Safe & effective routine",
-  },
-];
 
 const FALLBACK_LOCATION = "SkinMatch community";
 
@@ -347,7 +344,7 @@ export default function HomePage() {
   }, [closeSuggestions]);
 
   const handleInputKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
+    (event: KeyboardEvent<HTMLInputElement>) => {
       const hasItems = suggestions.length > 0;
       if (event.key === "ArrowDown") {
         if (!hasItems) {
@@ -426,7 +423,7 @@ export default function HomePage() {
   }, []);
 
   const handleIngredientSearch = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
+    (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const trimmed = searchQuery.trim();
       if (!trimmed) {
