@@ -261,7 +261,7 @@ function AccountContent() {
   {/* Matchy mascot - positioned relative to the panel */}
   <div className="absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
     <Image
-      src="/img/mascot/matchy_7.png"
+      src="/img/mascot/matchy_heart.png"
       alt="Matchy mascot"
       width={200}
       height={200}

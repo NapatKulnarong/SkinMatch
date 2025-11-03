@@ -35,9 +35,21 @@ type RawIngredientResult = {
   products: RawIngredientProduct[];
 };
 
+type RawIngredientSuggestion = {
+  key: string;
+  common_name: string;
+  inci_name?: string | null;
+  product_count?: number | null;
+};
+
 type RawIngredientSearchResponse = {
   query: string;
   results: RawIngredientResult[];
+};
+
+type RawIngredientSuggestionResponse = {
+  query: string;
+  suggestions: RawIngredientSuggestion[];
 };
 
 const getApiBase = () => {
@@ -100,6 +112,13 @@ export type IngredientSearchItem = {
   products: IngredientSearchProduct[];
 };
 
+export type IngredientSuggestion = {
+  key: string;
+  commonName: string;
+  inciName: string | null;
+  productCount: number;
+};
+
 export type IngredientSearchResponse = {
   query: string;
   results: IngredientSearchItem[];
@@ -145,6 +164,13 @@ const mapIngredient = (raw: RawIngredientSummary): IngredientSummary => ({
   topConcerns: Array.isArray(raw.top_concerns)
     ? raw.top_concerns.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [],
+});
+
+const mapSuggestion = (raw: RawIngredientSuggestion): IngredientSuggestion => ({
+  key: raw.key,
+  commonName: raw.common_name,
+  inciName: raw.inci_name ?? null,
+  productCount: raw.product_count ?? 0,
 });
 
 const mapResponse = (raw: RawIngredientSearchResponse): IngredientSearchResponse => ({
@@ -206,4 +232,41 @@ export async function fetchIngredientSearch(
 
   const payload = (await res.json()) as RawIngredientSearchResponse;
   return mapResponse(payload);
+}
+
+type SuggestionOptions = {
+  limit?: number;
+  signal?: AbortSignal;
+};
+
+export async function fetchIngredientSuggestions(
+  query: string,
+  options: SuggestionOptions = {}
+): Promise<IngredientSuggestion[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const params = new URLSearchParams({ q: trimmed });
+  if (options.limit) {
+    params.set("limit", String(options.limit));
+  }
+
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/ingredients/suggest?${params.toString()}`, {
+    cache: "no-store",
+    signal: options.signal,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to load ingredient suggestions.");
+  }
+
+  const payload = (await res.json()) as RawIngredientSuggestionResponse;
+  if (!Array.isArray(payload.suggestions)) {
+    return [];
+  }
+
+  return payload.suggestions.map(mapSuggestion);
 }

@@ -47,6 +47,7 @@ from .schemas import (
     FeedbackAck,
     FeedbackIn,
     IngredientSearchOut,
+    IngredientSuggestionResponse,
     MatchPickOut,
     QuestionOut,
     QuizResultSummary,
@@ -210,6 +211,87 @@ def _category_label(category: str | None) -> str:
         return Product.Category(category).label
     except ValueError:
         return category.replace("_", " ").replace("-", " ").title()
+
+
+@router.get("/ingredients/suggest", response=IngredientSuggestionResponse)
+def ingredient_suggestions(
+    request,
+    q: str,
+    limit: int = 8,
+):
+    query = (q or "").strip()
+    if not query:
+        return {"query": "", "suggestions": []}
+
+    suggestion_limit = max(1, min(limit, 12))
+    slug_candidate = slugify(query)
+
+    filters = Q(common_name__icontains=query) | Q(inci_name__icontains=query)
+    if slug_candidate:
+        filters |= Q(key__icontains=slug_candidate)
+
+    ingredients = list(
+        Ingredient.objects.filter(filters)
+        .annotate(
+            product_count=Count(
+                "products",
+                filter=Q(products__is_active=True),
+                distinct=True,
+            )
+        )
+        .filter(product_count__gt=0)
+    )
+
+    if not ingredients:
+        return {"query": query, "suggestions": []}
+
+    query_lower = query.lower()
+    slug_lower = slug_candidate.lower() if slug_candidate else ""
+
+    scored: list[tuple[Ingredient, int, int, str]] = []
+    for ingredient in ingredients:
+        score = 0
+        common_name = ingredient.common_name or ""
+        common_lower = common_name.lower()
+        if common_lower == query_lower:
+            score += 6
+        elif common_lower.startswith(query_lower):
+            score += 2
+
+        inci_lower = ""
+        if ingredient.inci_name:
+            inci_lower = ingredient.inci_name.lower()
+            if inci_lower == query_lower:
+                score += 5
+            elif inci_lower.startswith(query_lower):
+                score += 1
+
+        if slug_lower and ingredient.key.lower() == slug_lower:
+            score += 4
+
+        primary_name = common_name or ingredient.inci_name or ingredient.key
+        scored.append((ingredient, score, int(ingredient.product_count or 0), primary_name))
+
+    scored.sort(
+        key=lambda item: (
+            -item[1],
+            -item[2],
+            item[3].lower(),
+        )
+    )
+
+    trimmed = scored[:suggestion_limit]
+    suggestions = [
+        {
+            "key": ingredient.key,
+            "common_name": ingredient.common_name,
+            "inci_name": ingredient.inci_name or None,
+            "product_count": int(ingredient.product_count or 0),
+        }
+        for ingredient, _score, _count, _name in trimmed
+    ]
+
+    return {"query": query, "suggestions": suggestions}
 
 
 @router.get("/ingredients/search", response=IngredientSearchOut)
