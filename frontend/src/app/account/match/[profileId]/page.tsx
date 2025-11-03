@@ -38,6 +38,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
+  const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [shareName, setShareName] = useState<boolean>(true);
@@ -215,6 +216,19 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       alert("Please select a rating before submitting.");
       return;
     }
+    
+    // TODO: Implement API call to submit feedback
+    console.log("Submitting feedback:", {
+      profileId,
+      rating,
+      feedback,
+      anonymous: anonymizeFeedback,
+    });
+    
+    setFeedbackSubmitted(true);
+    setTimeout(() => {
+      setFeedbackSubmitted(false);
+    }, 3000);
     const sessionId = detail?.sessionId;
     if (!sessionId) {
       alert("We couldn't find this match session. Please refresh and try again.");
@@ -474,7 +488,6 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               ) : (
                 <div className="space-y-6">
                   <div>
-                    <p className="text-sm font-semibold text-[#3C3D37] mb-3">How would you rate this skin match?</p>
                     <div className="flex items-center gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -504,12 +517,34 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                           </svg>
                         </button>
                       ))}
-                      {rating > 0 && (
-                        <span className="ml-2 text-sm font-semibold text-[#3C3D37]">
-                          {rating} {rating === 1 ? "star" : "stars"}
-                        </span>
-                      )}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0_rgba(0,0,0,0.1)] sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[#3C3D37]">Submit feedback anonymously</p>
+                      <p className="text-xs text-[#3C3D37]/70">
+                        Keep your story in the mix while hiding your name on testimonials.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={anonymizeFeedback}
+                      onClick={() => setAnonymizeFeedback((prev) => !prev)}
+                      className={`relative inline-flex h-9 w-16 items-center rounded-full border-2 border-black transition ${
+                        anonymizeFeedback ? "bg-[#B9375D]" : "bg-white"
+                      }`}
+                    >
+                      <span className="sr-only">
+                        {anonymizeFeedback ? "Anonymous feedback enabled" : "Anonymous feedback disabled"}
+                      </span>
+                      <span
+                        className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-transform ${
+                          anonymizeFeedback ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
                   </div>
 
                   <div>

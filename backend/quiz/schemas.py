@@ -255,6 +255,18 @@ class IngredientSearchOut(Schema):
     results: List[IngredientSearchItemOut]
 
 
+class IngredientSuggestionOut(Schema):
+    key: str
+    common_name: str
+    inci_name: Optional[str] = None
+    product_count: int = 0
+
+
+class IngredientSuggestionResponse(Schema):
+    query: str
+    suggestions: List[IngredientSuggestionOut]
+
+
 class SessionDetailOut(Schema):
     session_id: uuid.UUID
     started_at: datetime

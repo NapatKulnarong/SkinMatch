@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { GlobeAltIcon, CameraIcon } from "@heroicons/react/24/outline";
@@ -12,6 +12,7 @@ import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
+import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
 import {
   getAuthToken,
   getStoredProfile,
@@ -160,6 +161,14 @@ const DEFAULT_SUCCESS_STORIES: SuccessStory[] = [
     location: "Phuket, Thailand",
     rating: 5,
     text: "Love how it considers my budget and pregnancy-safe ingredients. Makes shopping so much easier!",
+    avatar: "PW",
+    result: "Safe & effective routine"
+  }
+];
+
+const SUGGESTION_DEBOUNCE_MS = 180;
+const SUGGESTION_LIMIT = 8;
+const SUGGESTION_LIST_ID = "ingredient-search-suggestions";
     badge: "Safe & effective routine",
   },
 ];
@@ -185,6 +194,215 @@ const mapHighlightToStory = (highlight: FeedbackHighlight): SuccessStory => ({
 export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<IngredientSuggestion[]>([]);
+  const [isSuggestionLoading, setIsSuggestionLoading] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const suggestionAbortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<number | null>(null);
+  const blurTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (blurTimeoutRef.current !== null) {
+        window.clearTimeout(blurTimeoutRef.current);
+        blurTimeoutRef.current = null;
+      }
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+      setSuggestions([]);
+      setIsSuggestionLoading(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
+
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (suggestionAbortRef.current) {
+      suggestionAbortRef.current.abort();
+      suggestionAbortRef.current = null;
+    }
+
+    const controller = new AbortController();
+    suggestionAbortRef.current = controller;
+    setIsSuggestionLoading(true);
+
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const items = await fetchIngredientSuggestions(trimmed, {
+          limit: SUGGESTION_LIMIT,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) {
+          return;
+        }
+        setSuggestions(items);
+        setActiveSuggestionIndex(-1);
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.warn("Failed to load ingredient suggestions", error);
+        setSuggestions([]);
+        setActiveSuggestionIndex(-1);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSuggestionLoading(false);
+        }
+      }
+    }, SUGGESTION_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+    };
+  }, [searchQuery]);
+
+  const getSuggestionLabel = useCallback(
+    (item: IngredientSuggestion) => item.commonName || item.inciName || item.key,
+    []
+  );
+
+  const formatSuggestionMeta = useCallback((count: number) => {
+    if (!Number.isFinite(count) || count <= 0) {
+      return "";
+    }
+    return count === 1 ? "1 product" : `${count} products`;
+  }, []);
+
+  const closeSuggestions = useCallback(() => {
+    setIsInputFocused(false);
+    setActiveSuggestionIndex(-1);
+  }, []);
+
+  const handleSuggestionSelect = useCallback(
+    (suggestion: IngredientSuggestion) => {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (suggestionAbortRef.current) {
+        suggestionAbortRef.current.abort();
+        suggestionAbortRef.current = null;
+      }
+
+      const label = getSuggestionLabel(suggestion).trim();
+      if (!label) {
+        return;
+      }
+
+      setSearchQuery(label);
+      setSuggestions([]);
+      setIsSuggestionLoading(false);
+      closeSuggestions();
+      router.push(`/ingredients?q=${encodeURIComponent(label)}`);
+    },
+    [closeSuggestions, getSuggestionLabel, router]
+  );
+
+  const handleInputFocus = useCallback(() => {
+    if (blurTimeoutRef.current !== null) {
+      window.clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    setIsInputFocused(true);
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    if (blurTimeoutRef.current !== null) {
+      window.clearTimeout(blurTimeoutRef.current);
+    }
+    blurTimeoutRef.current = window.setTimeout(() => {
+      closeSuggestions();
+      blurTimeoutRef.current = null;
+    }, 120);
+  }, [closeSuggestions]);
+
+  const handleInputKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      const hasItems = suggestions.length > 0;
+      if (event.key === "ArrowDown") {
+        if (!hasItems) {
+          return;
+        }
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => {
+          const next = prev + 1;
+          if (next >= suggestions.length) {
+            return 0;
+          }
+          return next;
+        });
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        if (!hasItems) {
+          return;
+        }
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => {
+          const next = prev - 1;
+          if (next < 0) {
+            return suggestions.length - 1;
+          }
+          return next;
+        });
+        return;
+      }
+
+      if (event.key === "Enter") {
+        if (activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestions.length) {
+          event.preventDefault();
+          handleSuggestionSelect(suggestions[activeSuggestionIndex]);
+        } else {
+          closeSuggestions();
+        }
+        return;
+      }
+
+      if (event.key === "Escape") {
+        closeSuggestions();
+        return;
+      }
+    },
+    [activeSuggestionIndex, closeSuggestions, handleSuggestionSelect, suggestions]
+  );
+
+  const shouldShowSuggestions = isInputFocused && searchQuery.trim().length > 0;
+  const hasSuggestions = suggestions.length > 0;
+  const activeSuggestionId =
+    activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestions.length
+      ? `${SUGGESTION_LIST_ID}-${activeSuggestionIndex}`
+      : undefined;
   const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
 
   useEffect(() => {
@@ -214,9 +432,10 @@ export default function HomePage() {
       if (!trimmed) {
         return;
       }
+      closeSuggestions();
       router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
     },
-    [router, searchQuery]
+    [closeSuggestions, router, searchQuery]
   );
 
   const handleTrendingSelect = useCallback(
@@ -226,9 +445,10 @@ export default function HomePage() {
       if (!trimmed) {
         return;
       }
+      closeSuggestions();
       router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
     },
-    [router]
+    [closeSuggestions, router]
   );
 
   return (
@@ -275,7 +495,7 @@ export default function HomePage() {
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-dashed border-black bg-gradient-to-br from-[#e8f4e3] to-[#d4e9ce] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e8f4e3] to-[#d4e9ce] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-3">
@@ -285,7 +505,7 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/30 bg-[#4a6b47]/10 px-3 py-1">
                 <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a6b47]" />
                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#4a6b47]">
-                  Now Live
+                  BETA
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-[#2d4a2b]/70">
@@ -298,9 +518,17 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                onKeyDown={handleInputKeyDown}
                 placeholder="Search any ingredient (e.g., hyaluronic acid)..."
                 aria-label="Search skincare ingredients"
                 autoComplete="off"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={shouldShowSuggestions}
+                aria-controls={SUGGESTION_LIST_ID}
+                aria-activedescendant={activeSuggestionId}
                 className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
               />
               <button
@@ -309,6 +537,63 @@ export default function HomePage() {
               >
                 <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
+              {shouldShowSuggestions && (
+                <div
+                  id={SUGGESTION_LIST_ID}
+                  role="listbox"
+                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_8px_0_rgba(0,0,0,0.2)]"
+                >
+                  {isSuggestionLoading && !hasSuggestions ? (
+                    <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
+                  ) : hasSuggestions ? (
+                    <ul className="max-h-72 overflow-y-auto py-1">
+                      {suggestions.map((item, index) => {
+                        const label = getSuggestionLabel(item);
+                        const meta = formatSuggestionMeta(item.productCount);
+                        const isActive = index === activeSuggestionIndex;
+                        const optionId = `${SUGGESTION_LIST_ID}-${index}`;
+                        return (
+                          <li key={`${item.key}-${index}`}>
+                            <button
+                              type="button"
+                              id={optionId}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleSuggestionSelect(item)}
+                              onMouseEnter={() => setActiveSuggestionIndex(index)}
+                              className={`flex w-full items-center gap-3 px-4 py-2 text-left transition ${
+                                isActive ? "bg-[#e8f4e3]" : "hover:bg-[#f1f7ec]"
+                              } focus:outline-none focus-visible:bg-[#e8f4e3]`}
+                              aria-selected={isActive}
+                              role="option"
+                            >
+                              <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-[#4a6b47]" />
+                              <div className="flex min-w-0 flex-col">
+                                <span className="truncate text-sm font-semibold text-[#2d4a2b]">
+                                  {label}
+                                </span>
+                                {item.inciName && item.inciName !== label && (
+                                  <span className="truncate text-xs text-[#2d4a2b]/60">
+                                    {item.inciName}
+                                  </span>
+                                )}
+                              </div>
+                              {meta && (
+                                <span className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-[#2d4a2b]/50">
+                                  {meta}
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-[#2d4a2b]/60">
+                      No matching ingredients yet. Try another keyword.
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
 
             <div className="flex flex-wrap justify-center gap-2">
@@ -332,7 +617,7 @@ export default function HomePage() {
           {/* Mascot Image - positioned absolutely to overflow the box */}
           <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-45 md:-right-8 z-10 pointer-events-none">
   <Image
-    src="/img/mascot/matchy_6.png"
+    src="/img/mascot/matchy_camera.png"
     alt="Matchy with camera"
     width={180}
     height={180}
