@@ -168,16 +168,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
     <main className="min-h-screen bg-[#FFF6E9]">
       <Navbar />
       <PageContainer className="pt-32 pb-16">
-        {/* top nav row */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#3C3D37] hover:underline"
-          >
-            ← Back to account
-          </Link>
-        </div>
-
+        
         {loading ? (
           <div className="mt-12 flex justify-center">
             <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-center shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
@@ -215,9 +206,11 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
               </p>
 
-              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
-                Completed {completedLabel}
-              </p>
+              <div className="inline-block border-1 border-black bg-white rounded-full px-4 py-1">
+                <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
+                  Completed on {completedLabel}
+                </p>
+              </div>
             </header>
 
             {/* profile + strategy */}
@@ -321,7 +314,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 <section className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4 text-center">
                   <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
                   <p className="text-sm text-[#1b2a50]/70">
-                    Get a copy of your routine roadmap delivered straight to your inbox.
+                    Get a copy of your SkinProfile delivered straight to your inbox.
                   </p>
 
                   <div className="space-y-3 text-left">

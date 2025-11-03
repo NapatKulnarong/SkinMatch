@@ -427,7 +427,7 @@ export default function HomePage() {
 
             <div className="order-2 flex justify-center md:order-1">
               <Image
-                src="/img/mascot/matchy_1.png"
+                src="/img/mascot/matchy_magnifier.png"
                 alt="Matchy the SkinMatch mascot giving a friendly wave"
                 width={360}
                 height={270}

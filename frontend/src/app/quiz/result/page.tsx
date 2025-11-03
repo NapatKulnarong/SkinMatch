@@ -262,7 +262,7 @@ export default function QuizResultPage() {
           <div className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4">
             <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
             <p className="text-sm text-[#1b2a50]/70">
-              Get a copy of your routine roadmap delivered straight to your inbox.
+              Get a copy of your SkinProfile delivered straight to your inbox.
             </p>
             <div className="space-y-3 text-left">
               <input
