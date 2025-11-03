@@ -3,8 +3,8 @@ from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 import requests
 from django.conf import settings
 from django.contrib.auth import logout
-from django.http import HttpResponseRedirect
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
 from django.views import View
 
 from .auth import create_access_token
@@ -12,7 +12,7 @@ from .google_auth import authenticate_google_id_token
 
 
 def home(request):
-    return render(request, "home.html")
+    return HttpResponse("")
 
 
 def logout_view(request):
