@@ -538,6 +538,13 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
 
 
 def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
+    print(f"Block {block.order}: has image? {bool(block.image)}")
+    if block.image:
+        print(f"  Image name: {block.image.name}")
+        try:
+            print(f"  Image URL: {block.image.url}")
+        except Exception as e:
+            print(f"  Error getting URL: {e}")
     return FactContentBlockOut(
         order=block.order,
         block_type=block.block_type,
@@ -562,16 +569,7 @@ def _resolve_media_url(request, image_field) -> Optional[str]:
         return relative_url
 
     # Build something like "http://backend:8000/media/facts/hero/myimg.jpg"
-    absolute = request.build_absolute_uri(relative_url)
-
-    # Important bit:
-    # When the frontend (running in your browser on macOS at http://localhost:3000)
-    # calls the backend container, Django thinks its own host is "backend:8000".
-    # But the browser cannot resolve "backend". It ONLY knows "localhost:8000".
-    absolute = absolute.replace("http://backend:8000", "http://localhost:8000")
-    absolute = absolute.replace("http://backend", "http://localhost:8000")
-
-    return absolute
+    return request.build_absolute_uri(relative_url)
 
 
 # ------------------------------------------------------------------------------------

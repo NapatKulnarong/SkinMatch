@@ -71,15 +71,6 @@ export const popularTopicsMock: FactTopicSummary[] = [
     "Oil cleansers dissolve sunscreen best—but it is optional for some skin types.",
     4982
   ),
-  createSummary(
-    "matchy-feature",
-    "hydration-happiness",
-    "Matchy’s guide to happy hydrated skin",
-    "/img/mascot/matchy_4.png",
-    "knowledge",
-    "Why keeping your moisture barrier cushioned makes every routine work better.",
-    4680
-  ),
 ];
 
 // section cards for home page
