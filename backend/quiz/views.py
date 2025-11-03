@@ -29,9 +29,12 @@ from .models import (
     ProductIngredient,
     ProductConcern,
     ProductReview,
+    RestrictionTag,
     Question,
     QuizFeedback,
     QuizSession,
+    SkinConcern,
+    SkinTypeTag,
 )
 from .ai import generate_strategy_notes
 from .catalog_loader import ensure_sample_catalog
@@ -46,9 +49,11 @@ from .schemas import (
     HistoryDeleteAck,
     FeedbackAck,
     FeedbackIn,
+    FeedbackOut,
     IngredientSearchOut,
     IngredientSuggestionResponse,
     MatchPickOut,
+    ProductDetailOut,
     QuestionOut,
     QuizResultSummary,
     EmailSummaryAck,
@@ -72,10 +77,6 @@ def _resolve_request_user(request):
     Works for session auth (request.user) and raw Bearer tokens (Authorization header)
     so quiz endpoints can stay optional-auth while still binding sessions to users.
     """
-    user = getattr(request, "user", None)
-    if user and getattr(user, "is_authenticated", False):
-        return user
-
     auth_header = ""
     if hasattr(request, "headers"):
         auth_header = request.headers.get("Authorization", "") or ""
@@ -89,7 +90,11 @@ def _resolve_request_user(request):
             try:
                 return User.objects.get(id=data["user_id"])
             except User.DoesNotExist:
-                return None
+                pass
+
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False):
+        return user
     return None
 
 DEFAULT_QUIZ_FLOW: list[dict] = [
@@ -480,13 +485,124 @@ def submit_feedback(request, payload: FeedbackIn):
     session = None
     if payload.session_id:
         session = get_object_or_404(QuizSession, id=payload.session_id)
+    metadata = _sanitize_feedback_metadata(payload.metadata)
+    message = _compose_feedback_message(payload.message, payload.rating)
     feedback = QuizFeedback.objects.create(
         session=session,
-        contact_email=payload.contact_email or "",
-        message=payload.message.strip(),
-        metadata=payload.metadata or {},
+        message=message,
+        rating=payload.rating,
+        metadata=metadata,
     )
     return FeedbackAck(ok=bool(feedback))
+
+
+def _sanitize_feedback_metadata(metadata: dict | None) -> dict[str, str]:
+    if not isinstance(metadata, dict):
+        return {}
+    sanitized: dict[str, str] = {}
+    for key, value in metadata.items():
+        if value is None:
+            continue
+        key_str = str(key)
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if cleaned:
+                sanitized[key_str] = cleaned
+        elif isinstance(value, (int, float)):
+            sanitized[key_str] = str(value)
+    return sanitized
+
+
+def _compose_feedback_message(raw_message: str | None, rating: int | None) -> str:
+    message = (raw_message or "").strip()
+    if message:
+        return message
+    if rating:
+        suffix = "s" if rating != 1 else ""
+        return f"Rated {rating} star{suffix}."
+    return "Feedback submitted."
+
+
+def _initials_from_name(name: str) -> str:
+    cleaned = name.replace("_", " ").strip()
+    if not cleaned:
+        return "SM"
+    parts = [part for part in cleaned.split() if part]
+    if not parts:
+        return "SM"
+    if len(parts) == 1:
+        token = parts[0]
+        return (token[:2] if len(token) > 1 else token[0]).upper()
+    return (parts[0][0] + parts[1][0]).upper()
+
+
+@router.get("/feedback/highlights", response=list[FeedbackOut])
+def list_feedback_highlights(request, limit: int = 6):
+    capped_limit = max(1, min(limit, 12))
+    queryset = (
+        QuizFeedback.objects.select_related("session__user")
+        .filter(rating__isnull=False)
+        .exclude(message__isnull=True)
+        .exclude(message__exact="")
+        .order_by("-created_at")[:capped_limit]
+    )
+    return [_serialize_feedback(feedback) for feedback in queryset]
+
+
+def _serialize_feedback(feedback: QuizFeedback) -> dict:
+    metadata = _sanitize_feedback_metadata(feedback.metadata if isinstance(feedback.metadata, dict) else {})
+    display_name = (metadata.get("display_name") or metadata.get("name") or "").strip()
+
+    user = None
+    if feedback.session_id:
+        user = getattr(feedback.session, "user", None)
+
+    if not display_name and user is not None:
+        first = (user.first_name or "").strip()
+        last = (user.last_name or "").strip()
+        if first and last:
+            display_name = f"{first} {last[0]}."
+        elif first:
+            display_name = first
+        elif last:
+            display_name = last
+        else:
+            display_name = getattr(user, "username", "") or getattr(user, "email", "")
+
+    if not display_name:
+        display_name = "SkinMatch member"
+
+    initials = (metadata.get("initials") or "").strip() or _initials_from_name(display_name)
+    location = (metadata.get("location") or "").strip() or None
+    badge = (metadata.get("badge") or "").strip() or None
+
+    anonymous_flag = (metadata.get("anonymous") or "").strip().lower()
+    is_anonymous = anonymous_flag in {"1", "true", "yes", "anon"}
+
+    if is_anonymous:
+        display_name = "SkinMatch member"
+        initials = "SM"
+        location = None
+
+    if not badge and feedback.session_id:
+        snapshot = getattr(feedback.session, "profile_snapshot", {}) or {}
+        if isinstance(snapshot, dict):
+            primary = snapshot.get("primary_concerns")
+            if isinstance(primary, list) and primary:
+                badge = str(primary[0])
+
+    message = feedback.message.strip()
+
+    return {
+        "id": feedback.id,
+        "created_at": feedback.created_at,
+        "rating": feedback.rating,
+        "message": message,
+        "display_name": display_name,
+        "initials": initials,
+        "location": location,
+        "badge": badge,
+    }
 
 
 @router.post("/answer", response=AnswerAck)
@@ -756,6 +872,83 @@ def session_detail(request, session_id: uuid.UUID):
         completed_at=session.completed_at,
         picks=picks,
         profile=profile,
+    )
+
+
+@router.get("/products/{product_id}", response=ProductDetailOut)
+def product_detail(request, product_id: uuid.UUID):
+    product = get_object_or_404(
+        Product.objects.filter(id=product_id, is_active=True).prefetch_related(
+            Prefetch(
+                "productingredient_set",
+                queryset=ProductIngredient.objects.select_related("ingredient").order_by("order", "ingredient__common_name"),
+                to_attr="prefetched_ingredient_links",
+            ),
+            Prefetch(
+                "concerns",
+                queryset=SkinConcern.objects.all().order_by("name"),
+                to_attr="prefetched_concerns",
+            ),
+            Prefetch(
+                "skin_types",
+                queryset=SkinTypeTag.objects.all().order_by("name"),
+                to_attr="prefetched_skin_types",
+            ),
+            Prefetch(
+                "restrictions",
+                queryset=RestrictionTag.objects.all().order_by("name"),
+                to_attr="prefetched_restrictions",
+            ),
+        )
+    )
+
+    ingredient_entries: list[dict] = []
+    for link in getattr(product, "prefetched_ingredient_links", []):
+        ingredient = getattr(link, "ingredient", None)
+        if not ingredient:
+            continue
+        ingredient_entries.append(
+            {
+                "name": ingredient.common_name,
+                "inci_name": ingredient.inci_name or None,
+                "highlight": bool(link.highlight),
+                "order": link.order,
+            }
+        )
+
+    hero_ingredients_raw = product.hero_ingredients or ""
+    hero_ingredients = [part.strip() for part in hero_ingredients_raw.split(",") if part and part.strip()]
+    if not hero_ingredients and ingredient_entries:
+        hero_ingredients = [entry["name"] for entry in ingredient_entries[:3]]
+
+    price_value = _decimal_to_float(product.price)
+    if price_value is not None and price_value <= 0:
+        price_value = None
+
+    image_url = _product_image_url(product)
+    product_url = _sanitize_product_url(product.product_url)
+
+    return ProductDetailOut(
+        product_id=product.id,
+        slug=product.slug,
+        brand=product.brand,
+        product_name=product.name,
+        category=product.category,
+        category_label=_category_label(product.category),
+        summary=product.summary or None,
+        description=product.description or None,
+        hero_ingredients=hero_ingredients,
+        ingredients=sorted(ingredient_entries, key=lambda entry: entry["order"]),
+        concerns=[concern.name for concern in getattr(product, "prefetched_concerns", [])],
+        skin_types=[stype.name for stype in getattr(product, "prefetched_skin_types", [])],
+        restrictions=[tag.name for tag in getattr(product, "prefetched_restrictions", [])],
+        price=price_value,
+        currency=product.currency,
+        average_rating=_decimal_to_float(product.rating),
+        review_count=product.review_count,
+        image_url=image_url,
+        product_url=product_url,
+        affiliate_url=product_url,
     )
 
 
@@ -1046,10 +1239,6 @@ def _product_image_url(product: Product) -> str | None:
             return image_value
         relative_path = image_value.lstrip("/")
         return f"{settings.MEDIA_URL.rstrip('/')}/{relative_path}"
-
-    url = (product.image_url or "").strip()
-    if url:
-        return url
     return _placeholder_image_data(product)
 
 
@@ -1213,6 +1402,7 @@ def _map_history_summary(raw: dict | None) -> QuizResultSummary:
 
 def _serialize_pick(pick: MatchPick) -> MatchPickOut:
     product = getattr(pick, "product", None)
+    image_url = pick.image_url or (_product_image_url(product) if product else None)
     return MatchPickOut(
         product_id=str(pick.product_id),
         slug=pick.product_slug,
@@ -1225,7 +1415,7 @@ def _serialize_pick(pick: MatchPick) -> MatchPickOut:
         currency=pick.currency,
         ingredients=list(pick.ingredients or []),
         rationale=pick.rationale or {},
-        image_url=getattr(product, "image_url", None),
+        image_url=image_url,
         product_url=getattr(product, "product_url", None),
         average_rating=_decimal_to_float(getattr(product, "rating", None)),
         review_count=getattr(product, "review_count", 0) or 0,

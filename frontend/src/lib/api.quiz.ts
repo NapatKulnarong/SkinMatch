@@ -116,6 +116,17 @@ type RawSessionDetail = {
   profile: RawProfile | null;
 };
 
+type RawFeedbackHighlight = {
+  id: string;
+  created_at: string;
+  rating?: number | string | null;
+  message: string;
+  display_name: string;
+  initials: string;
+  location?: string | null;
+  badge?: string | null;
+};
+
 type RawHistoryDetail = {
   session_id: string | null;
   completed_at: string;
@@ -124,6 +135,36 @@ type RawHistoryDetail = {
   recommendations: RawRecommendation[] | null;
   strategy_notes?: string[] | null;
   answer_snapshot: Record<string, unknown>;
+};
+
+type RawProductDetailIngredient = {
+  name: string;
+  inci_name?: string | null;
+  highlight?: boolean;
+  order?: number | null;
+};
+
+type RawProductDetail = {
+  product_id: string;
+  slug: string;
+  brand: string;
+  product_name: string;
+  category: string;
+  category_label?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  hero_ingredients?: string[] | null;
+  ingredients?: RawProductDetailIngredient[] | null;
+  concerns?: string[] | null;
+  skin_types?: string[] | null;
+  restrictions?: string[] | null;
+  price?: number | null;
+  currency: string;
+  average_rating?: number | null;
+  review_count?: number | null;
+  image_url?: string | null;
+  product_url?: string | null;
+  affiliate_url?: string | null;
 };
 
 const getApiBase = () => {
@@ -276,6 +317,54 @@ export type QuizSessionDetail = {
   profile: QuizProfile | null;
 };
 
+export type FeedbackHighlight = {
+  id: string;
+  createdAt: string;
+  rating: number | null;
+  message: string;
+  displayName: string;
+  initials: string;
+  location: string | null;
+  badge: string | null;
+};
+
+export type SubmitFeedbackPayload = {
+  sessionId: string;
+  rating: number;
+  message?: string;
+  metadata?: Record<string, string>;
+};
+
+export type ProductDetailIngredient = {
+  name: string;
+  inciName: string | null;
+  highlight: boolean;
+  order: number;
+};
+
+export type ProductDetail = {
+  productId: string;
+  slug: string;
+  brand: string;
+  productName: string;
+  category: string;
+  categoryLabel: string | null;
+  summary: string | null;
+  description: string | null;
+  heroIngredients: string[];
+  ingredients: ProductDetailIngredient[];
+  concerns: string[];
+  skinTypes: string[];
+  restrictions: string[];
+  price: number | null;
+  currency: string;
+  averageRating: number | null;
+  reviewCount: number;
+  imageUrl: string | null;
+  productUrl: string | null;
+  affiliateUrl: string | null;
+};
+
 const mapChoice = (raw: RawChoice): QuizChoice => ({
   id: raw.id,
   label: raw.label,
@@ -330,6 +419,79 @@ const mapRecommendation = (raw: RawRecommendation): QuizRecommendation => ({
   averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
   reviewCount: raw.review_count ?? 0,
 });
+
+const mapProductDetailIngredient = (
+  raw: RawProductDetailIngredient
+): ProductDetailIngredient => ({
+  name: raw.name,
+  inciName: raw.inci_name ?? null,
+  highlight: Boolean(raw.highlight),
+  order: typeof raw.order === "number" ? raw.order : 0,
+});
+
+const mapProductDetail = (raw: RawProductDetail): ProductDetail => {
+  const heroIngredients =
+    Array.isArray(raw.hero_ingredients) && raw.hero_ingredients.length
+      ? raw.hero_ingredients
+          .map((item) => (typeof item === "string" ? item.trim() : String(item).trim()))
+          .filter((item) => item.length > 0)
+      : [];
+
+  const ingredients = Array.isArray(raw.ingredients)
+    ? raw.ingredients.map(mapProductDetailIngredient).sort((a, b) => a.order - b.order)
+    : [];
+
+  const sanitizeList = (values?: string[] | null) =>
+    Array.isArray(values)
+      ? values
+          .map((value) => (typeof value === "string" ? value.trim() : String(value).trim()))
+          .filter((value) => value.length > 0)
+      : [];
+
+  return {
+    productId: raw.product_id,
+    slug: raw.slug,
+    brand: raw.brand,
+    productName: raw.product_name,
+    category: raw.category,
+    categoryLabel: raw.category_label ?? null,
+    summary: raw.summary ?? null,
+    description: raw.description ?? null,
+    heroIngredients,
+    ingredients,
+    concerns: sanitizeList(raw.concerns),
+    skinTypes: sanitizeList(raw.skin_types),
+    restrictions: sanitizeList(raw.restrictions),
+    price: typeof raw.price === "number" ? raw.price : null,
+    currency: raw.currency,
+    averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+    reviewCount: typeof raw.review_count === "number" ? raw.review_count : 0,
+    imageUrl: raw.image_url ?? null,
+    productUrl: raw.product_url ?? null,
+    affiliateUrl: raw.affiliate_url ?? raw.product_url ?? null,
+  };
+};
+
+const mapFeedbackHighlight = (raw: RawFeedbackHighlight): FeedbackHighlight => {
+  let rating: number | null = null;
+  if (typeof raw.rating === "number") {
+    rating = raw.rating;
+  } else if (typeof raw.rating === "string" && raw.rating.trim()) {
+    const parsed = Number(raw.rating);
+    rating = Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return {
+    id: raw.id,
+    createdAt: raw.created_at,
+    rating,
+    message: raw.message,
+    displayName: raw.display_name,
+    initials: raw.initials,
+    location: raw.location ?? null,
+    badge: raw.badge ?? null,
+  };
+};
 
 const mapSummary = (raw: RawFinalizeSummary): QuizResultSummary => ({
   primaryConcerns: raw.primary_concerns ?? [],
@@ -581,6 +743,30 @@ export async function fetchQuizHistoryDetail(profileId: string): Promise<QuizHis
   return mapHistoryDetail(data);
 }
 
+export async function fetchProductDetail(productId: string): Promise<ProductDetail> {
+  if (!productId) {
+    throw new Error("Product ID is required to load details.");
+  }
+
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/products/${encodeURIComponent(productId)}`, {
+    method: "GET",
+    headers: withAuth(),
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
+    throw new Error("This product is no longer available.");
+  }
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || "Failed to load product details.");
+  }
+
+  const data: RawProductDetail = await res.json();
+  return mapProductDetail(data);
+}
+
 export async function emailQuizSummary(sessionId: string, email?: string): Promise<void> {
   const base = getApiBase();
   const res = await fetch(`${base}/quiz/email-summary`, {
@@ -598,4 +784,41 @@ export async function emailQuizSummary(sessionId: string, email?: string): Promi
     const errorBody = await res.text();
     throw new Error(errorBody || "We couldn't email your summary just yet.");
   }
+}
+
+export async function submitQuizFeedback(payload: SubmitFeedbackPayload): Promise<void> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/quiz/feedback`, {
+    method: "POST",
+    headers: {
+      ...withAuth({ "Content-Type": "application/json" }),
+    },
+    body: JSON.stringify({
+      session_id: payload.sessionId,
+      rating: payload.rating,
+      message: payload.message ?? "",
+      metadata: payload.metadata ?? {},
+    }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "We couldn't save your feedback just yet.");
+  }
+}
+
+export async function fetchFeedbackHighlights(limit = 3): Promise<FeedbackHighlight[]> {
+  const base = getApiBase();
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${base}/quiz/feedback/highlights?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(errorBody || "Failed to load community feedback.");
+  }
+
+  const data: RawFeedbackHighlight[] = await res.json();
+  return data.map(mapFeedbackHighlight);
 }

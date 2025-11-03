@@ -123,7 +123,6 @@ class Product(models.Model):
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.USD)
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     review_count = models.PositiveIntegerField(default=0)
-    image_url = models.URLField(blank=True)
     image = models.TextField(
         blank=True,
         default="",
@@ -393,8 +392,13 @@ class QuizFeedback(models.Model):
         null=True,
         blank=True,
     )
-    contact_email = models.EmailField(blank=True)
     message = models.TextField()
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Optional star rating from 1 to 5.",
+    )
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -402,8 +406,10 @@ class QuizFeedback(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["created_at"]),
+            models.Index(fields=["rating", "created_at"]),
         ]
 
     def __str__(self) -> str:
-        base = self.contact_email or "anonymous"
-        return f"Feedback from {base} at {self.created_at:%Y-%m-%d %H:%M}"
+        metadata = self.metadata if isinstance(self.metadata, dict) else {}
+        display = metadata.get("display_name") or metadata.get("name") or "anonymous"
+        return f"Feedback from {display} at {self.created_at:%Y-%m-%d %H:%M}"

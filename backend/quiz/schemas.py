@@ -183,6 +183,36 @@ class MatchPickOut(Schema):
     review_count: int = 0
 
 
+class ProductDetailIngredientOut(Schema):
+    name: str
+    inci_name: Optional[str] = None
+    highlight: bool = False
+    order: int = 0
+
+
+class ProductDetailOut(Schema):
+    product_id: uuid.UUID
+    slug: str
+    brand: str
+    product_name: str
+    category: str
+    category_label: Optional[str] = None
+    summary: Optional[str] = None
+    description: Optional[str] = None
+    hero_ingredients: List[str] = Field(default_factory=list)
+    ingredients: List[ProductDetailIngredientOut] = Field(default_factory=list)
+    concerns: List[str] = Field(default_factory=list)
+    skin_types: List[str] = Field(default_factory=list)
+    restrictions: List[str] = Field(default_factory=list)
+    price: Optional[float] = None
+    currency: str
+    average_rating: Optional[float] = None
+    review_count: int = 0
+    image_url: Optional[str] = None
+    product_url: Optional[str] = None
+    affiliate_url: Optional[str] = None
+
+
 class IngredientSummaryOut(Schema):
     key: str
     common_name: str
@@ -247,9 +277,20 @@ class SessionDetailOut(Schema):
 
 class FeedbackIn(Schema):
     session_id: Optional[uuid.UUID] = None
-    contact_email: Optional[str] = None
-    message: str
+    message: Optional[str] = None
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
     metadata: dict = {}
+
+
+class FeedbackOut(Schema):
+    id: uuid.UUID
+    created_at: datetime
+    rating: Optional[int] = None
+    message: str
+    display_name: str
+    initials: str
+    location: Optional[str] = None
+    badge: Optional[str] = None
 
 
 class FeedbackAck(Schema):

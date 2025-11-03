@@ -36,7 +36,7 @@ class ProductSeed:
     skin_types: list[str]
     restrictions: list[str]
     product_url: str | None = None
-    image_url: str | None = None
+    image: str | None = None
 
 
 CONCERNS: tuple[tuple[str, str], ...] = (
@@ -165,6 +165,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination", "sensitive"],
         restrictions=["cruelty-free"],
         product_url="https://www.cosrx.com/products/advanced-snail-96-mucin-power-essence",
+        image="https://img.lazcdn.com/g/p/c7cedae4b89dea2eb1d46f89fccc96b9.jpg_720x720q80.jpg",
     ),
     ProductSeed(
         brand="COSRX",
@@ -181,6 +182,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["cruelty-free", "sulfate-free"],
         product_url="https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser",
+        image="https://s3.konvy.com/static/team/2025/0725/17534133699946.jpg",
     ),
     ProductSeed(
         brand="Laneige",
@@ -197,6 +199,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=[],
         product_url="https://us.laneige.com/products/water-sleeping-mask",
+        image="https://us.laneige.com/cdn/shop/files/WSM_AD_PDP_2.jpg?v=1754046790",
     ),
     ProductSeed(
         brand="Laneige",
@@ -213,6 +216,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["alcohol-free"],
         product_url="https://us.laneige.com/products/cream-skin-toner-moisturizer",
+        image="https://th.laneige.com/cdn/shop/files/1_HQ__Cream-Skin_cream-skin-E--product-artwork-Help-01_8700x8700_12131111_0.jpg?v=1761329251",
     ),
     ProductSeed(
         brand="Sulwhasoo",
@@ -229,6 +233,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://us.sulwhasoo.com/products/first-care-activating-serum",
+        image="https://th.sulwhasoo.com/cdn/shop/files/FCAS90.jpg?v=1759403827",
     ),
     ProductSeed(
         brand="Dr. Jart+",
@@ -245,6 +250,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "sensitive"],
         restrictions=["paraben-free"],
         product_url="https://us.drjart.com/products/cicapair-tiger-grass-color-correcting-treatment-spf-30",
+        image="https://www.drjart.co.uk/media/export/cms/products/1000x1000/dj_sku_H58001_1000x1000_0.jpg",
     ),
     ProductSeed(
         brand="Dr. Jart+",
@@ -261,6 +267,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["paraben-free"],
         product_url="https://us.drjart.com/products/ceramidin-cream",
+        image="https://lilabeauty.com.au/cdn/shop/products/buy-dr-jart-ceramidin-skin-barrier-moisturizing-cream-50ml-at-lila-beauty-korean-and-japanese-beauty-skin-care-210704.jpg?v=1704891552",
     ),
     ProductSeed(
         brand="Etude",
@@ -277,6 +284,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "dry", "normal"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://www.etude.com/us/en/products/soonjung-ph-55-relief-toner",
+        image="https://www.mikaela-beauty.com/cdn/shop/files/AX6H2260w.jpg?v=1704945634",
     ),
     ProductSeed(
         brand="Innisfree",
@@ -293,6 +301,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["paraben-free"],
         product_url="https://us.innisfree.com/products/green-tea-seed-serum",
+        image="https://main.thgimages.com/?url=https://static.thcdn.com/productimg/original/15227996-9175270721798909.jpg&format=webp&width=1500&height=1500&fit=cover",
     ),
     ProductSeed(
         brand="Banila Co",
@@ -309,6 +318,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["paraben-free"],
         product_url="https://banilausa.com/products/clean-it-zero-original-balancing-cleansing-balm",
+        image="https://s3.konvy.com/static/team/2018/1022/15402028175352.jpg",
     ),
     ProductSeed(
         brand="SKIN1004",
@@ -325,6 +335,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "normal", "combination", "dry"],
         restrictions=["vegan", "cruelty-free", "fragrance-free"],
         product_url="https://skin1004.com/products/madagascar-centella-ampoule",
+        image="https://cdn11.bigcommerce.com/s-7p5jn6i1wf/images/stencil/670x670/products/1227/4463/skin1004-madagascar-centella-ampoule__98829.1725356484.jpg?c=1",
     ),
     ProductSeed(
         brand="Beauty of Joseon",
@@ -341,6 +352,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["cruelty-free"],
         product_url="https://beautyofjoseon.com/products/glow-serum-propolis-niacinamide",
+        image="https://www.koreanbeauty.se/cdn/shop/files/Glow_Serum_Propolis_Niacinamide.png?v=1758459963&width=1080",
     ),
     ProductSeed(
         brand="Round Lab",
@@ -357,6 +369,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "sensitive"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://roundlabusa.com/products/1025-dokdo-toner",
+        image="https://medias.watsons.co.th/publishing/WTCTH-297429-side-zoom.jpg",
     ),
     ProductSeed(
         brand="Mediheal",
@@ -373,6 +386,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=["paraben-free"],
         product_url="https://mediheal.com/products/nmf-aquaring-ampoule-mask",
+        image="https://m.media-amazon.com/images/I/51UHMN44bPL._AC_SL6000_.jpg",
     ),
     ProductSeed(
         brand="Dear, Klairs",
@@ -389,6 +403,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "dry", "normal"],
         restrictions=["fragrance-free", "vegan", "cruelty-free"],
         product_url="https://wishtrend.com/products/klairs-supple-preparation-unscented-toner",
+        image="https://th.keautiful.com/cdn/shop/files/9b7edad28c9cd81cef40d8df4603378964950d8f4f06fbf6bcd2a2e206bb_grande.jpg?v=1686357821",
     ),
     ProductSeed(
         brand="Dear, Klairs",
@@ -405,6 +420,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["cruelty-free"],
         product_url="https://wishtrend.com/products/klairs-freshly-juiced-vitamin-c-drop",
+        image="https://koreacosmeticsbn.com/cdn/shop/files/GOTADEVITAMINAENJUGORECIENTE.webp?v=1690696909&width=1946",
     ),
     ProductSeed(
         brand="Neogen",
@@ -421,6 +437,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["alcohol-free"],
         product_url="https://neogenlab.us/products/real-ferment-micro-essence",
+        image="https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/ngd/ngd44893/l/50.jpg",
     ),
     ProductSeed(
         brand="Missha",
@@ -437,6 +454,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["paraben-free"],
         product_url="https://misshaus.com/products/time-revolution-the-first-treatment-essence",
+        image="https://inwfile.com/s-fk/87w46p.jpg",
     ),
     ProductSeed(
         brand="Dr. G",
@@ -453,6 +471,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "sensitive"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://dr-g.com/products/red-blemish-clear-soothing-cream",
+        image="https://img.lazcdn.com/g/p/f25f0ddad7df1e5512fc41a83079912d.jpg_720x720q80.jpg",
     ),
     ProductSeed(
         brand="AXIS-Y",
@@ -469,6 +488,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["vegan", "cruelty-free"],
         product_url="https://axis-y.com/products/dark-spot-correcting-glow-serum",
+        image="https://s3.konvy.com/static/team/2023/0705/16885262857889.jpg",
     ),
     ProductSeed(
         brand="I'm From",
@@ -485,6 +505,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "normal", "combination"],
         restrictions=["vegan"],
         product_url="https://wishtrend.com/products/im-from-mugwort-essence",
+        image="https://lilabeauty.com.au/cdn/shop/products/buy-im-from-mugwort-essence-160ml-at-lila-beauty-korean-and-japanese-beauty-skin-care-511518.jpg?v=1636559238",
     ),
     ProductSeed(
         brand="Illiyoon",
@@ -501,6 +522,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["fragrance-free"],
         product_url="https://global.amorepacific.com/products/illiyoon-ceramide-ato-concentrate-cream",
+        image="https://lilabeauty.com.au/cdn/shop/files/Ceramide_ATO_Concentrate_Cream_230ml.jpg?v=1749675684",
     ),
     ProductSeed(
         brand="Make P:rem",
@@ -517,6 +539,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "dry", "normal"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://makeprem.us/products/safe-me-relief-moisture-cream",
+        image="https://i0.wp.com/olpeo.mk/wp-content/uploads/safe-me.-relief-moisture-cream12-at-olpeo-korean-skincare-store.png?fit=1080%2C1080&ssl=1",
     ),
     ProductSeed(
         brand="Pyunkang Yul",
@@ -533,6 +556,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=["fragrance-free", "paraben-free"],
         product_url="https://pyunkangyul.us/products/moisture-ampoule",
+        image="https://lilabeauty.com.au/cdn/shop/products/PyunkangYulMoistureAmpoule100ml.jpg?v=1636539697",
     ),
     ProductSeed(
         brand="Huxley",
@@ -549,6 +573,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=["paraben-free"],
         product_url="https://huxleyworld.com/products/oil-essence-secret-of-sahara",
+        image="https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/hux/hux53396/l/35.jpg",
     ),
 ]
 
@@ -568,6 +593,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.shiseido.com/ultimune-power-infusing-concentrate",
+        image="https://www.shiseido.co.th/dw/image/v2/BCSK_PRD/on/demandware.static/-/Sites-itemmaster_shiseido/default/dwd9b6b41c/images/products/22390/22390_S_01.jpg?sw=1000&sh=1000&sm=fit",
     ),
     ProductSeed(
         brand="Hada Labo",
@@ -584,6 +610,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination", "sensitive"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://www.hadalabo.jp/en/products/hadalabo-gokujyun-lotion",
+        image="https://lilabeauty.com.au/cdn/shop/products/RohtoHadaLaboGokujyunHyaluronicAcidLotionMoist170ml.jpg?v=1636528019",
     ),
     ProductSeed(
         brand="SK-II",
@@ -600,6 +627,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.sk-ii.com/product/facial-treatment-essence",
+        image="https://www.konvy.com/static/team/2023/0222/16770521617283_600x600.jpg",
     ),
     ProductSeed(
         brand="Biore",
@@ -616,6 +644,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["water-resistant"],
         product_url="https://www.kao.co.jp/bioreuv/aquarich/wateryessence/",
+        image="https://s3.konvy.com/static/team/2024/0503/17147356019660.jpg",
     ),
     ProductSeed(
         brand="Kose",
@@ -632,6 +661,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.kose.co.jp/sekkisei/en/products/emulsion/",
+        image="https://s3.konvy.com/static/team/2024/1115/17316657228677.jpg",
     ),
     ProductSeed(
         brand="DHC",
@@ -648,6 +678,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["paraben-free"],
         product_url="https://www.dhccare.com/deep-cleansing-oil",
+        image="https://s3.konvy.com/static/team/2023/0828/16932048288541_600x600.jpg",
     ),
     ProductSeed(
         brand="Sofina",
@@ -664,6 +695,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.sofina.co.jp/ip/en/product/basecare/",
+        image="https://www.jeban.com/uploads/reviews/product/113291/111668_015993dd74.jpg",
     ),
     ProductSeed(
         brand="Curel",
@@ -680,6 +712,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://www.curel.com/jp/en/face/creams/intensive-moisture-cream",
+        image="https://medias.watsons.co.th/publishing/WTCTH-265683-front-zoom.jpg?version=1733525570",
     ),
     ProductSeed(
         brand="Muji",
@@ -696,6 +729,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "dry", "normal"],
         restrictions=["fragrance-free", "alcohol-free"],
         product_url="https://www.muji.us/store/sensitive-skin-toning-water-high-moisture.html",
+        image="https://www.jeban.com/uploads/reviews/product/86573/517629_e3f169337d.jpg",
     ),
     ProductSeed(
         brand="Rohto",
@@ -712,6 +746,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=[],
         product_url="https://jp.rohto.com/melanocc/products/essence/",
+        image="https://lilabeauty.com.au/cdn/shop/products/RohtoMelanoCCAntiSpotIntensiveEssenceRenew20ml_700x.jpg?v=1636527885",
     ),
     ProductSeed(
         brand="Ipsa",
@@ -728,6 +763,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.ipsa.co.jp/en/product/time-reset-aqua",
+        image="https://s3.konvy.com/static/team/2021/0429/16196875142792.jpg",
     ),
     ProductSeed(
         brand="Obagi",
@@ -744,6 +780,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=[],
         product_url="https://www.obagi.co.jp/products/c10-serum/",
+        image="https://product.hstatic.net/1000241635/product/c20_04_66a1b5ff7bc846a7bbb468e0216d6c3d.jpg",
     ),
     ProductSeed(
         brand="Kose",
@@ -760,6 +797,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.kose.co.jp/sekkisei/en/products/cleansing-oil/",
+        image="https://sekkiseibeauty.com/cdn/shop/files/1_cbdc68c8-dfc0-4610-83f9-28145cfaa26a.png?v=1753036793",
     ),
     ProductSeed(
         brand="Anessa",
@@ -776,6 +814,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["water-resistant"],
         product_url="https://www.shiseido.com/anessa-perfect-uv-sunscreen-skincare-milk",
+        image="https://s3.konvy.com/static/team/2024/0227/17090199639894.jpg",
     ),
     ProductSeed(
         brand="Senka",
@@ -792,6 +831,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=[],
         product_url="https://www.shiseido.com/senka-perfect-whip",
+        image="https://www.konvy.com/static/team/2023/0505/16832796673849_600x600.jpg",
     ),
     ProductSeed(
         brand="Hada Labo",
@@ -808,6 +848,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["fragrance-free"],
         product_url="https://www.hadalabo.jp/en/products/premium-whitening-lotion",
+        image="https://buymejapan.com/cdn/shop/products/png_20230417_204338_0000.webp?v=1742294517",
     ),
     ProductSeed(
         brand="Naturie",
@@ -824,6 +865,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "sensitive"],
         restrictions=["fragrance-free"],
         product_url="https://www.naturie-net.jp/en/products/skin-conditioner/",
+        image="https://lilabeauty.com.au/cdn/shop/products/buy-i-mju-naturie-hatomugi-skin-conditioner-500ml-at-lila-beauty-korean-and-japanese-beauty-skin-care-643839.jpg?v=1636811729",
     ),
     ProductSeed(
         brand="Suqqu",
@@ -840,6 +882,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=[],
         product_url="https://www.suqqu.com/product/moisture-rich-mask",
+        image="https://down-th.img.susercontent.com/file/th-11134207-23020-fgxasp1yrznva3",
     ),
     ProductSeed(
         brand="Lululun",
@@ -856,6 +899,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["paraben-free"],
         product_url="https://lululun.com/products/precious-red",
+        image="https://www.konvy.com/static/team/2024/0214/17079097191892_600x600.jpg",
     ),
     ProductSeed(
         brand="Biore",
@@ -872,6 +916,7 @@ JAPANESE_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["water-resistant"],
         product_url="https://www.kao.co.jp/bioreuv/athlizm/essence/",
+        image="https://inwfile.com/s-fk/834nf7.jpg",
     ),
 ]
 
@@ -891,6 +936,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "oily", "combination"],
         restrictions=[],
         product_url="https://www.snailwhite.co.th/products/whipp-soap",
+        image="https://www.cosmenet.in.th/upload/iblock/b46/snailwhite-whipp-soap-600.jpg",
     ),
     ProductSeed(
         brand="Snail White",
@@ -907,6 +953,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.snailwhite.co.th/products/miracle-intensive-repair-serum",
+        image="https://www.cosmenet.in.th/upload/iblock/bba/snailwhite-miracle-intensive-repair-600.jpg",
     ),
     ProductSeed(
         brand="Mistine",
@@ -923,6 +970,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["water-resistant"],
         product_url="https://mistine.com/product/aqua-base-sunscreen",
+        image="https://cdn.thebeautrium.com/image-product/B0065696.webp",
     ),
     ProductSeed(
         brand="Mistine",
@@ -939,6 +987,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination"],
         restrictions=[],
         product_url="https://mistine.com/product/acne-clear-facial-foam",
+        image="https://th-test-11.slatic.net/p/238900cf380cd179ddc24f8d4b052904.jpg",
     ),
     ProductSeed(
         brand="Smooth E",
@@ -955,6 +1004,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "normal", "oily"],
         restrictions=["fragrance-free"],
         product_url="https://www.smootheglobal.com/en/products/babyface-gel",
+        image="https://smooth-e.com/cdn/shop/files/1.5.png?v=1745901001",
     ),
     ProductSeed(
         brand="Smooth E",
@@ -971,6 +1021,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.smootheglobal.com/en/products/white-babyface-serum",
+        image="https://s3.konvy.com/static/team/2020/1101/16042316446368.jpg",
     ),
     ProductSeed(
         brand="Cute Press",
@@ -987,6 +1038,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://cutepress.com/products/1st-skin-booster-serum",
+        image="https://global.cutepress.com/cdn/shop/files/2021-new-product_picture-dropper_serum-1000x1000--16.jpg?v=1715913659&width=1200",
     ),
     ProductSeed(
         brand="Cute Press",
@@ -1003,6 +1055,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination"],
         restrictions=[],
         product_url="https://cutepress.com/products/uv-expert-protection-white-matte",
+        image="https://www.cutepress.com/pub/media/catalog/product/cache/8bcb7669b359307340d2dd48787afbce/p/r/product_picture_sep-a-10.jpg",
     ),
     ProductSeed(
         brand="BK Acne",
@@ -1019,6 +1072,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["oil-free"],
         product_url="https://www.bkacne.com/products/serum-brightening-anti-pollution",
+        image="https://s3.konvy.com/static/team/2019/0628/15617157029527.jpg",
     ),
     ProductSeed(
         brand="Yanhee",
@@ -1035,6 +1089,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.yanheeproduct.com/products/vitamin-c-serum",
+        image="https://s3.konvy.com/static/team/2021/0112/16104579772534.jpg",
     ),
 ]
 
@@ -1054,6 +1109,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["cruelty-free"] ,
         product_url="https://theordinary.com/product/niacinamide-10-zinc-1",
+        image="https://medias.watsons.co.th/publishing/WTCTH-320290-side-zoom.jpg?version=1754940611",
     ),
     ProductSeed(
         brand="The Ordinary",
@@ -1070,6 +1126,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination", "sensitive"],
         restrictions=["vegan", "cruelty-free"] ,
         product_url="https://theordinary.com/product/hyaluronic-acid-2-b5",
+        image="https://www.adorebeauty.com.au/pim_media/000/558/165/PNG_1_O._Hyaluronic_Acid_thirty.png?fmt=webp&w=980&h=980",
     ),
     ProductSeed(
         brand="The Ordinary",
@@ -1086,6 +1143,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "oily", "combination"],
         restrictions=["vegan", "cruelty-free"] ,
         product_url="https://theordinary.com/product/aha-30-bha-2-peeling-solution",
+        image="https://molecule.lt/image/cache/aha-30-bha-2-sveiciamasis-tirpalas_202209281720541-1000x1000.jpg",
     ),
     ProductSeed(
         brand="Paula's Choice",
@@ -1102,6 +1160,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["cruelty-free", "fragrance-free"] ,
         product_url="https://www.paulaschoice.com/skin-perfecting-2-bha-liquid-exfoliant",
+        image="https://paulaschoice.th/cdn/shop/files/2_-bha-liquid-exfoliant-118ml_04dbf576-3500-4ae8-8a6f-ec5467351522_720x.jpg?v=1751516088",
     ),
     ProductSeed(
         brand="Paula's Choice",
@@ -1118,6 +1177,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free", "fragrance-free"] ,
         product_url="https://www.paulaschoice.com/10-niacinamide-booster",
+        image="https://paulaschoice.th/cdn/shop/files/10percent-niacinamide-booster-paula-s-choice-malaysia-1_c60adb56-214e-4608-930e-9440102efdee_1080x.jpg?v=1726072653",
     ),
     ProductSeed(
         brand="CeraVe",
@@ -1134,6 +1194,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["fragrance-free", "non-comedogenic"] ,
         product_url="https://www.cerave.com/skincare/cleansers/foaming-facial-cleanser",
+        image="https://inwfile.com/s-cv/e2l0fx.png",
     ),
     ProductSeed(
         brand="CeraVe",
@@ -1150,6 +1211,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["fragrance-free", "non-comedogenic"] ,
         product_url="https://www.cerave.com/skincare/cleansers/hydrating-facial-cleanser",
+        image="https://www.essentials.lk/cdn/shop/files/CeraveHydratingFacialCleanserForNormalToDrySkin237ml.jpg?v=1734173420",
     ),
     ProductSeed(
         brand="CeraVe",
@@ -1166,6 +1228,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["fragrance-free", "non-comedogenic"] ,
         product_url="https://www.cerave.com/skincare/moisturizers/moisturizing-cream",
+        image="https://thmappbkk.blob.core.windows.net/boots/2025/10/1/9fb03389-51d7-46fa-8aa1-954bd57a5c28_large.jpg",
     ),
     ProductSeed(
         brand="CeraVe",
@@ -1182,6 +1245,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily", "sensitive"],
         restrictions=["fragrance-free", "non-comedogenic"] ,
         product_url="https://www.cerave.com/skincare/moisturizers/pm-facial-moisturizing-lotion",
+        image="https://media.allaboutyou.co.th/media/catalog/product/cache/68bd2c830b15d292727e06e369c4931c/a/e/ae789e54c835613253114275ece676bc76c7f370b11ed37b6c23066bf850d3af.jpeg",
     ),
     ProductSeed(
         brand="La Roche-Posay",
@@ -1198,6 +1262,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination"],
         restrictions=["oil-free", "non-comedogenic"] ,
         product_url="https://www.laroche-posay.us/acne/acne-spot-treatments/effaclar-dual-action-acne-treatment",
+        image="https://www.laroche-posay.us/dw/image/v2/AANG_PRD/on/demandware.static/-/Sites-acd-laroche-posay-master-catalog/default/dwa3f470a4/img/effaclarduoacnespottreatment/effaclar-duo-acne-spot-treatment-883140500759-1.jpg",
     ),
     ProductSeed(
         brand="La Roche-Posay",
@@ -1214,6 +1279,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "sensitive"],
         restrictions=["fragrance-free", "oil-free"] ,
         product_url="https://www.laroche-posay.us/face-and-body-moisturizers/toleriane-double-repair-face-moisturizer",
+        image="https://i5.walmartimages.com/seo/La-Roche-Posay-Toleriane-Double-Repair-Face-Moisturizer-SPF-30-3-38-fl-oz_ed9819a5-bb68-44b6-8979-4d29c35e85d1.a47bf56ba4960edbc866312dbe60a205.png",
     ),
     ProductSeed(
         brand="La Roche-Posay",
@@ -1230,6 +1296,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["water-resistant"] ,
         product_url="https://www.laroche-posay.us/sunscreen/anthelios/anthelios-melt-in-milk-sunscreen-spf-60",
+        image="https://www.laroche-posay.us/dw/image/v2/AANG_PRD/on/demandware.static/-/Sites-acd-laroche-posay-master-catalog/default/dwe3151dc4/product/March%202023%20packshot%20updates/anthelios-melt-in-milk-body-sunscreen-883140500322-1.jpg",
     ),
     ProductSeed(
         brand="Neutrogena",
@@ -1246,6 +1313,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["oil-free", "non-comedogenic"] ,
         product_url="https://www.neutrogena.com/products/skincare/hydro-boost-water-gel",
+        image="https://img.drz.lazcdn.com/static/bd/p/56fff745e0f927c7e74fb9b03155c9c1.jpg_720x720q80.jpg",
     ),
     ProductSeed(
         brand="Neutrogena",
@@ -1262,6 +1330,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["water-resistant", "non-comedogenic"] ,
         product_url="https://www.neutrogena.com/products/sun/ultra-sheer-dry-touch-sunscreen-spf-55",
+        image="https://images.ctfassets.net/bcjr30vxh6td/rsxMVyeMGbNsndAZQpHtP/06a1257abd4c07dd6fcb1976cb9f8c57/6868790_Carousel1.webp?fm=webp&w=3840",
     ),
     ProductSeed(
         brand="Kiehl's",
@@ -1278,6 +1347,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.kiehls.com/skincare/moisturizers/ultra-facial-cream",
+        image="https://m.media-amazon.com/images/I/61271b8GniL._SL1500_.jpg",
     ),
     ProductSeed(
         brand="Kiehl's",
@@ -1294,6 +1364,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=[],
         product_url="https://www.kiehls.com/skincare/face-cleansers/calendula-deep-cleansing-foaming-face-wash",
+        image="https://laskin.vn/wp-content/uploads/2022/10/8e2ac688f04924aa548c0a935c7a85e3.jpg",
     ),
     ProductSeed(
         brand="Kiehl's",
@@ -1310,6 +1381,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.kiehls.com/skincare/serums/clearly-corrective-dark-spot-solution",
+        image="https://s3.konvy.com/static/team/2020/0316/15843400241106.jpg",
     ),
     ProductSeed(
         brand="Estée Lauder",
@@ -1326,6 +1398,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.esteelauder.com/product/681/804/product-catalog/skincare",
+        image="https://inwfile.com/s-dh/2i0cnn.jpg",
     ),
     ProductSeed(
         brand="Clinique",
@@ -1342,6 +1415,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["fragrance-free"] ,
         product_url="https://www.clinique.com/product/1573/101984/moisture-surge-100h",
+        image="https://s3.konvy.com/static/team/2024/0219/17083273066790.jpg",
     ),
     ProductSeed(
         brand="Clinique",
@@ -1358,6 +1432,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination", "oily"],
         restrictions=["fragrance-free"] ,
         product_url="https://www.clinique.com/product/1683/5135/skin-care",
+        image="https://buybeautique.com/cdn/shop/files/s886267-main-zoom.webp?v=1699095110",
     ),
     ProductSeed(
         brand="Drunk Elephant",
@@ -1374,6 +1449,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["vegan", "cruelty-free", "fragrance-free"] ,
         product_url="https://www.drunkelephant.com/products/c-firma-fresh-day-serum",
+        image="https://mcgrocer.com/cdn/shop/files/drunk-elephant-c-firma-fresh-day-serum-40509612065006.jpg?v=1739327362",
     ),
     ProductSeed(
         brand="Drunk Elephant",
@@ -1390,6 +1466,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["vegan", "cruelty-free", "fragrance-free"] ,
         product_url="https://www.drunkelephant.com/products/t-l-c-framboos",
+        image="https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/upload/w_640/prod/959209-L1.jpg",
     ),
     ProductSeed(
         brand="Sunday Riley",
@@ -1406,6 +1483,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["cruelty-free"] ,
         product_url="https://sundayriley.com/products/good-genes",
+        image="https://www.sephora.com/productimages/sku/s2715332-main-zoom.jpg?pb=allure-2023-bestofbeauty-badge",
     ),
     ProductSeed(
         brand="Tatcha",
@@ -1422,6 +1500,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "oily", "combination"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.tatcha.com/product/the-water-cream",
+        image="https://www.tatcha.com/on/demandware.static/-/Sites-master_catalog_tatcha/default/dw4ca30f17/images/product-images/moisturizers/WaterCream-1-FS-new-main-image.jpg",
     ),
     ProductSeed(
         brand="Tatcha",
@@ -1438,6 +1517,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.tatcha.com/product/the-dewy-skin-cream",
+        image="https://www.tatcha.co.uk/cdn/shop/files/TAT24_OCT_SI_PP_Tatcha-UK_DSC_JUMBOS-HERO_CLOSED-JAR_750x750_MR_2048x.jpg?v=1757433659",
     ),
     ProductSeed(
         brand="Glow Recipe",
@@ -1454,6 +1534,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=["cruelty-free", "vegan"] ,
         product_url="https://www.glowrecipe.com/products/watermelon-glow-niacinamide-dew-drops",
+        image="https://www.cultbeauty.com/images?url=https://static.thcdn.com/productimg/original/13910972-1884983758574423.jpg&format=webp&auto=avif&width=985&height=985&fit=cover",
     ),
     ProductSeed(
         brand="Glow Recipe",
@@ -1470,6 +1551,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.glowrecipe.com/products/avocado-melt-retinol-sleeping-mask",
+        image="https://i1.wp.com/blog.glowrecipe.com/wp-content/uploads/2019/08/Glow-Recipe-Avocado-Melt-Retinol-Sleeping-Mask-Pack-Shot.jpg?fit=1024%2C1024&ssl=1",
     ),
     ProductSeed(
         brand="First Aid Beauty",
@@ -1486,6 +1568,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "sensitive"],
         restrictions=["fragrance-free"] ,
         product_url="https://www.firstaidbeauty.com/product/ultra-repair-cream",
+        image="https://www.firstaidbeauty.com/cdn/shop/files/UltraRepairCream_6oz_Lead_2000x2000_d8b2f943-720b-438d-bf22-b3a8cd497298.jpg?v=1716235447&width=1946",
     ),
     ProductSeed(
         brand="First Aid Beauty",
@@ -1502,6 +1585,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.firstaidbeauty.com/product/facial-radiance-pads",
+        image="https://www.firstaidbeauty.com/cdn/shop/files/Facial_Radiance_Pads_60ct_d0d80d4f-767c-41e8-8dfe-50bb2442c147.jpg?v=1717166845&width=1946",
     ),
     ProductSeed(
         brand="Biossance",
@@ -1518,6 +1602,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal", "combination"],
         restrictions=["vegan", "cruelty-free"] ,
         product_url="https://biossance.com/products/squalane-vitamin-c-rose-oil",
+        image="https://static.thcdn.com/images/large/original//productimg/1600/1600/12766621-9424897139105061.jpg",
     ),
     ProductSeed(
         brand="Ole Henriksen",
@@ -1534,6 +1619,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.olehenriksen.com/products/banana-bright-eye-creme",
+        image="https://d3pllp7nz3wmw5.cloudfront.net/product_images/26941513001-1_FULL.jpg",
     ),
     ProductSeed(
         brand="Murad",
@@ -1550,6 +1636,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.murad.com/product/rapid-dark-spot-correcting-serum/",
+        image="https://www.konvy.com/static/team/2025/0213/17394306659140_600x600.jpg",
     ),
     ProductSeed(
         brand="Peter Thomas Roth",
@@ -1566,6 +1653,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "dry"],
         restrictions=[],
         product_url="https://www.peterthomasroth.com/product/water-drench-hyaluronic-cloud-cream",
+        image="https://media.farmaciatei.ro/gallery/68924/crema-pentru-fata-water-drench-hyaluronic-cloud-cream-hydrating-moisturizer-20-ml-peter-thomas-roth-8601.jpg",
     ),
     ProductSeed(
         brand="Youth To The People",
@@ -1582,6 +1670,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["vegan", "cruelty-free"] ,
         product_url="https://www.youthtothepeople.com/products/superfood-cleanser",
+        image="https://www.youthtothepeople.com/dw/image/v2/AAFM_PRD/on/demandware.static/-/Sites-yttp-master-catalog/default/dw92070e07/products/YTTP-10100/09-2024/YTTP_Website_Cleanser_Frontal_Allure_Badge_3.jpg",
     ),
     ProductSeed(
         brand="Youth To The People",
@@ -1598,6 +1687,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["vegan", "cruelty-free"] ,
         product_url="https://www.youthtothepeople.com/products/superberry-dream-mask",
+        image="https://www.sephora.com/productimages/sku/s2379444-main-zoom.jpg?imwidth=315",
     ),
     ProductSeed(
         brand="Tula",
@@ -1614,6 +1704,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.tula.com/products/cult-classic-cleanser",
+        image="https://www.sephora.com/productimages/sku/s2500684-main-zoom.jpg?imwidth=315",
     ),
     ProductSeed(
         brand="Dr. Dennis Gross",
@@ -1630,6 +1721,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free"] ,
         product_url="https://drdennisgross.com/products/alpha-beta-universal-daily-peel",
+        image="https://www.sephora.com/productimages/sku/s1722487-main-zoom.jpg",
     ),
     ProductSeed(
         brand="SkinCeuticals",
@@ -1646,6 +1738,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.skinceuticals.com/c-e-ferulic",
+        image="https://www.lmching.com/cdn/shop/files/D_anm_i-72_bc9cded0-3df6-444b-8838-d90ebb7644ec_540x.jpg?v=1722253755",
     ),
     ProductSeed(
         brand="Differin",
@@ -1662,6 +1755,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["oily", "combination", "normal"],
         restrictions=["oil-free"] ,
         product_url="https://www.differin.com/products/adapalene-gel-0-1-acne-treatment",
+        image="https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/dif/dif92030/l/41.jpg",
     ),
     ProductSeed(
         brand="Olay",
@@ -1678,6 +1772,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=[],
         product_url="https://www.olay.com/regenerist-micro-sculpting-cream",
+        image="https://s3.konvy.com/static/team/2018/0222/15192962407073.jpg",
     ),
     ProductSeed(
         brand="Aveeno",
@@ -1694,6 +1789,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "normal", "combination"],
         restrictions=["fragrance-free"] ,
         product_url="https://www.aveeno.com/products/calm-restore-oat-gel-moisturizer",
+        image="https://img.lazcdn.com/g/p/d8fde17cc0a6d270b95c7df82ac442b4.jpg_720x720q80.jpg",
     ),
     ProductSeed(
         brand="Eucerin",
@@ -1710,6 +1806,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["dry", "normal"],
         restrictions=[],
         product_url="https://www.eucerinus.com/products/advanced-repair-cream",
+        image="https://beautymarkedgh.com/cdn/shop/products/eucerin_grande.png?v=1627510533",
     ),
     ProductSeed(
         brand="Bioderma",
@@ -1726,6 +1823,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["sensitive", "normal", "combination"],
         restrictions=["fragrance-free"] ,
         product_url="https://www.bioderma.us/our-products/sensibio/h2o",
+        image="https://www.bioderma.co.th/sites/th/files/styles/fancybox_2000_2000/public/products/%7B157387%7D_%7B%7D_%7B28703X%7D.jpg?itok=ZksLdNWn",
     ),
     ProductSeed(
         brand="Vichy",
@@ -1742,6 +1840,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "dry", "combination"],
         restrictions=["oil-free", "alcohol-free"] ,
         product_url="https://www.vichyusa.com/mineral-89-3337875583626.html",
+        image="https://www.vichyusa.com/dw/image/v2/AANG_PRD/on/demandware.static/-/Sites-acd-vichy-master-catalog/default/dwfc8759c1/product/Mineral89/NEW-%20Vichy-Mineral-89-Hyaluronic-Acid-Face-Serum-50-ml-3337875543248-PDP-1%20(2).jpg",
     ),
     ProductSeed(
         brand="Pixi",
@@ -1758,6 +1857,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free"] ,
         product_url="https://www.pixibeauty.com/products/glow-tonic",
+        image="https://mcgrocer.com/cdn/shop/files/pixi-glow-tonic-250ml-40437632270574.jpg?v=1745459136",
     ),
 ]
 
@@ -1846,7 +1946,7 @@ def _product_defaults(seed: ProductSeed) -> dict:
         "currency": seed.currency,
         "rating": seed.rating,
         "product_url": seed.product_url or "",
-        "image_url": seed.image_url or "",
+        "image": seed.image or "",
         "is_active": True,
     }
 

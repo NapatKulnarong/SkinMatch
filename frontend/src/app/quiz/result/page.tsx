@@ -3,11 +3,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
-import type { QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
-import { emailQuizSummary } from "@/lib/api.quiz";
+import type { ProductDetail, QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
+import { emailQuizSummary, fetchProductDetail, submitQuizFeedback } from "@/lib/api.quiz";
+import { getStoredProfile } from "@/lib/auth-storage";
+import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
@@ -30,6 +32,14 @@ export default function QuizResultPage() {
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
   const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [activeRecommendation, setActiveRecommendation] = useState<QuizRecommendation | null>(null);
+  const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
+  const [productDetailLoading, setProductDetailLoading] = useState(false);
+  const [productDetailError, setProductDetailError] = useState<string | null>(null);
+  const detailCacheRef = useRef<Record<string, ProductDetail>>({});
+  const currentDetailRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
@@ -45,7 +55,7 @@ export default function QuizResultPage() {
 
   const ingredientHighlights = useMemo(() => {
     const highlights: { ingredient: string; reason: string }[] = [];
-    const topIngredients = result?.summary.topIngredients ?? [];
+    const topIngredients = result?.summary?.topIngredients ?? [];
     topIngredients.forEach((ingredient) => {
       if (!ingredient) return;
       highlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
@@ -56,7 +66,7 @@ export default function QuizResultPage() {
       }
     });
     return highlights.slice(0, 6);
-  }, [guidance.lookFor, result?.summary.topIngredients]);
+  }, [guidance.lookFor, result?.summary?.topIngredients]);
 
   const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];
@@ -106,25 +116,106 @@ export default function QuizResultPage() {
     }
   }, [emailInput, result?.sessionId]);
 
+  const handleShowProductDetails = useCallback(
+    async (item: QuizRecommendation) => {
+      if (!item?.productId) {
+        return;
+      }
+
+      setActiveRecommendation(item);
+      setProductDetailError(null);
+      currentDetailRequestRef.current = item.productId;
+
+      const cached = detailCacheRef.current[item.productId];
+      if (cached) {
+        setProductDetail(cached);
+        setProductDetailLoading(false);
+        return;
+      }
+
+      setProductDetail(null);
+      setProductDetailLoading(true);
+
+      try {
+        const data = await fetchProductDetail(item.productId);
+        detailCacheRef.current[item.productId] = data;
+        if (currentDetailRequestRef.current === item.productId) {
+          setProductDetail(data);
+        }
+      } catch (err) {
+        if (currentDetailRequestRef.current === item.productId) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : "We couldn't load this product right now. Please try again.";
+          setProductDetailError(message);
+        }
+      } finally {
+        if (currentDetailRequestRef.current === item.productId) {
+          setProductDetailLoading(false);
+        }
+      }
+    },
+    [fetchProductDetail]
+  );
+
+  const handleCloseProductDetails = useCallback(() => {
+    currentDetailRequestRef.current = null;
+    setActiveRecommendation(null);
+    setProductDetail(null);
+    setProductDetailError(null);
+    setProductDetailLoading(false);
+  }, []);
+
+  const handleRetryProductDetails = useCallback(() => {
+    if (activeRecommendation) {
+      void handleShowProductDetails(activeRecommendation);
+    }
+  }, [activeRecommendation, handleShowProductDetails]);
+
   const handleSubmitFeedback = useCallback(async () => {
     if (rating === 0) {
       alert("Please select a rating before submitting.");
       return;
     }
-    
-    // TODO: Implement API call to submit feedback
-    console.log("Submitting feedback:", {
-      sessionId: result?.sessionId,
-      rating,
-      feedback,
-      anonymous: anonymizeFeedback,
-    });
-    
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackSubmitted(false);
-    }, 3000);
-  }, [anonymizeFeedback, rating, feedback, result?.sessionId]);
+    if (!result?.sessionId) {
+      alert("We couldn't find this match session. Please refresh and try again.");
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    setFeedbackError(null);
+    try {
+      const storedProfile = getStoredProfile();
+      const badge = result?.summary?.primaryConcerns?.[0] ?? result?.profile?.primaryConcerns?.[0] ?? null;
+      const metadata = buildFeedbackMetadata({
+        profile: storedProfile,
+        badge,
+        source: "quiz-result",
+        anonymize: anonymizeFeedback,
+      });
+
+      await submitQuizFeedback({
+        sessionId: result.sessionId,
+        rating,
+        message: feedback,
+        metadata,
+      });
+
+      setFeedbackSubmitted(true);
+      setFeedback("");
+      setRating(0);
+      setAnonymizeFeedback(false);
+      setTimeout(() => {
+        setFeedbackSubmitted(false);
+      }, 4000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      setFeedbackError(message);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  }, [anonymizeFeedback, feedback, rating, result?.profile?.primaryConcerns, result?.sessionId, result?.summary?.primaryConcerns]);
 
   if (!hasPrimary) {
     return (
@@ -255,7 +346,7 @@ export default function QuizResultPage() {
           {/* PRODUCT MATCHES SECTION - MOVED UP */}
           <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
             <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Product matches</h2>
-            {renderRecommendations(recommendations, requiresAuth)}
+            {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails)}
           </div>
 
           {/* EMAIL & RETAKE QUIZ ROW */}
@@ -406,11 +497,14 @@ export default function QuizResultPage() {
                 <button
                   type="button"
                   onClick={handleSubmitFeedback}
-                  disabled={rating === 0}
+                  disabled={rating === 0 || isSubmittingFeedback}
                   className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                 >
-                  Submit feedback
+                  {isSubmittingFeedback ? "Sending..." : "Submit feedback"}
                 </button>
+                {feedbackError ? (
+                  <p className="text-sm font-semibold text-red-600">{feedbackError}</p>
+                ) : null}
               </div>
             )}
           </div>
@@ -422,6 +516,16 @@ export default function QuizResultPage() {
           </p>
         )}
       </section>
+      {activeRecommendation && (
+        <ProductDetailModal
+          recommendation={activeRecommendation}
+          detail={productDetail}
+          loading={productDetailLoading}
+          error={productDetailError}
+          onClose={handleCloseProductDetails}
+          onRetry={handleRetryProductDetails}
+        />
+      )}
     </main>
   );
 }
@@ -461,6 +565,20 @@ function capitalize(text: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatPriceLabel(price: number | null, currency?: string) {
+  if (typeof price !== "number") return null;
+  if (!currency || price <= 0) return null;
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return null;
+  }
 }
 
 function buildProfileItems(profile: QuizProfile | null, answers: Record<QuizAnswerKey, string | null>) {
@@ -516,20 +634,17 @@ function buildSummaryInsights(summary: QuizResultSummary | undefined) {
   return insights;
 }
 
-function renderRecommendations(recommendations: QuizRecommendation[], requiresAuth: boolean) {
+function renderRecommendations(
+  recommendations: QuizRecommendation[],
+  requiresAuth: boolean,
+  onShowDetails: (item: QuizRecommendation) => void | Promise<void>
+) {
   if (recommendations.length) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {recommendations.map((item) => {
           const brandLabel = item.brandName ?? item.brand;
-          const priceLabel =
-            item.priceSnapshot !== null
-              ? new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: item.currency,
-                  maximumFractionDigits: 0,
-                }).format(item.priceSnapshot)
-              : null;
+          const priceLabel = formatPriceLabel(item.priceSnapshot, item.currency);
           return (
             <article
               key={item.productId}
@@ -583,7 +698,7 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
               </div>
 
               {/* Footer - Rating & CTA */}
-              <footer className="mt-3 flex items-center justify-between gap-2 border-t border-black/10 pt-3">
+              <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
                 <div className="flex items-center gap-1 text-[10px] text-[#3C3D37] text-opacity-60">
                   {item.averageRating ? (
                     <>
@@ -612,14 +727,24 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
                     </svg>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void onShowDetails(item);
+                    }}
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                  >
+                    Details
+                  </button>
+
                   {item.productUrl && (
                     <a
                       href={item.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#B9375D] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                     >
-                      View
+                      Shop
                     </a>
                   )}
                 </div>
@@ -643,5 +768,341 @@ function renderRecommendations(recommendations: QuizRecommendation[], requiresAu
     <p className="text-sm text-[#3C3D37]/70 text-center py-8">
       We&apos;re still analysing product data for your skin traits. Ingredient guidance above is ready to use today.
     </p>
+  );
+}
+
+type ProductDetailModalProps = {
+  recommendation: QuizRecommendation;
+  detail: ProductDetail | null;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+  onRetry: () => void;
+};
+
+const RATIONALE_LABELS: Record<string, string> = {
+  primary_concerns: "Targets your primary concerns",
+  secondary_concerns: "Supports your secondary focus",
+  eye_area: "Focused on eye area needs",
+  skin_type: "Skin type compatible",
+  sensitivity: "Friendly for sensitive skin",
+  restrictions: "Matches your preferences",
+  budget: "Fits your budget range",
+};
+
+function ProductDetailModal({
+  recommendation,
+  detail,
+  loading,
+  error,
+  onClose,
+  onRetry,
+}: ProductDetailModalProps) {
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    const previous = typeof document !== "undefined" ? document.body.style.overflow : "";
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = previous;
+      }
+    };
+  }, []);
+
+  const display = detail ?? null;
+  const imageUrl = display?.imageUrl ?? recommendation.imageUrl ?? null;
+  const brand = display?.brand ?? recommendation.brandName ?? recommendation.brand;
+  const name = display?.productName ?? recommendation.productName;
+  const categoryLabel =
+    display?.categoryLabel ?? capitalize(display?.category ?? recommendation.category);
+  const priceLabel = formatPriceLabel(
+    display?.price ?? recommendation.priceSnapshot,
+    display?.currency ?? recommendation.currency
+  );
+  const rating = display?.averageRating ?? recommendation.averageRating;
+  const reviewCount = display?.reviewCount ?? recommendation.reviewCount;
+  const heroIngredients =
+    (display?.heroIngredients && display.heroIngredients.length
+      ? display.heroIngredients
+      : recommendation.ingredients.slice(0, 3)) ?? [];
+  const ingredientDetails = display?.ingredients.length
+    ? display.ingredients
+    : recommendation.ingredients.map((ingredient, index) => ({
+        name: ingredient,
+        inciName: null,
+        highlight: index < heroIngredients.length,
+        order: index,
+      }));
+  const concerns = display?.concerns ?? [];
+  const skinTypes = display?.skinTypes ?? [];
+  const restrictions = display?.restrictions ?? [];
+  const affiliateUrl =
+    display?.affiliateUrl ?? display?.productUrl ?? recommendation.productUrl ?? null;
+
+  const rationaleEntries = Object.entries(recommendation.rationale ?? {})
+    .map(([key, values]) => ({
+      key,
+      label: RATIONALE_LABELS[key] ?? capitalize(key),
+      values: Array.isArray(values)
+        ? values.filter(Boolean).map((value) => String(value))
+        : [],
+    }))
+    .filter((entry) => entry.values.length);
+
+  const ingredientPreview = ingredientDetails.slice(0, 8);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3 py-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${brand} ${name}`}
+        className="relative flex w-full max-w-3xl max-h-[90vh] flex-col overflow-hidden rounded-3xl border-2 border-black bg-white shadow-[8px_10px_0_rgba(0,0,0,0.25)]"
+      >
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid min-h-full gap-5 px-5 pb-6 pt-8 md:grid-cols-[220px,1fr] md:pt-8">
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-[#1f2d26] shadow-[0_3px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f7f7f7] hover:shadow-[0_4px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                  aria-label="Close product details"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border-2 border-black/10 bg-[#f7f7f7] pb-[85%]">
+                {imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={`${brand} ${name}`}
+                    fill
+                    unoptimized
+                    className="object-cover object-center"
+                    sizes="(max-width: 768px) 60vw, 220px"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-center text-xs font-semibold text-[#7a628c]">
+                    Image coming soon
+                  </div>
+                )}
+              </div>
+
+              {affiliateUrl && (
+                <a
+                  href={affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#B9375D] px-4 py-2 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
+                >
+                  Shop with affiliate
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M12.293 2.293a1 1 0 011.414 0l4 4A1 1 0 0117 8h-3v7a1 1 0 11-2 0V7a1 1 0 011-1h2.586L12.293 3.707a1 1 0 010-1.414z" />
+                    <path d="M5 4a3 3 0 00-3 3v7a3 3 0 003 3h7a3 3 0 003-3v-1a1 1 0 112 0v1a5 5 0 01-5 5H5a5 5 0 01-5-5V7a5 5 0 015-5h1a1 1 0 110 2H5z" />
+                  </svg>
+                </a>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B9375D]">{brand}</p>
+                <h2 className="text-2xl font-extrabold leading-tight text-[#1f2d26]">{name}</h2>
+                <p className="text-sm font-semibold text-[#3C3D37] text-opacity-70">{categoryLabel}</p>
+                {(rating || priceLabel) && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-[#1f2d26]">
+                    {rating ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-[#fff3c4] px-3 py-1 font-semibold">
+                        <svg className="h-4 w-4 text-[#f59e0b]" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 8.72c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                        {rating.toFixed(1)}
+                        <span className="text-xs text-[#3C3D37] text-opacity-60">({reviewCount ?? 0})</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#3C3D37] text-opacity-60">No reviews yet</span>
+                    )}
+                    {priceLabel && (
+                      <span className="inline-flex items-center rounded-full border border-black/10 bg-white px-3 py-1 text-sm font-semibold text-[#1f2d26]">
+                        {priceLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {display?.summary && (
+                <p className="text-sm leading-relaxed text-[#3C3D37] text-opacity-80">{display.summary}</p>
+              )}
+
+              {display?.description && (
+                <div className="rounded-2xl border border-[#d7d7d7] bg-[#fafafa] p-4 text-sm leading-relaxed text-[#3C3D37]">
+                  {display.description}
+                </div>
+              )}
+
+              {heroIngredients.length ? (
+                <div>
+                  <h3 className="text-sm font-bold text-[#1f2d26] uppercase tracking-[0.12em]">
+                    Hero ingredients
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {heroIngredients.map((ingredient) => (
+                      <span
+                        key={ingredient}
+                        className="inline-flex items-center rounded-full border border-black/10 bg-[#fce8ef] px-3 py-1 text-xs font-semibold text-[#B9375D]"
+                      >
+                        {ingredient}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {ingredientPreview.length ? (
+                <div>
+                  <h3 className="text-sm font-bold text-[#1f2d26] uppercase tracking-[0.12em]">
+                    Ingredient highlights
+                  </h3>
+                  <ul className="mt-3 grid gap-2 text-sm text-[#3C3D37] text-opacity-80 sm:grid-cols-2">
+                    {ingredientPreview.map((ingredient) => (
+                      <li key={`${ingredient.name}-${ingredient.order}`} className="flex items-start gap-2">
+                        <span
+                          className={`mt-1 inline-flex h-2 w-2 rounded-full ${
+                            ingredient.highlight ? "bg-[#B9375D]" : "bg-[#3C3D37]/40"
+                          }`}
+                          aria-hidden
+                        />
+                        <div>
+                          <p className="font-semibold text-[#1f2d26]">{ingredient.name}</p>
+                          {ingredient.inciName && (
+                            <p className="text-xs uppercase tracking-[0.12em] text-[#3C3D37] text-opacity-50">
+                              {ingredient.inciName}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {(concerns.length || skinTypes.length || restrictions.length) && (
+                <div className="space-y-3">
+                  {concerns.length ? (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1f2d26]">Targets</h3>
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                        {concerns.map((concern) => (
+                          <span
+                            key={concern}
+                            className="rounded-full border border-black/10 bg-[#e6f5f0] px-3 py-1 font-semibold text-[#1f2d26]"
+                          >
+                            {concern}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {skinTypes.length ? (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1f2d26]">
+                        Skin type fit
+                      </h3>
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                        {skinTypes.map((skinType) => (
+                          <span
+                            key={skinType}
+                            className="rounded-full border border-black/10 bg-[#fff3c4] px-3 py-1 font-semibold text-[#1f2d26]"
+                          >
+                            {capitalize(skinType)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {restrictions.length ? (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#1f2d26]">
+                        Preferences met
+                      </h3>
+                      <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                        {restrictions.map((restriction) => (
+                          <span
+                            key={restriction}
+                            className="rounded-full border border-black/10 bg-[#e8e5ff] px-3 py-1 font-semibold text-[#33308a]"
+                          >
+                            {restriction}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {rationaleEntries.length ? (
+                <div>
+                  <h3 className="text-sm font-bold text-[#1f2d26] uppercase tracking-[0.12em]">
+                    Why we matched it
+                  </h3>
+                  <ul className="mt-3 space-y-3 text-sm text-[#3C3D37] text-opacity-80">
+                    {rationaleEntries.map((entry) => (
+                      <li key={entry.key}>
+                        <p className="font-semibold text-[#1f2d26]">{entry.label}</p>
+                        <p className="text-sm text-[#3C3D37] text-opacity-70">{entry.values.join(", ")}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="flex items-start justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="shrink-0 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : null}
+
+              {loading && !detail ? (
+                <p className="text-xs font-semibold text-[#3C3D37] text-opacity-60">
+                  Fetching product details…
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
