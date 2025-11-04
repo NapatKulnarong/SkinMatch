@@ -12,12 +12,17 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
     genai = None
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.core.exceptions import ValidationError
 from ninja import File, ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
@@ -207,6 +212,24 @@ class SendTermsEmailIn(Schema):
 class SendTermsEmailOut(Schema):
     ok: bool
 
+
+class PasswordResetRequestIn(Schema):
+    email: EmailStr
+
+
+class PasswordResetRequestOut(Schema):
+    ok: bool
+
+
+class PasswordResetConfirmIn(Schema):
+    uid: str
+    token: str
+    new_password: str
+
+
+class PasswordResetConfirmOut(Schema):
+    ok: bool
+
 # --------------- Auth endpoints ---------------
 
 
@@ -227,6 +250,64 @@ def send_terms_email(request, payload: SendTermsEmailIn):
     except Exception:
         logger.exception("Failed to send terms email to %s", payload.email)
         raise HttpError(500, "We couldn't send the terms right now. Please try again later.")
+
+    return {"ok": True}
+
+@api.post("/auth/password/forgot", response=PasswordResetRequestOut)
+def password_reset_request(request, payload: PasswordResetRequestIn):
+    try:
+        user = User.objects.get(email__iexact=str(payload.email))
+    except User.DoesNotExist:
+        # Always return ok to avoid revealing which emails exist
+        return {"ok": True}
+
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    frontend_origin = getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
+    reset_url = f"{frontend_origin}/reset-password?uid={uid}&token={token}"
+
+    subject = "SkinMatch Password Reset"
+    message = "\n".join(
+        [
+            "We received a request to reset your SkinMatch password.",
+            "If you made this request, click the link below (or copy and paste it into your browser) to set a new password:",
+            "",
+            reset_url,
+            "",
+            "If you didn't request a password reset, you can safely ignore this email.",
+            "",
+            "— The SkinMatch Team",
+        ]
+    )
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")
+
+    try:
+        send_mail(subject, message, from_email, [str(payload.email)])
+    except Exception:
+        logger.exception("Failed to send password reset email to %s", payload.email)
+        raise HttpError(500, "We couldn't send the reset link. Please try again later.")
+
+    return {"ok": True}
+
+
+@api.post("/auth/password/reset", response=PasswordResetConfirmOut)
+def password_reset_confirm(request, payload: PasswordResetConfirmIn):
+    try:
+        uid = force_str(urlsafe_base64_decode(payload.uid))
+        user = User.objects.get(pk=uid)
+    except (ValueError, User.DoesNotExist, TypeError, OverflowError):
+        raise HttpError(400, "Invalid or expired reset link.")
+
+    if not default_token_generator.check_token(user, payload.token):
+        raise HttpError(400, "Invalid or expired reset link.")
+
+    try:
+        validate_password(payload.new_password, user=user)
+    except ValidationError as exc:
+        raise HttpError(400, " ".join(exc.messages))
+
+    user.set_password(payload.new_password)
+    user.save(update_fields=["password"])
 
     return {"ok": True}
 
