@@ -53,66 +53,38 @@ export default function QuizResultPage() {
   const answerLabels = useMemo(() => answersToLabels(answers), [answers]);
   const guidance = useMemo(() => buildGuidance(answerLabels), [answerLabels]);
 
-  const { prioritizeIngredients, cautionItems } = useMemo(() => {
-    if (!guidance) {
-      return {
-        prioritizeIngredients: [] as { ingredient: string; reason: string }[],
-        cautionItems: [] as { ingredient: string; reason: string }[],
-      };
-    }
+  const ingredientHighlights = useMemo(() => {
+    const highlights: { ingredient: string; reason: string }[] = [];
+    const seen = new Set<string>();
 
-    const baseHighlights: { ingredient: string; reason: string }[] = [];
-    const topIngredients = result?.summary?.topIngredients ?? [];
-    topIngredients.forEach((ingredient) => {
-      if (!ingredient) return;
-      baseHighlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
-    });
-    guidance.lookFor.forEach((item) => {
-      if (!baseHighlights.some((entry) => entry.ingredient === item.ingredient)) {
-        baseHighlights.push(item);
-      }
-    });
-
-    const cautionList = [...(guidance.avoid ?? [])];
-    const profileData = result?.profile;
-    const sensitivityLabel = profileData?.sensitivity ?? answerLabels.sensitivity ?? "";
-    const secondaryConcerns = profileData?.secondaryConcerns ?? [];
-    const primaryConcerns = profileData?.primaryConcerns ?? [];
-    const hasSensitivity = Boolean(sensitivityLabel && sensitivityLabel.toLowerCase() !== "no");
-    const hasRedness = [...primaryConcerns, ...secondaryConcerns].some(
-      (concern) => typeof concern === "string" && concern.toLowerCase().includes("redness")
-    );
-
-    let filteredHighlights = baseHighlights;
-    const retinoidEntries = baseHighlights.filter((entry) => /retinoid|retinol|retinal/i.test(entry.ingredient));
-
-    if ((hasSensitivity || hasRedness) && retinoidEntries.length) {
-      filteredHighlights = baseHighlights.filter(
-        (entry) => !/retinoid|retinol|retinal/i.test(entry.ingredient)
-      );
-
-      const alreadyCaution = cautionList.some((item) => /retinoid|retinol|retinal/i.test(item.ingredient));
-      if (!alreadyCaution) {
-        const retinoidName = retinoidEntries[0].ingredient;
-        cautionList.push({
-          ingredient: retinoidName,
-          reason:
-            "Introduce retinoids slowly and buffer with moisturiser—these actives can trigger redness or irritation for sensitive skin.",
-        });
-      }
-    }
-
-    return {
-      prioritizeIngredients: filteredHighlights.slice(0, 6),
-      cautionItems: cautionList,
+    const pushHighlight = (ingredient: string, reason: string | undefined) => {
+      const trimmed = ingredient?.trim();
+      if (!trimmed) return;
+      const key = trimmed.toLowerCase();
+      if (seen.has(key)) return;
+      highlights.push({
+        ingredient: trimmed,
+        reason: reason && reason.trim() ? reason.trim() : MATCH_INGREDIENT_REASON,
+      });
+      seen.add(key);
     };
+
+    (result?.summary?.ingredientsToPrioritize ?? []).forEach((entry) => {
+      pushHighlight(entry.name, entry.reason);
+    });
+
+    const topIngredients = result?.summary?.topIngredients ?? [];
+    topIngredients.forEach((ingredient) => pushHighlight(ingredient, undefined));
+
+    guidance.lookFor.forEach((item) => {
+      pushHighlight(item.ingredient, item.reason);
+    });
+
+    return highlights.slice(0, 6);
   }, [
-    guidance,
+    guidance.lookFor,
+    result?.summary?.ingredientsToPrioritize,
     result?.summary?.topIngredients,
-    result?.profile,
-    answerLabels.sensitivity,
-    answerLabels.secondaryConcern,
-    answerLabels.primaryConcern,
   ]);
 
   const fallbackStrategyNotes = useMemo(() => {
@@ -336,23 +308,17 @@ export default function QuizResultPage() {
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
               <h2 className="text-2xl font-bold text-[#33574a]">Ingredients to prioritise</h2>
-              {prioritizeIngredients.length ? (
-                <ul className="space-y-4">
-                  {prioritizeIngredients.map((item) => (
-                    <li key={item.ingredient} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#33574a]" aria-hidden />
-                      <div>
-                        <p className="font-semibold text-[#1f2d26]">{item.ingredient}</p>
-                        <p className="text-sm text-[#1f2d26]/70">{item.reason}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-[#1f2d26]/70">
-                  Ingredient insights will appear here once we have more data for this profile.
-                </p>
-              )}
+              <ul className="space-y-4">
+                {ingredientHighlights.map((item) => (
+                  <li key={item.ingredient} className="flex items-start gap-3">
+                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#33574a]" aria-hidden />
+                    <div>
+                      <p className="font-semibold text-[#1f2d26]">{item.ingredient}</p>
+                      <p className="text-sm text-[#1f2d26]/70">{item.reason}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </section>
 
