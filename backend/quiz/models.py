@@ -102,6 +102,7 @@ class Product(models.Model):
     slug = models.SlugField(max_length=120, unique=True)
     name = models.CharField(max_length=180)
     brand = models.CharField(max_length=120, db_index=True)
+    barcode = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Optional EAN/UPC barcode identifier")
     origin_country = models.CharField(max_length=4, choices=Origin.choices)
     category = models.CharField(max_length=30, choices=Category.choices)
     summary = models.CharField(max_length=300, blank=True)

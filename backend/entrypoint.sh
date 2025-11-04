@@ -1,10 +1,13 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-echo "🏁 Waiting for DB via psycopg (DATABASE_URL=$DATABASE_URL)"
+cd /app
+
+echo "🏁 Waiting for Postgres using psycopg (DATABASE_URL=$DATABASE_URL)"
 python - <<'PY'
 import os, time, sys
 import psycopg
+
 url = os.environ.get("DATABASE_URL")
 for i in range(60):
     try:
@@ -20,34 +23,39 @@ print("❌ DB did not become ready in time")
 sys.exit(1)
 PY
 
+# Optional in dev: auto-generate migrations
+if [ "${DJANGO_AUTO_MAKEMIGRATIONS:-true}" = "true" ]; then
+  echo "🧱 Creating migrations (dev)"
+  python manage.py makemigrations --noinput || true
+else
+  echo "🧱 Skipping makemigrations (prod)"
+fi
+
 echo "🔄 Running migrations"
 python manage.py migrate --noinput
 
-echo "👤 Ensuring superuser"
+echo "👤 Ensuring default superuser"
 python - <<'PY'
 import os
-# ✅ บอก Django ให้ใช้ settings ของโปรเจกต์
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apidemo.settings")
 import django
 django.setup()
-
 from django.contrib.auth import get_user_model
 
-U = get_user_model()
+User = get_user_model()
 u = os.getenv("DJANGO_SUPERUSER_USERNAME")
 e = os.getenv("DJANGO_SUPERUSER_EMAIL")
 p = os.getenv("DJANGO_SUPERUSER_PASSWORD")
 
 if u and e and p:
-    if not U.objects.filter(username=u).exists():
-        U.objects.create_superuser(u, e, p)
-        print(f"✅ Superuser created: {u}")
+    if not User.objects.filter(username=u).exists():
+        print("Creating default superuser...")
+        User.objects.create_superuser(username=u, email=e, password=p)
     else:
-        print(f"ℹ️  Superuser already exists: {u}")
+        print("Superuser already exists.")
 else:
-    print("⚠️  SUPERUSER envs not set; skipping")
+    print("Superuser credentials not provided; skipping creation.")
 PY
 
-
-echo "🚀 Starting Django"
+echo "🚀 Starting Django dev server..."
 exec python manage.py runserver 0.0.0.0:8000

@@ -48,9 +48,11 @@ from quiz.views import router as quiz_router
 
 import google.generativeai as genai
 
+from .api_scan import scan_router
 
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
+api.add_router("/scan", scan_router)
 User = get_user_model()
 
 if genai:
@@ -195,6 +197,9 @@ class FactTopicDetailOut(FactTopicSummary):
 
 # --------------- Auth endpoints ---------------
 
+@api.get("/healthz")
+def healthz(request):
+    return {"status": "ok"}
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
