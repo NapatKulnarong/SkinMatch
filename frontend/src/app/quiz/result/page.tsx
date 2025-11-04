@@ -186,7 +186,7 @@ export default function QuizResultPage() {
         }
       }
     },
-    [fetchProductDetail]
+    []
   );
 
   const handleCloseProductDetails = useCallback(() => {

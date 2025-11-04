@@ -184,7 +184,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
         setProductDetailLoading(false);
       }
     }
-  }, [fetchProductDetail]);
+  }, []);
 
   const handleCloseProductDetails = useCallback(() => {
     currentDetailRequestRef.current = null;
