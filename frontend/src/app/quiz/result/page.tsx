@@ -54,19 +54,49 @@ export default function QuizResultPage() {
   const guidance = useMemo(() => buildGuidance(answerLabels), [answerLabels]);
 
   const ingredientHighlights = useMemo(() => {
-    const highlights: { ingredient: string; reason: string }[] = [];
-    const topIngredients = result?.summary?.topIngredients ?? [];
-    topIngredients.forEach((ingredient) => {
-      if (!ingredient) return;
-      highlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
-    });
-    guidance.lookFor.forEach((item) => {
-      if (!highlights.some((entry) => entry.ingredient === item.ingredient)) {
-        highlights.push(item);
+    const highlights = new Map<string, { ingredient: string; reason: string }>();
+
+    const pushHighlight = (ingredient: string, reason: string | undefined) => {
+      const name = ingredient?.trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      const normalizedReason = reason?.trim() ?? "";
+      const existing = highlights.get(key);
+
+      if (existing) {
+        if (
+          normalizedReason &&
+          normalizedReason !== MATCH_INGREDIENT_REASON &&
+          (existing.reason === MATCH_INGREDIENT_REASON || !existing.reason.trim())
+        ) {
+          highlights.set(key, { ingredient: existing.ingredient, reason: normalizedReason });
+        }
+        return;
       }
+
+      highlights.set(key, {
+        ingredient: name,
+        reason: normalizedReason || MATCH_INGREDIENT_REASON,
+      });
+    };
+
+    (result?.summary?.ingredientsToPrioritize ?? []).forEach((entry) => {
+      pushHighlight(entry.name, entry.reason);
     });
-    return highlights.slice(0, 6);
-  }, [guidance.lookFor, result?.summary?.topIngredients]);
+
+    const topIngredients = result?.summary?.topIngredients ?? [];
+    topIngredients.forEach((ingredient) => pushHighlight(ingredient, undefined));
+
+    guidance.lookFor.forEach((item) => {
+      pushHighlight(item.ingredient, item.reason);
+    });
+
+    return Array.from(highlights.values()).slice(0, 6);
+  }, [
+    guidance.lookFor,
+    result?.summary?.ingredientsToPrioritize,
+    result?.summary?.topIngredients,
+  ]);
 
   const fallbackStrategyNotes = useMemo(() => {
     const insights = [...guidance.insights];

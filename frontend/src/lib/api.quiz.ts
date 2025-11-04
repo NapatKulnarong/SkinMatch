@@ -55,9 +55,16 @@ type RawRecommendation = {
   review_count?: number | null;
 };
 
+type RawSummaryIngredient = {
+  name?: string | null;
+  reason?: string | null;
+};
+
 type RawFinalizeSummary = {
   primary_concerns?: string[] | null;
   top_ingredients?: string[] | null;
+  ingredients_to_prioritize?: RawSummaryIngredient[] | null;
+  ingredients_caution?: RawSummaryIngredient[] | null;
   category_breakdown?: Record<string, number> | null;
   generated_at?: string | null;
   score_version?: string | null;
@@ -245,9 +252,16 @@ export type QuizRecommendation = {
   reviewCount: number;
 };
 
+export type QuizSummaryIngredient = {
+  name: string;
+  reason: string;
+};
+
 export type QuizResultSummary = {
   primaryConcerns: string[];
   topIngredients: string[];
+  ingredientsToPrioritize: QuizSummaryIngredient[];
+  ingredientsCaution: QuizSummaryIngredient[];
   categoryBreakdown: Record<string, number>;
   generatedAt: string | null;
   scoreVersion: string | null;
@@ -493,9 +507,40 @@ const mapFeedbackHighlight = (raw: RawFeedbackHighlight): FeedbackHighlight => {
   };
 };
 
+const sanitizeSummaryList = (values?: string[] | null) =>
+  Array.isArray(values)
+    ? values
+        .map((value) => (typeof value === "string" ? value.trim() : String(value).trim()))
+        .filter((value) => value.length > 0)
+    : [];
+
+const mapSummaryIngredients = (
+  items?: RawSummaryIngredient[] | null
+): QuizSummaryIngredient[] =>
+  Array.isArray(items)
+    ? items
+        .map((item) => {
+          if (!item) return null;
+          const name = typeof item.name === "string" ? item.name.trim() : "";
+          if (!name) return null;
+          const reason =
+            typeof item.reason === "string" ? item.reason.trim() : "";
+          return {
+            name,
+            reason,
+          };
+        })
+        .filter(
+          (entry): entry is QuizSummaryIngredient =>
+            Boolean(entry && entry.name.length)
+        )
+    : [];
+
 const mapSummary = (raw: RawFinalizeSummary): QuizResultSummary => ({
-  primaryConcerns: raw.primary_concerns ?? [],
-  topIngredients: raw.top_ingredients ?? [],
+  primaryConcerns: sanitizeSummaryList(raw.primary_concerns),
+  topIngredients: sanitizeSummaryList(raw.top_ingredients),
+  ingredientsToPrioritize: mapSummaryIngredients(raw.ingredients_to_prioritize),
+  ingredientsCaution: mapSummaryIngredients(raw.ingredients_caution),
   categoryBreakdown: raw.category_breakdown ?? {},
   generatedAt: raw.generated_at ?? null,
   scoreVersion: raw.score_version ?? null,

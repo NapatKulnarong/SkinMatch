@@ -734,17 +734,45 @@ function buildIngredientHighlights(
   summary: QuizResultSummary,
   lookFor: { ingredient: string; reason: string }[]
 ) {
-  const highlights: { ingredient: string; reason: string }[] = [];
-  (summary.topIngredients ?? []).forEach((ingredient) => {
-    if (!ingredient) return;
-    highlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
-  });
-  lookFor.forEach((entry) => {
-    if (!highlights.some((item) => item.ingredient === entry.ingredient)) {
-      highlights.push(entry);
+  const highlights = new Map<string, { ingredient: string; reason: string }>();
+
+  const pushHighlight = (ingredient: string, reason: string | undefined) => {
+    const trimmed = ingredient?.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    const normalizedReason = reason?.trim() ?? "";
+    const existing = highlights.get(key);
+
+    if (existing) {
+      if (
+        normalizedReason &&
+        normalizedReason !== MATCH_INGREDIENT_REASON &&
+        (existing.reason === MATCH_INGREDIENT_REASON || !existing.reason.trim())
+      ) {
+        highlights.set(key, { ingredient: existing.ingredient, reason: normalizedReason });
+      }
+      return;
     }
+
+    highlights.set(key, {
+      ingredient: trimmed,
+      reason: normalizedReason || MATCH_INGREDIENT_REASON,
+    });
+  };
+
+  (summary.ingredientsToPrioritize ?? []).forEach((entry) => {
+    pushHighlight(entry.name, entry.reason);
   });
-  return highlights.slice(0, 6);
+
+  (summary.topIngredients ?? []).forEach((ingredient) => {
+    pushHighlight(ingredient, undefined);
+  });
+
+  lookFor.forEach((entry) => {
+    pushHighlight(entry.ingredient, entry.reason);
+  });
+
+  return Array.from(highlights.values()).slice(0, 6);
 }
 
 function formatPregnancyLabel(value: unknown) {
