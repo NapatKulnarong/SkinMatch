@@ -743,15 +743,32 @@ function buildIngredientHighlights(
   lookFor: { ingredient: string; reason: string }[]
 ) {
   const highlights: { ingredient: string; reason: string }[] = [];
+  const seen = new Set<string>();
+
+  const pushHighlight = (ingredient: string, reason: string | undefined) => {
+    const trimmed = ingredient?.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    highlights.push({
+      ingredient: trimmed,
+      reason: reason && reason.trim() ? reason.trim() : MATCH_INGREDIENT_REASON,
+    });
+    seen.add(key);
+  };
+
+  (summary.ingredientsToPrioritize ?? []).forEach((entry) => {
+    pushHighlight(entry.name, entry.reason);
+  });
+
   (summary.topIngredients ?? []).forEach((ingredient) => {
-    if (!ingredient) return;
-    highlights.push({ ingredient, reason: MATCH_INGREDIENT_REASON });
+    pushHighlight(ingredient, undefined);
   });
+
   lookFor.forEach((entry) => {
-    if (!highlights.some((item) => item.ingredient === entry.ingredient)) {
-      highlights.push(entry);
-    }
+    pushHighlight(entry.ingredient, entry.reason);
   });
+
   return highlights.slice(0, 6);
 }
 
