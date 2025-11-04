@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import date, datetime
 from pathlib import Path
@@ -13,6 +14,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
@@ -52,6 +54,7 @@ User = get_user_model()
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+logger = logging.getLogger(__name__)
 # --------------- Schemas ---------------
 
 class SignUpIn(Schema):
@@ -189,6 +192,21 @@ class FactTopicDetailOut(FactTopicSummary):
     content_blocks: List[FactContentBlockOut]
     updated_at: datetime
 
+class SendTermsEmailIn(Schema):
+    email: EmailStr
+    terms_body: str
+
+    @field_validator("terms_body")
+    @classmethod
+    def body_not_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Terms body is required.")
+        return cleaned
+
+class SendTermsEmailOut(Schema):
+    ok: bool
+
 # --------------- Auth endpoints ---------------
 
 
@@ -198,6 +216,19 @@ def genai_generate(request, payload: GenIn):
         raise HttpError(503, "AI generation service is not available.")
     response_text = generate_text(payload.prompt)
     return {"response": response_text}
+
+@api.post("/legal/send-terms", response=SendTermsEmailOut)
+def send_terms_email(request, payload: SendTermsEmailIn):
+    subject = "SkinMatch Terms of Service"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
+
+    try:
+        send_mail(subject, payload.terms_body, from_email, [payload.email])
+    except Exception:
+        logger.exception("Failed to send terms email to %s", payload.email)
+        raise HttpError(500, "We couldn't send the terms right now. Please try again later.")
+
+    return {"ok": True}
 
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
