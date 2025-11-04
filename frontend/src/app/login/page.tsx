@@ -8,6 +8,7 @@ import {
   login as loginRequest,
   signup as signupRequest,
   createAdminSession,
+  requestPasswordReset,
 } from "@/lib/api.auth";
 import {
   clearSession,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
 
-type Mode = "intro" | "signup" | "login";
+type Mode = "intro" | "signup" | "login" | "forgot";
 
 type SignupState = {
   name: string;
@@ -34,6 +35,8 @@ type LoginState = {
   identifier: string;
   password: string;
 };
+
+type ForgotStatus = "idle" | "loading" | "success" | "error";
 
 const initialSignup: SignupState = {
   name: "",
@@ -101,6 +104,9 @@ function LoginContent() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState<ForgotStatus>("idle");
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   useEffect(() => {
     const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
@@ -166,6 +172,9 @@ function LoginContent() {
     setSignupError(null);
     setLoginError(null);
     setGoogleError(null);
+    setForgotEmail("");
+    setForgotStatus("idle");
+    setForgotError(null);
   };
 
   const handleGoogleSignIn = () => {
@@ -193,6 +202,35 @@ function LoginContent() {
     console.log("🔗 Redirecting to Google:", authUrl);
     setGoogleLoading(true);
     redirectTo(authUrl);
+  };
+
+  const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedEmail = forgotEmail.trim();
+
+    if (!trimmedEmail) {
+      setForgotStatus("error");
+      setForgotError("Please enter the email associated with your account.");
+      return;
+    }
+
+    setForgotStatus("loading");
+    setForgotError(null);
+
+    try {
+      const response = await requestPasswordReset(trimmedEmail);
+      if (!response.ok) {
+        throw new Error("We couldn't send the reset link. Please try again in a moment.");
+      }
+      setForgotStatus("success");
+    } catch (error) {
+      setForgotStatus("error");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "We couldn't send the reset link. Please try again later.";
+      setForgotError(message);
+    }
   };
   
   const onSignupChange = (
@@ -621,7 +659,7 @@ function LoginContent() {
 
                 <button
                   type="button"
-                  onClick={() => alert("Password reset flow coming soon!")}
+                  onClick={() => changeMode("forgot")}
                   className="text-sm font-semibold text-[#6B5D83] hover:underline"
                 >
                   Forgot Password?
@@ -635,6 +673,67 @@ function LoginContent() {
                   className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loginLoading ? "Logging in..." : "Login"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {mode === "forgot" && (
+          <div className="p-8" data-testid="forgot-form">
+            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
+              Reset your password
+            </h2>
+            <p className="text-sm text-[#2C2533]/80">
+              Enter the email linked to your SkinMatch account. We&apos;ll send you a reset
+              link to choose a new password.
+            </p>
+
+            <form onSubmit={handleForgotPassword} className="mt-6 space-y-6">
+              <Field label="Email address" colSpan={2}>
+                <input
+                  type="email"
+                  name="forgot-email"
+                  value={forgotEmail}
+                  onChange={(event) => {
+                    setForgotEmail(event.target.value);
+                    if (forgotStatus === "error") {
+                      setForgotStatus("idle");
+                      setForgotError(null);
+                    }
+                  }}
+                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                  placeholder="you@example.com"
+                  disabled={forgotStatus === "loading" || forgotStatus === "success"}
+                />
+              </Field>
+
+              {forgotStatus === "success" ? (
+                <p className="text-sm font-semibold text-[#166534]">
+                  If an account exists for that email, we just sent instructions to reset your
+                  password. Check your inbox and spam folder.
+                </p>
+              ) : null}
+
+              {forgotStatus === "error" && forgotError ? (
+                <p className="text-sm font-semibold text-red-700">{forgotError}</p>
+              ) : null}
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => changeMode("login")}
+                  className="text-sm font-semibold text-[#2C2533] hover:underline"
+                >
+                  ← Back to login
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={forgotStatus === "loading" || forgotStatus === "success"}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {forgotStatus === "loading" ? "Sending..." : "Email reset link"}
                 </button>
               </div>
             </form>
