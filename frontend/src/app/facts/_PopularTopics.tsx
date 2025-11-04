@@ -9,7 +9,11 @@ import type { FactTopicSummary } from "@/lib/types";
 
 const FALLBACK_IMAGE = "/img/facts_img/sheet_mask.jpg";
 
-export default function PopularTopics() {
+type PopularTopicsProps = {
+  sectionId?: string;
+};
+
+export default function PopularTopics({ sectionId }: PopularTopicsProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [idx, setIdx] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -46,9 +50,9 @@ export default function PopularTopics() {
 
   if (loading) {
     return (
-      <PageContainer as="section" className="pt-20">
-        <div className="relative">
-          <div className="relative h-[420px] md:h-[480px] rounded-[28px] border-2 border-black bg-white/50 shadow-[8px_10px_0_rgba(0,0,0,0.2)] animate-pulse" />
+      <PageContainer as="section" id={sectionId} className="pt-20">
+        <div className="rounded-[28px] border-2 border-black bg-white/60 shadow-[8px_10px_0_rgba(0,0,0,0.2)]">
+          <div className="h-[420px] md:h-[520px] animate-pulse rounded-[28px]" />
         </div>
       </PageContainer>
     );
@@ -56,7 +60,7 @@ export default function PopularTopics() {
 
   if (error || !current) {
     return (
-      <PageContainer as="section" className="pt-20">
+      <PageContainer as="section" id={sectionId} className="pt-20">
         <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error ?? "No popular topics found yet. Check back soon!"}
         </div>
@@ -68,96 +72,97 @@ export default function PopularTopics() {
   const blurb = current.subtitle || current.excerpt || "Discover the full story.";
 
   return (
-    <PageContainer as="section" className="pt-20">
-      <div className="relative">
-        {/* Corner badge that sits on the card's top-left corner */}
-        <div
-          className="
-            absolute -top-7 left-0 z-20
-            rounded-full border-2 border-black bg-[#F8D7B6]
-            px-6 py-2.5 text-[17px] font-bold text-gray-700
-            shadow-[4px_6px_0_rgba(0,0,0,0.35)]
-          "
-        >
-          Popular Topics
-        </div>
-
-        {/* Matchy mascot - Sitting under the card with legs visible */}
-        <Image
-          src="/img/mascot/matchy_4.png"
-          alt="Matchy smiling and waving"
-          width={320}
-          height={320}
-          className="absolute -bottom-28 -right-14 z-10 w-[285px] sm:w-[390px] pointer-events-none"
-          priority
-        />
-
-        {/* Feature card */}
-        <div
-          className="
-            relative rounded-[28px] border-2 border-black overflow-hidden
-            bg-white/70 shadow-[8px_10px_0_rgba(0,0,0,0.35)]
-          "
-        >
-          {/* Image */}
-          <div className="relative h-[420px] md:h-[480px]">
+    <PageContainer as="section" id={sectionId} className="pt-20">
+      <div className="relative -top-7 z-20 py-2 text-4xl font-extrabold text-gray-900">
+          Skin Facts
+      </div>
+      <div className="relative overflow-hidden rounded-[32px] border-2 border-black 
+                     bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
+        <div className="grid lg:grid-cols-[minmax(0,2.6fr)_minmax(280px,1fr)]">
+          <div className="relative h-[420px] md:h-[542px] w-full">
             <Image
               src={heroImage}
               alt={current.heroImageAlt ?? current.title}
               fill
               priority
-              className="object-cover"
+              className="object-cover w-full h-full"
               sizes="(max-width: 768px) 100vw, 1200px"
             />
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#2d4a2b]/85 via-[#2d4a2b]/20 to-transparent" />
 
-          {/* Headline + button (black text like your mock) */}
-          <div className="absolute inset-0 flex">
-            <div className="flex flex-col justify-between p-6 md:p-10 w-full">
-              <div className="max-w-[60%] md:max-w-[55%]">
-                <h3 className="text-black text-4xl md:text-6xl font-extrabold leading-tight">
+            <div className="absolute inset-y-0 left-0 flex flex-col justify-between px-6 py-8 sm:px-12 sm:py-12 text-white">
+              <div className="space-y-4 max-w-xl">
+                <p className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+                  Editors&apos; pick
+                </p>
+                <h3 className="text-3xl sm:text-5xl font-extrabold leading-tight drop-shadow-sm">
                   {current.title}
                 </h3>
-              </div>
-
-              <div className="mt-4 max-w-xl">
-                <p className="text-base font-medium text-black/80 md:text-lg">
+                <p className="text-base sm:text-lg leading-relaxed text-white/85">
                   {blurb}
                 </p>
               </div>
 
-              <div className="mt-6 flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href={`/facts/${current.slug}`}
-                  className="
-                    inline-flex items-center gap-2 rounded-full
-                    border-2 border-black bg-white px-5 py-2
-                    font-semibold text-gray-900
-                    shadow-[0_6px_0_rgba(0,0,0,0.35)]
-                    hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)]
-                    active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]
-                    focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10
-                  "
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fef9ef] px-6 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_6px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-[2px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
                 >
-                  Read
-                  <span aria-hidden className="text-lg">➜</span>
+                  Read deep dive
+                  <span aria-hidden className="text-lg">↗</span>
                 </Link>
+                <span className="text-xs uppercase tracking-[0.28em] text-white/65">
+                  Swipe for more stories
+                </span>
               </div>
             </div>
           </div>
+
+          <aside className="hidden lg:flex flex-col gap-3 border-l-2 border-[#2d4a2b]/10 bg-[#f7fbe5] p-6">
+            {topics.slice(0, 5).map((topic, i) => {
+              const isActive = i === idx;
+              const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+              return (
+                <button
+                  key={topic.id}
+                  type="button"
+                  aria-current={isActive}
+                  onClick={() => setIdx(i)}
+                  className={`group relative flex flex-1 items-center gap-4 rounded-2xl border-2 border-black px-3 py-3 text-left transition ${
+                    isActive ? "bg-white shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "bg-white/70 hover:bg-white"
+                  }`}
+                >
+                  <span className="flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-black/20">
+                    <Image
+                      src={image}
+                      alt={topic.heroImageAlt ?? topic.title}
+                      width={56}
+                      height={56}
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <span className="flex-1 space-y-1">
+                    <span className={`text-xs font-semibold uppercase tracking-[0.22em] ${isActive ? "text-[#1f2d26]" : "text-[#3c4c3f]/70"}`}>
+                      {i === 0 ? "Now reading" : "Up next"}
+                    </span>
+                    <span className={`block text-sm font-bold leading-snug ${isActive ? "text-[#1f2d26]" : "text-[#2d3a2f]"}`}>
+                      {topic.title}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </aside>
         </div>
       </div>
 
-      {/* Dots */}
-      <div className="mt-4 flex items-center justify-center gap-2">
+      <div className="mt-5 flex items-center justify-center gap-2">
         {topics.map((t, i) => (
           <button
             key={t.id}
             aria-label={`Show slide ${i + 1}`}
             onClick={() => setIdx(i)}
-            className={`h-2.5 w-2.5 rounded-full transition ${
-              i === idx ? "bg-gray-800" : "bg-gray-400 hover:bg-gray-500"
-            }`}
+            className={`h-2.5 w-2.5 rounded-full transition ${i === idx ? "bg-[#4a6b47]" : "bg-[#c6d1be]"}`}
           />
         ))}
       </div>
