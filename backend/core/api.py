@@ -1,6 +1,6 @@
+import logging
 import os
 from datetime import date, datetime
-import logging
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
@@ -57,7 +57,6 @@ User = get_user_model()
 
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
 # --------------- Schemas ---------------
 
 class SignUpIn(Schema):
@@ -206,6 +205,23 @@ class NewsletterSubscribeOut(Schema):
     message: str
     already_subscribed: bool = False
 
+
+class SendTermsEmailIn(Schema):
+    email: EmailStr
+    terms_body: str
+
+    @field_validator("terms_body")
+    @classmethod
+    def body_not_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Terms body is required.")
+        return cleaned
+
+
+class SendTermsEmailOut(Schema):
+    ok: bool
+
 # --------------- Newsletter ---------------
 
 
@@ -293,6 +309,19 @@ def genai_generate(request, payload: GenIn):
         raise HttpError(503, "AI generation service is not available.")
     response_text = generate_text(payload.prompt)
     return {"response": response_text}
+
+@api.post("/legal/send-terms", response=SendTermsEmailOut)
+def send_terms_email(request, payload: SendTermsEmailIn):
+    subject = "SkinMatch Terms of Service"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
+
+    try:
+        send_mail(subject, payload.terms_body, from_email, [payload.email])
+    except Exception:
+        logger.exception("Failed to send terms email to %s", payload.email)
+        raise HttpError(500, "We couldn't send the terms right now. Please try again later.")
+
+    return {"ok": True}
 
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):

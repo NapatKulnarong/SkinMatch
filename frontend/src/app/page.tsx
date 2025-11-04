@@ -824,18 +824,8 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/skin-types" className="text-white/70 hover:text-white transition">
-                    Skin Type Guide
-                  </Link>
-                </li>
-                <li>
                   <Link href="/facts" className="text-white/70 hover:text-white transition">
                     Skincare Facts
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog" className="text-white/70 hover:text-white transition">
-                    Blog
                   </Link>
                 </li>
               </ul>
