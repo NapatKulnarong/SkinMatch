@@ -107,6 +107,8 @@ class SkinProfileOut(Schema):
 class QuizResultSummary(Schema):
     primary_concerns: List[str] = Field(default_factory=list)
     top_ingredients: List[str] = Field(default_factory=list)
+    ingredients_to_prioritize: List[Dict[str, str]] = Field(default_factory=list)
+    ingredients_caution: List[Dict[str, str]] = Field(default_factory=list)
     category_breakdown: Dict[str, float] = Field(default_factory=dict)
     generated_at: Optional[str] = None
     score_version: Optional[str] = None

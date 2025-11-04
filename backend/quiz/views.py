@@ -1397,6 +1397,22 @@ def _map_history_summary(raw: dict | None) -> QuizResultSummary:
     return QuizResultSummary(
         primary_concerns=list(data.get("primary_concerns") or []),
         top_ingredients=list(data.get("top_ingredients") or []),
+        ingredients_to_prioritize=[
+            {
+                "name": str(item.get("name", "")).strip(),
+                "reason": str(item.get("reason", "")).strip(),
+            }
+            for item in (data.get("ingredients_to_prioritize") or [])
+            if isinstance(item, dict)
+        ],
+        ingredients_caution=[
+            {
+                "name": str(item.get("name", "")).strip(),
+                "reason": str(item.get("reason", "")).strip(),
+            }
+            for item in (data.get("ingredients_caution") or [])
+            if isinstance(item, dict)
+        ],
         category_breakdown=dict(data.get("category_breakdown") or {}),
         generated_at=data.get("generated_at"),
         score_version=data.get("score_version"),

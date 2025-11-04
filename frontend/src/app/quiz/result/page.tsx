@@ -54,19 +54,30 @@ export default function QuizResultPage() {
   const guidance = useMemo(() => buildGuidance(answerLabels), [answerLabels]);
 
   const ingredientHighlights = useMemo(() => {
-    const highlights: { ingredient: string; reason: string }[] = [];
-    const seen = new Set<string>();
+    const highlights = new Map<string, { ingredient: string; reason: string }>();
 
     const pushHighlight = (ingredient: string, reason: string | undefined) => {
-      const trimmed = ingredient?.trim();
-      if (!trimmed) return;
-      const key = trimmed.toLowerCase();
-      if (seen.has(key)) return;
-      highlights.push({
-        ingredient: trimmed,
-        reason: reason && reason.trim() ? reason.trim() : MATCH_INGREDIENT_REASON,
+      const name = ingredient?.trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      const normalizedReason = reason?.trim() ?? "";
+      const existing = highlights.get(key);
+
+      if (existing) {
+        if (
+          normalizedReason &&
+          normalizedReason !== MATCH_INGREDIENT_REASON &&
+          (existing.reason === MATCH_INGREDIENT_REASON || !existing.reason.trim())
+        ) {
+          highlights.set(key, { ingredient: existing.ingredient, reason: normalizedReason });
+        }
+        return;
+      }
+
+      highlights.set(key, {
+        ingredient: name,
+        reason: normalizedReason || MATCH_INGREDIENT_REASON,
       });
-      seen.add(key);
     };
 
     (result?.summary?.ingredientsToPrioritize ?? []).forEach((entry) => {
@@ -80,7 +91,7 @@ export default function QuizResultPage() {
       pushHighlight(item.ingredient, item.reason);
     });
 
-    return highlights.slice(0, 6);
+    return Array.from(highlights.values()).slice(0, 6);
   }, [
     guidance.lookFor,
     result?.summary?.ingredientsToPrioritize,

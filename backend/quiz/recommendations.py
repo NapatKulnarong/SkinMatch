@@ -242,8 +242,8 @@ def _build_summary(
         pregnant_or_breastfeeding=pregnant_or_breastfeeding,
     )
     
-    # Get top ingredients to prioritize (limit to 6)
-    prioritized_names = [item['name'] for item in classified['prioritize'][:6]]
+    prioritized_items = classified['prioritize']
+    prioritized_names = [item['name'] for item in prioritized_items[:6]]
     
     # Get ingredients to use with caution
     caution_items = classified['caution']
@@ -253,7 +253,7 @@ def _build_summary(
     return {
         "primary_concerns": primary_labels,
         "top_ingredients": prioritized_names,
-        "ingredients_to_prioritize": classified['prioritize'][:6],
+        "ingredients_to_prioritize": prioritized_items,
         "ingredients_caution": caution_items,
         "category_breakdown": category_counts,
     }

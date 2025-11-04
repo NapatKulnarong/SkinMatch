@@ -742,19 +742,30 @@ function buildIngredientHighlights(
   summary: QuizResultSummary,
   lookFor: { ingredient: string; reason: string }[]
 ) {
-  const highlights: { ingredient: string; reason: string }[] = [];
-  const seen = new Set<string>();
+  const highlights = new Map<string, { ingredient: string; reason: string }>();
 
   const pushHighlight = (ingredient: string, reason: string | undefined) => {
     const trimmed = ingredient?.trim();
     if (!trimmed) return;
     const key = trimmed.toLowerCase();
-    if (seen.has(key)) return;
-    highlights.push({
+    const normalizedReason = reason?.trim() ?? "";
+    const existing = highlights.get(key);
+
+    if (existing) {
+      if (
+        normalizedReason &&
+        normalizedReason !== MATCH_INGREDIENT_REASON &&
+        (existing.reason === MATCH_INGREDIENT_REASON || !existing.reason.trim())
+      ) {
+        highlights.set(key, { ingredient: existing.ingredient, reason: normalizedReason });
+      }
+      return;
+    }
+
+    highlights.set(key, {
       ingredient: trimmed,
-      reason: reason && reason.trim() ? reason.trim() : MATCH_INGREDIENT_REASON,
+      reason: normalizedReason || MATCH_INGREDIENT_REASON,
     });
-    seen.add(key);
   };
 
   (summary.ingredientsToPrioritize ?? []).forEach((entry) => {
@@ -769,7 +780,7 @@ function buildIngredientHighlights(
     pushHighlight(entry.ingredient, entry.reason);
   });
 
-  return highlights.slice(0, 6);
+  return Array.from(highlights.values()).slice(0, 6);
 }
 
 function formatPregnancyLabel(value: unknown) {
