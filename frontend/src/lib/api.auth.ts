@@ -155,3 +155,36 @@ export async function uploadAvatar(token: string, file: File): Promise<StoredPro
   });
   return handleJson<StoredProfile>(res);
 }
+
+export async function requestPasswordReset(email: string) {
+  const res = await fetch(`${API_BASE}/auth/password/forgot`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
+
+export async function resetPassword(payload: { uid: string; token: string; new_password: string }) {
+  const res = await fetch(`${API_BASE}/auth/password/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
+
+export async function changePassword(
+  token: string,
+  payload: { current_password: string; new_password: string }
+) {
+  const res = await fetch(`${API_BASE}/auth/password/change`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
