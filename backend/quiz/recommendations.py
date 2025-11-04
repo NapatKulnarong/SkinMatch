@@ -12,6 +12,7 @@ from .models import (
     Product,
     SkinConcern,
 )
+from .ingredient_logic import classify_ingredients, filter_products_by_skin_profile
 
 TraitList = Sequence[str]
 
@@ -33,6 +34,7 @@ def recommend_products(
     sensitivity: str | None,
     restrictions: TraitList,
     budget: str | None,
+    pregnant_or_breastfeeding: bool | None = None,
     limit: int = 5,
 ) -> tuple[list[Recommendation], dict]:
     """Rank products in the catalog based on quiz traits."""
@@ -52,22 +54,24 @@ def recommend_products(
         for concern in SkinConcern.objects.filter(key__in=concern_keys)
     }
 
-    qs = (
-        Product.objects.filter(is_active=True)
-        .prefetch_related(
-            Prefetch("restrictions", to_attr="prefetched_restrictions"),
-            Prefetch("skin_types", to_attr="prefetched_skin_types"),
-            Prefetch(
-                "concerns",
-                queryset=SkinConcern.objects.all(),
-                to_attr="prefetched_concerns",
-            ),
-            Prefetch(
-                "ingredients",
-                queryset=Ingredient.objects.all().order_by("productingredient__order"),
-                to_attr="prefetched_ingredients",
-            ),
-        )
+    qs = filter_products_by_skin_profile(
+        Product.objects.filter(is_active=True),
+        primary_slugs=primary_slugs,
+    )
+    
+    qs = qs.prefetch_related(
+        Prefetch("restrictions", to_attr="prefetched_restrictions"),
+        Prefetch("skin_types", to_attr="prefetched_skin_types"),
+        Prefetch(
+            "concerns",
+            queryset=SkinConcern.objects.all(),
+            to_attr="prefetched_concerns",
+        ),
+        Prefetch(
+            "ingredients",
+            queryset=Ingredient.objects.all().order_by("productingredient__order"),
+            to_attr="prefetched_ingredients",
+        ),
     )
 
     ranked: list[tuple[Decimal, Product, dict[str, list[str]]]] = []
@@ -144,7 +148,15 @@ def recommend_products(
             )
         )
 
-    summary = _build_summary(primary_slugs, recommendations, concern_map)
+    summary = _build_summary(
+        primary_slugs,
+        secondary_slugs,
+        recommendations,
+        concern_map,
+        skin_type,
+        sensitivity,
+        pregnant_or_breastfeeding,
+    )
     return recommendations, summary
 
 
@@ -199,9 +211,14 @@ def _budget_band(product: Product) -> str:
 
 def _build_summary(
     primary_concerns: TraitList,
+    secondary_concerns: TraitList,
     recommendations: list[Recommendation],
     concern_map: dict[str, SkinConcern],
+    skin_type: str | None,
+    sensitivity: str | None,
+    pregnant_or_breastfeeding: bool | None,
 ) -> dict:
+    """Build summary with classified ingredients."""
     category_counts: dict[str, int] = {}
     ingredient_frequency: dict[str, int] = {}
 
@@ -212,17 +229,31 @@ def _build_summary(
         for ingredient in recommendation.ingredients:
             ingredient_frequency[ingredient] = ingredient_frequency.get(ingredient, 0) + 1
 
-    top_ingredients = [
-        name
-        for name, _ in sorted(
-            ingredient_frequency.items(), key=lambda item: item[1], reverse=True
-        )[:5]
-    ]
+    # Get all unique ingredients from recommendations
+    all_ingredients = list(ingredient_frequency.keys())
+    
+    # Classify ingredients
+    classified = classify_ingredients(
+        ingredients=all_ingredients,
+        primary_concerns=list(primary_concerns),
+        secondary_concerns=list(secondary_concerns),
+        skin_type=skin_type,
+        sensitivity=sensitivity,
+        pregnant_or_breastfeeding=pregnant_or_breastfeeding,
+    )
+    
+    # Get top ingredients to prioritize (limit to 6)
+    prioritized_names = [item['name'] for item in classified['prioritize'][:6]]
+    
+    # Get ingredients to use with caution
+    caution_items = classified['caution']
 
     primary_labels = _resolve_concern_names(primary_concerns, concern_map)
 
     return {
         "primary_concerns": primary_labels,
-        "top_ingredients": top_ingredients,
+        "top_ingredients": prioritized_names,
+        "ingredients_to_prioritize": classified['prioritize'][:6],
+        "ingredients_caution": caution_items,
         "category_breakdown": category_counts,
     }
