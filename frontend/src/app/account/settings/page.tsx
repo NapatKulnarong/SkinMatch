@@ -9,6 +9,7 @@ import {
   fetchProfile,
   updateProfile,
   uploadAvatar,
+  changePassword,
   type ProfileUpdatePayload,
 } from "@/lib/api.auth";
 import {
@@ -51,6 +52,14 @@ export default function AccountSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [passwordState, setPasswordState] = useState({
+    current: "",
+    next: "",
+    confirm: "",
+  });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const tokenRef = useRef<string | null>(null);
 
@@ -205,6 +214,66 @@ export default function AccountSettingsPage() {
       setError(err instanceof Error ? err.message : "Unable to remove avatar");
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handlePasswordFieldChange =
+    (key: "current" | "next" | "confirm") =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const { value } = event.target;
+      setPasswordState((prev) => ({ ...prev, [key]: value }));
+    };
+
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!tokenRef.current) return;
+
+    setPasswordSaving(true);
+    setPasswordMessage(null);
+    setPasswordError(null);
+
+    const current = passwordState.current.trim();
+    const next = passwordState.next.trim();
+    const confirm = passwordState.confirm.trim();
+
+    if (!current || !next || !confirm) {
+      setPasswordError("Please fill in every password field.");
+      setPasswordSaving(false);
+      return;
+    }
+
+    if (next.length < 8) {
+      setPasswordError("New password must be at least 8 characters long.");
+      setPasswordSaving(false);
+      return;
+    }
+
+    if (next !== confirm) {
+      setPasswordError("New password confirmation does not match.");
+      setPasswordSaving(false);
+      return;
+    }
+
+    if (current === next) {
+      setPasswordError("New password must be different from the current password.");
+      setPasswordSaving(false);
+      return;
+    }
+
+    try {
+      await changePassword(tokenRef.current, {
+        current_password: current,
+        new_password: next,
+      });
+      setPasswordMessage("Password updated successfully.");
+      setPasswordState({ current: "", next: "", confirm: "" });
+    } catch (err) {
+      console.error("Failed to change password", err);
+      setPasswordError(
+        err instanceof Error ? err.message : "Unable to change password right now."
+      );
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -459,6 +528,94 @@ export default function AccountSettingsPage() {
               </div>
             </form>
           </div>
+          <form
+            className="mt-8 flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-8 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
+            onSubmit={handlePasswordSubmit}
+          >
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Change password</h2>
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                Update your password to keep your SkinMatch account secure.
+              </p>
+            </div>
+
+            {(passwordMessage || passwordError) && (
+              <div
+                className={[
+                  "rounded-xl border-2 px-5 py-4 text-sm font-semibold shadow-[0_4px_0_rgba(0,0,0,0.12)]",
+                  passwordMessage
+                    ? "border-green-300 bg-green-50 text-green-800"
+                    : "border-red-300 bg-red-50 text-red-800",
+                ].join(" ")}
+              >
+                {passwordMessage ?? passwordError}
+              </div>
+            )}
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="flex flex-col gap-2 text-sm font-bold text-gray-800 sm:col-span-2">
+                Current password
+                <input
+                  type="password"
+                  value={passwordState.current}
+                  onChange={handlePasswordFieldChange("current")}
+                  autoComplete="current-password"
+                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  placeholder="••••••••"
+                  disabled={passwordSaving}
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                New password
+                <input
+                  type="password"
+                  value={passwordState.next}
+                  onChange={handlePasswordFieldChange("next")}
+                  autoComplete="new-password"
+                  minLength={8}
+                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  placeholder="At least 8 characters"
+                  disabled={passwordSaving}
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
+                Confirm new password
+                <input
+                  type="password"
+                  value={passwordState.confirm}
+                  onChange={handlePasswordFieldChange("confirm")}
+                  autoComplete="new-password"
+                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  placeholder="Re-enter new password"
+                  disabled={passwordSaving}
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#c8f0c8] px-8 py-3.5 text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]"
+              >
+                {passwordSaving ? (
+                  <>
+                    <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+                    Updating…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Update password
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </section>
       </PageContainer>
     </main>
