@@ -22,6 +22,7 @@ from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 from ninja import File, ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
@@ -230,6 +231,19 @@ class PasswordResetConfirmIn(Schema):
 class PasswordResetConfirmOut(Schema):
     ok: bool
 
+class PasswordChangeIn(Schema):
+    current_password: str
+    new_password: str
+
+
+class PasswordChangeOut(Schema):
+    ok: bool
+
+
+def _stamp_last_login(user: User) -> None:
+    user.last_login = timezone.localtime(timezone.now())
+    user.save(update_fields=["last_login"])
+
 # --------------- Auth endpoints ---------------
 
 
@@ -311,6 +325,29 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
 
     return {"ok": True}
 
+
+@api.post("/auth/password/change", response=PasswordChangeOut, auth=JWTAuth())
+def password_change(request, payload: PasswordChangeIn):
+    user = request.auth
+    if user is None:
+        raise HttpError(401, "Authentication required.")
+
+    if not user.check_password(payload.current_password):
+        raise HttpError(400, "Current password is incorrect.")
+
+    if payload.current_password == payload.new_password:
+        raise HttpError(400, "New password must be different from the current password.")
+
+    try:
+        validate_password(payload.new_password, user=user)
+    except ValidationError as exc:
+        raise HttpError(400, " ".join(exc.messages))
+
+    user.set_password(payload.new_password)
+    user.save(update_fields=["password"])
+
+    return {"ok": True}
+
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
     identifier = payload.identifier
@@ -326,6 +363,7 @@ def token_login(request, payload: LoginIn):
     if not user:
         return {"ok": False, "message": "Invalid credentials"}
     
+    _stamp_last_login(user)
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
 
@@ -336,6 +374,7 @@ def google_login(request, payload: GoogleLoginIn):
     except ValueError as exc:
         return {"ok": False, "message": str(exc)}
 
+    _stamp_last_login(user)
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": message}
 
