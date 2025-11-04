@@ -1125,6 +1125,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
 
     profile = session.profile_snapshot or {}
     traits = _extract_profile_traits(profile)
+    pregnant = profile.get("pregnant_or_breastfeeding", False)
 
     recommendations: list = []
     summary: dict = {}
@@ -1138,6 +1139,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
             sensitivity=traits["sensitivity"],
             restrictions=traits["restrictions"],
             budget=traits["budget"],
+            pregnant_or_breastfeeding=pregnant,
         )
     else:
         # still leverage scoring to build ingredient summary while hiding products
@@ -1149,6 +1151,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
             sensitivity=traits["sensitivity"],
             restrictions=traits["restrictions"],
             budget=traits["budget"],
+            pregnant_or_breastfeeding=pregnant,
         )
 
     session.picks.all().delete()
