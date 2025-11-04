@@ -529,7 +529,7 @@ export default function HomePage() {
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e8f4e3] to-[#d4e9ce] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e4e5ba] to-[#8ec78d] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-3">
@@ -567,7 +567,8 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[2px] hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
+                          sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[21px]  hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
               >
                 <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
@@ -649,18 +650,18 @@ export default function HomePage() {
         {/* Product Scanner Teaser */}
         <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-dashed border-black bg-gradient-to-br from-[#f9e8e8] to-[#f5d4d4] shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
           {/* Mascot Image - positioned absolutely to overflow the box */}
-          <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-45 md:-right-8 z-10 pointer-events-none">
-  <Image
-    src="/img/mascot/matchy_camera.png"
-    alt="Matchy with camera"
-    width={180}
-    height={180}
-    className="h-auto w-[100px] sm:w-[140px] md:w-[280px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
-  />
-</div>
+          <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-59 md:-right-13 z-10 pointer-events-none">
+            <Image
+              src="/img/mascot/matchy_scan.png"
+              alt="Matchy with scanner"
+              width={180}
+              height={180}
+              className="h-auto w-[100px] sm:w-[140px] md:w-[330px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
+            />
+        </div>
 
-          <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-20 sm:pt-24">
-            <div className="mx-auto max-w-3xl text-center space-y-4 sm:space-y-6">
+          <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-8 sm:pt-12">
+            <div className="mx-auto max-w-3xl text-center space-y-4 sm:space-y-">
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-3">
                   <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#a85b5b]" />
@@ -684,7 +685,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-[#5a4230] opacity-50 cursor-not-allowed shadow-[0_4px_0_rgba(0,0,0,0.2)]"
               >
                 <CameraIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                Scan Product (Coming Soon)
+                Scan Product
               </button>
             </div>
           </div>
