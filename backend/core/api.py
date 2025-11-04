@@ -465,11 +465,11 @@ def token_login(request, payload: LoginIn):
         .first()
     )
     if not user_obj:
-        return {"ok": False, "message": "Invalid credentials"}
+        return {"ok": False, "message": "We couldn't find an account with that email or username."}
 
     user = authenticate(request, username=user_obj.get_username(), password=payload.password)
     if not user:
-        return {"ok": False, "message": "Invalid credentials"}
+        return {"ok": False, "message": "The password you entered is incorrect."}
     
     _stamp_last_login(user)
     token = create_access_token(user)
