@@ -173,3 +173,18 @@ export async function resetPassword(payload: { uid: string; token: string; new_p
   });
   return handleJson<{ ok: boolean }>(res);
 }
+
+export async function changePassword(
+  token: string,
+  payload: { current_password: string; new_password: string }
+) {
+  const res = await fetch(`${API_BASE}/auth/password/change`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
