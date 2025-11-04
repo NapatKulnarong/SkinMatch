@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
+import { subscribeToNewsletter } from "@/lib/api.newsletter";
 import {
   getAuthToken,
   getStoredProfile,
@@ -401,6 +402,10 @@ export default function HomePage() {
       ? `${SUGGESTION_LIST_ID}-${activeSuggestionIndex}`
       : undefined;
   const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newsletterMessage, setNewsletterMessage] = useState<string | null>(null);
+  const newsletterFeedbackId = newsletterMessage ? "newsletter-feedback" : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -448,12 +453,44 @@ export default function HomePage() {
     [closeSuggestions, router]
   );
 
+  const handleNewsletterSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const trimmed = newsletterEmail.trim();
+      if (!trimmed) {
+        setNewsletterStatus("error");
+        setNewsletterMessage("Please enter your email address.");
+        return;
+      }
+
+      setNewsletterStatus("loading");
+      setNewsletterMessage(null);
+
+      try {
+        const response = await subscribeToNewsletter(trimmed, "homepage");
+        setNewsletterStatus("success");
+        setNewsletterMessage(response.message);
+        if (!response.alreadySubscribed) {
+          setNewsletterEmail("");
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "We couldn't add you just now. Please try again in a moment.";
+        setNewsletterStatus("error");
+        setNewsletterMessage(message);
+      }
+    },
+    [newsletterEmail]
+  );
+
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
       <Navbar />
       <PageContainer className="relative flex flex-col gap-8 sm:gap-12 pt-24 sm:pt-32 pb-12 sm:pb-16">
         {/* Hero Section */}
-        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#fff1dd] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
           <div className="grid items-center gap-6 sm:gap-8 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[1.05fr_0.95fr]">
             <div className="order-1 space-y-4 sm:space-y-6 text-center md:order-2 md:text-left">
               <div className="space-y-2 sm:space-y-3">
@@ -480,7 +517,7 @@ export default function HomePage() {
 
             <div className="order-2 flex justify-center md:order-1">
               <Image
-                src="/img/mascot/matchy_1.png"
+                src="/img/mascot/matchy_match.gif"
                 alt="Matchy the SkinMatch mascot giving a friendly wave"
                 width={360}
                 height={270}
@@ -707,34 +744,59 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#f0e9f7] to-[#e8d9f0] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <div className="mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#4a3a5a]">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#3C5B6F]">
                 Get Weekly Skincare Tips
               </h2>
               <p className="text-xs sm:text-sm text-[#4a3a5a]/70">
-                Join 10,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
+                Join 1,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
               </p>
             </div>
 
-            <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+            <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSubmit} noValidate>
               <input
                 type="email"
+                value={newsletterEmail}
+                onChange={(event) => {
+                  setNewsletterEmail(event.target.value);
+                  if (newsletterStatus !== "idle") {
+                    setNewsletterStatus("idle");
+                    setNewsletterMessage(null);
+                  }
+                }}
                 placeholder="your.email@example.com"
+                aria-label="Email address"
+                aria-describedby={newsletterFeedbackId}
+                aria-invalid={newsletterStatus === "error"}
                 className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
               />
               <button
                 type="submit"
-                className="rounded-full border-2 border-black bg-[#7c5a8f] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
+                disabled={newsletterStatus === "loading"}
+                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Subscribe
+                {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
               </button>
             </form>
 
-            <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
-              No spam, unsubscribe anytime. We respect your privacy.
-            </p>
+            <div className="space-y-1" aria-live="polite" aria-atomic="true">
+              {newsletterMessage && (
+                <p
+                  id="newsletter-feedback"
+                  className={`text-[11px] sm:text-xs font-semibold ${
+                    newsletterStatus === "error" ? "text-[#B9375D]" : "text-[#4a3a5a]"
+                  }`}
+                  role="status"
+                >
+                  {newsletterMessage}
+                </p>
+              )}
+              <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
+                No spam, unsubscribe anytime. We respect your privacy.
+              </p>
+            </div>
           </div>
         </section>
       </PageContainer>

@@ -32,7 +32,7 @@ export default function QuizResultPage() {
   const [feedback, setFeedback] = useState<string>("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
   const [anonymizeFeedback, setAnonymizeFeedback] = useState(false);
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [activeRecommendation, setActiveRecommendation] = useState<QuizRecommendation | null>(null);
   const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
@@ -205,11 +205,11 @@ export default function QuizResultPage() {
 
   const handleSubmitFeedback = useCallback(async () => {
     if (rating === 0) {
-      alert("Please select a rating before submitting.");
+      setFeedbackError("Please select a rating before submitting.");
       return;
     }
     if (!result?.sessionId) {
-      alert("We couldn't find this match session. Please refresh and try again.");
+      setFeedbackError("We couldn't find this quiz session. Please refresh and try again.");
       return;
     }
 
@@ -218,34 +218,44 @@ export default function QuizResultPage() {
     try {
       const storedProfile = getStoredProfile();
       const badge = result?.summary?.primaryConcerns?.[0] ?? result?.profile?.primaryConcerns?.[0] ?? null;
+      const trimmedMessage = feedback.trim();
       const metadata = buildFeedbackMetadata({
-        profile: storedProfile,
-        badge,
-        source: "quiz-result",
+        profile: anonymizeFeedback ? null : storedProfile,
         anonymize: anonymizeFeedback,
+        source: "quiz-result",
+        badge,
       });
 
       await submitQuizFeedback({
         sessionId: result.sessionId,
         rating,
-        message: feedback,
+        message: trimmedMessage || undefined,
         metadata,
       });
 
-      setFeedbackSubmitted(true);
-      setFeedback("");
       setRating(0);
+      setHoverRating(0);
+      setFeedback("");
+      setFeedbackSubmitted(true);
       setAnonymizeFeedback(false);
       setTimeout(() => {
         setFeedbackSubmitted(false);
-      }, 4000);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      }, 3000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "We couldn't send your feedback right now. Please try again.";
       setFeedbackError(message);
     } finally {
       setIsSubmittingFeedback(false);
     }
-  }, [anonymizeFeedback, feedback, rating, result?.profile?.primaryConcerns, result?.sessionId, result?.summary?.primaryConcerns]);
+  }, [
+    anonymizeFeedback,
+    feedback,
+    rating,
+    result?.profile?.primaryConcerns,
+    result?.sessionId,
+    result?.summary?.primaryConcerns,
+  ]);
 
   if (!hasPrimary) {
     return (
@@ -383,7 +393,7 @@ export default function QuizResultPage() {
           <div className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4">
             <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
             <p className="text-sm text-[#1b2a50]/70">
-              Get a copy of your routine roadmap delivered straight to your inbox.
+              Get a copy of your SkinProfile delivered straight to your inbox.
             </p>
             <div className="space-y-3 text-left">
               <input

@@ -103,7 +103,7 @@ export default function TrendingSkincare() {
                 <div className="relative h-56 w-full">
                   <Image
                     src={image}
-                    alt=""
+                    alt={item.heroImageAlt ?? item.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 400px"

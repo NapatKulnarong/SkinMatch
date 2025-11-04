@@ -1,6 +1,13 @@
 import type { StoredProfile } from "./auth-storage";
 
-const DEFAULT_DISPLAY_NAME = "SkinMatch member";
+const DEFAULT_DISPLAY_NAME = "Anonymous User";
+
+let anonymousCounter = 0;
+
+const nextAnonymousDisplayName = (): string => {
+  anonymousCounter += 1;
+  return `${DEFAULT_DISPLAY_NAME} ${anonymousCounter}`;
+};
 
 const normalise = (value?: string | null): string => (value ?? "").trim();
 
@@ -17,7 +24,7 @@ const initialsFromName = (name?: string | null): string => {
 };
 
 const buildDisplayName = (profile: StoredProfile | null): string => {
-  if (!profile) return DEFAULT_DISPLAY_NAME;
+  if (!profile) return nextAnonymousDisplayName();
   const username = normalise(profile.username);
   if (username) return username;
   const first = normalise(profile.first_name);
@@ -27,7 +34,7 @@ const buildDisplayName = (profile: StoredProfile | null): string => {
   }
   if (first) return first;
   if (last) return last;
-  return DEFAULT_DISPLAY_NAME;
+  return nextAnonymousDisplayName();
 };
 
 export type FeedbackMetadataOptions = {

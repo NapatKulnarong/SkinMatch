@@ -101,7 +101,7 @@ export default function FactCheck() {
                 <div className="relative h-56 w-full">
                   <Image
                     src={image}
-                    alt=""
+                    alt={topic.heroImageAlt ?? topic.title}
                     fill
                     priority={false}
                     className="object-cover"

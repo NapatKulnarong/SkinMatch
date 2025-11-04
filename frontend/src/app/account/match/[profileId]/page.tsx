@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
@@ -210,27 +209,15 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
       })
     : "";
 
-  const handleSubmitFeedback = async () => {
+  const handleSubmitFeedback = useCallback(async () => {
     if (rating === 0) {
-      alert("Please select a rating before submitting.");
+      setFeedbackError("Please select a rating before submitting.");
       return;
     }
-    
-    // TODO: Implement API call to submit feedback
-    console.log("Submitting feedback:", {
-      profileId,
-      rating,
-      feedback,
-      anonymous: anonymizeFeedback,
-    });
-    
-    setFeedbackSubmitted(true);
-    setTimeout(() => {
-      setFeedbackSubmitted(false);
-    }, 3000);
+
     const sessionId = detail?.sessionId;
     if (!sessionId) {
-      alert("We couldn't find this match session. Please refresh and try again.");
+      setFeedbackError("We couldn't find this match session. Please refresh and try again.");
       return;
     }
 
@@ -238,49 +225,52 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
     setFeedbackError(null);
     try {
       const storedProfile = getStoredProfile();
-      const badge = detail?.summary?.primaryConcerns?.[0] ?? detail?.profile?.primaryConcerns?.[0] ?? null;
+      const trimmedMessage = feedback.trim();
+      const badge =
+        detail?.summary?.primaryConcerns?.[0] ?? detail?.profile?.primaryConcerns?.[0] ?? null;
       const metadata = buildFeedbackMetadata({
-        profile: storedProfile,
-        badge,
+        profile: anonymizeFeedback ? null : storedProfile,
+        anonymize: anonymizeFeedback,
         source: "match-detail",
-        anonymize: false,
+        badge,
       });
 
       await submitQuizFeedback({
         sessionId,
         rating,
-        message: feedback,
+        message: trimmedMessage || undefined,
         metadata,
       });
 
-      setFeedbackSubmitted(true);
-      setFeedback("");
       setRating(0);
+      setHoverRating(0);
+      setFeedback("");
+      setAnonymizeFeedback(false);
+      setFeedbackSubmitted(true);
       setTimeout(() => {
         setFeedbackSubmitted(false);
-      }, 4000);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "We couldn't save your feedback.";
+      }, 3000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "We couldn't send your feedback right now. Please try again.";
       setFeedbackError(message);
     } finally {
       setIsSubmittingFeedback(false);
     }
-  };
+  }, [
+    anonymizeFeedback,
+    detail?.profile?.primaryConcerns,
+    detail?.sessionId,
+    detail?.summary?.primaryConcerns,
+    feedback,
+    rating,
+  ]);
 
   return (
     <main className="min-h-screen bg-[#FFF6E9]">
       <Navbar />
       <PageContainer className="pt-32 pb-16">
-        {/* top nav row */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#3C3D37] hover:underline"
-          >
-            ← Back to account
-          </Link>
-        </div>
-
+        
         {loading ? (
           <div className="mt-12 flex justify-center">
             <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-center shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
@@ -318,9 +308,11 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
               </p>
 
-              <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
-                Completed {completedLabel}
-              </p>
+              <div className="inline-block border-1 border-black bg-white rounded-full px-4 py-1">
+                <p className="text-xs font-semibold text-[#3C3D37] text-opacity-50">
+                  Completed on {completedLabel}
+                </p>
+              </div>
             </header>
 
             {/* profile + strategy */}
@@ -424,7 +416,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                 <section className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4 text-center">
                   <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
                   <p className="text-sm text-[#1b2a50]/70">
-                    Get a copy of your routine roadmap delivered straight to your inbox.
+                    Get a copy of your SkinProfile delivered straight to your inbox.
                   </p>
 
                   <div className="space-y-3 text-left">

@@ -1,10 +1,10 @@
 import uuid
 
 from datetime import date
-from typing import Optional
+from typing import Optional, Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, validate_email
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
@@ -313,3 +313,35 @@ class SkinFactView(models.Model):
             SkinFactTopic.objects.filter(id=self.topic_id).update(
                 view_count=F("view_count") + 1
             )
+
+
+class NewsletterSubscriber(models.Model):
+    """Stores marketing email opt-ins."""
+
+    email = models.EmailField(unique=True)
+    source = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Where the opt-in originated, e.g. 'homepage', 'quiz_result'.",
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-subscribed_at",)
+        indexes = [
+            models.Index(fields=["subscribed_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.email} ({self.subscribed_at:%Y-%m-%d})"
+
+    def clean(self) -> None:
+        if self.email:
+            normalised = self.email.strip().lower()
+            validate_email(normalised)
+            self.email = normalised
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.clean()
+        super().save(*args, **kwargs)
