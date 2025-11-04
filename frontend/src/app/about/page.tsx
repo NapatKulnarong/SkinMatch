@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { EnvelopeIcon } from "@heroicons/react/24/solid";
 import { FaGithub, FaInstagram } from "react-icons/fa";
 import PageContainer from "@/components/PageContainer";
+import SiteFooter from "@/components/SiteFooter";
 
 type Member = {
   id: number;
@@ -80,6 +81,7 @@ const CONTACTS_BY_NAME: Record<
 
 export default function AboutPage() {
   return (
+    <>
     <main className="min-h-screen bg-[#bcdcf6]">
       {/* Intro Letter */}
       <PageContainer as="section" className="pt-44 pb-14">
@@ -139,6 +141,8 @@ export default function AboutPage() {
         </div>
       </PageContainer>
     </main>
+    <SiteFooter />
+    </>
   );
 }
 
