@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
+import SiteFooter from "@/components/SiteFooter";
 import { fetchProfile } from "@/lib/api.auth";
 import {
   clearSession,
@@ -160,7 +161,8 @@ function AccountContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#d3cbe0]">
+    <>
+      <main className="min-h-screen bg-[#d3cbe0]">
       <PageContainer className="pt-28 pb-16 lg:px-8">
         {/* Header Section */}
         <div className="mb-8">
@@ -267,7 +269,9 @@ function AccountContent() {
           </div>
         </section>
       </PageContainer>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 

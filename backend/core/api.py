@@ -1,7 +1,6 @@
 import logging
 import os
 from datetime import date, datetime
-import logging
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
@@ -19,7 +18,6 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes, force_str
@@ -65,8 +63,6 @@ User = get_user_model()
 
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-logger = logging.getLogger(__name__)
 # --------------- Schemas ---------------
 
 class SignUpIn(Schema):
@@ -214,6 +210,23 @@ class NewsletterSubscribeOut(Schema):
     ok: bool
     message: str
     already_subscribed: bool = False
+
+
+class SendTermsEmailIn(Schema):
+    email: EmailStr
+    terms_body: str
+
+    @field_validator("terms_body")
+    @classmethod
+    def body_not_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Terms body is required.")
+        return cleaned
+
+
+class SendTermsEmailOut(Schema):
+    ok: bool
 
 # --------------- Newsletter ---------------
 
