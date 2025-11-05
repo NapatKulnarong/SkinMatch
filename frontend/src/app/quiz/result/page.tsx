@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { ProductDetail, QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
 import { emailQuizSummary, fetchProductDetail, submitQuizFeedback } from "@/lib/api.quiz";
-import { getStoredProfile } from "@/lib/auth-storage";
+import { getStoredProfile, getAuthToken } from "@/lib/auth-storage";
 import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
@@ -679,6 +679,24 @@ function renderRecommendations(
   requiresAuth: boolean,
   onShowDetails: (item: QuizRecommendation) => void | Promise<void>
 ) {
+  const saving = new Set<string>();
+  const handleFav = async (item: QuizRecommendation) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!item.productId) return;
+      saving.add(item.productId);
+      const { addToWishlist } = await import("@/lib/api.wishlist");
+      await addToWishlist(item.productId, token);
+    } catch (err) {
+      console.error("Failed to save to wishlist", err);
+    } finally {
+      if (item.productId) saving.delete(item.productId);
+    }
+  };
   if (recommendations.length) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -760,6 +778,7 @@ function renderRecommendations(
                   <button
                     type="button"
                     aria-label="Add to wishlist"
+                    onClick={() => { void handleFav(item); }}
                     className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
                     <svg className="h-3.5 w-3.5 text-[#B9375D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
