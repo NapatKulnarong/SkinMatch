@@ -284,6 +284,81 @@ export const sectionTopicsMock: Record<
       3160
     ),
   ],
+
+  ingredient_spotlight: [
+    createSummary(
+      "28",
+      "hyaluronic-acid-deep-dive",
+      "Hyaluronic Acid: The Ultimate Hydrator",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "From molecular weights to layering techniques—your complete HA guide.",
+      5200
+    ),
+    createSummary(
+      "29",
+      "niacinamide-brightener",
+      "Niacinamide: The Multi-Tasker",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "How this B-vitamin derivative controls oil, fades marks, and strengthens barriers.",
+      4900
+    ),
+    createSummary(
+      "30",
+      "azelaic-acid-gentle-exfoliant",
+      "Azelaic Acid: The Gentle Exfoliant",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "Pore-clearing powerhouse that works for sensitive and rosacea-prone skin.",
+      4650
+    ),
+    createSummary(
+      "31",
+      "peptides-anti-aging",
+      "Peptides: Building Blocks for Youthful Skin",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "Understanding signal peptides, carrier peptides, and neuropeptides.",
+      4380
+    ),
+    createSummary(
+      "32",
+      "ceramides-barrier-repair",
+      "Ceramides: The Barrier Repair Experts",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "How these lipids lock in moisture and protect against environmental stressors.",
+      4120
+    ),
+    createSummary(
+      "33",
+      "tranexamic-acid-hyperpigmentation",
+      "Tranexamic Acid: Hyperpigmentation Fighter",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "Clinical evidence for fading dark spots and melasma safely.",
+      3890
+    ),
+    createSummary(
+      "34",
+      "bakuchiol-retinol-alternative",
+      "Bakuchiol: The Plant-Based Retinol Alternative",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "Pregnancy-safe alternative that delivers similar anti-aging benefits.",
+      3650
+    ),
+    createSummary(
+      "35",
+      "allantoin-soothing-healer",
+      "Allantoin: The Soothing Healer",
+      "/img/facts_img/serum_texture.jpg",
+      "ingredient_spotlight",
+      "Gentle ingredient that promotes cell regeneration and calms irritation.",
+      3420
+    ),
+  ],
 };
 
 // mock of the full detail view
