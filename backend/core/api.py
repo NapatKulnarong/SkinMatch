@@ -306,6 +306,7 @@ def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
         "already_subscribed": True,
     }
 
+
 class SendTermsEmailIn(Schema):
     email: EmailStr
     terms_body: str

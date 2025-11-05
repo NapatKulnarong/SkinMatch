@@ -179,11 +179,11 @@ function AccountContent() {
 
         <section className="grid grid-cols-12 gap-6">
           {/* LEFT PROFILE CARD */}
-          <aside className="col-span-12 lg:col-span-4">
+          <aside className="col-span-12 lg:col-span-3">
             <div className="flex flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
               {/* Avatar */}
               <div className="relative mx-auto w-[240px] h-[240px] flex-shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5] shadow-[4px_6px_0_rgba(0,0,0,0.2)]">
+                <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     key={avatarSrc}
@@ -196,8 +196,8 @@ function AccountContent() {
               </div>
 
               {/* Profile Info */}
-              <div className="mt-6 space-y-2 text-center flex-shrink-0">
-                <h2 className="text-3xl font-extrabold leading-tight text-gray-900">
+              <div className="mt-auto space-y-2 text-left flex-shrink-0">
+                <h2 className="text-2xl font-extrabold leading-tight text-gray-900">
                   {displayName}
                 </h2>
                 {profile?.username && (
@@ -208,7 +208,7 @@ function AccountContent() {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-auto pt-6 flex flex-col gap-3 flex-shrink-0">
+              <div className=" pt-6 flex flex-col gap-3 flex-shrink-0">
                 <Link
                   href="/account/settings"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-3 text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
@@ -234,7 +234,7 @@ function AccountContent() {
           </aside>
 
           {/* RIGHT: MATCH HISTORY WITH MASCOT */}
-          <div className="col-span-12 lg:col-span-8 relative">
+          <div className="col-span-12 lg:col-span-9 relative">
             {/* Matchy Mascot - Positioned on top center of the Match History box */}
             <div className="absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
               <Image
@@ -472,7 +472,9 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
       headerAction={
         <button
           onClick={() => setEditMode(!editMode)}
-          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 text-xs font-bold transition shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 text-xs font-bold 
+                    transition shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] 
+                    active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
             editMode 
               ? 'bg-[#c8e6d7] text-[#2d5f4d]' 
               : 'bg-white text-gray-900'
@@ -602,11 +604,15 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                 <div key={key} className="relative">
                   <Link
                     href={profileLink}
-                    className={`group relative rounded-3xl border-2 ${style.border} bg-gradient-to-br ${style.gradient} p-6 shadow-[0_6px_0_rgba(0,0,0,0.15)] transition-all hover:-translate-y-2 hover:shadow-[0_10px_0_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-[0_4px_0_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#7C6DB1]/40 flex flex-col block`}
+                    className={`group relative rounded-3xl border-2 ${style.border} bg-gradient-to-br ${style.gradient} p-4 
+                              shadow-[0_6px_0_rgba(0,0,0,0.15)] transition-all hover:-translate-y-2 hover:shadow-[0_10px_0_rgba(0,0,0,0.2)] 
+                              active:translate-y-0 active:shadow-[0_4px_0_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-4 
+                              focus-visible:ring-[#7C6DB1]/40 flex flex-col block`}
                     prefetch
                   >
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className={`rounded-2xl border-2 ${style.badge} px-4 py-2.5 shadow-sm`}>
+                    <div className="mb-2 flex items-start justify-between">
+                      {/* Date badge */}
+                      <div className={`rounded-2xl border-2 ${style.badge} px-3 py-1.5 shadow-sm`}>
                         <p className="text-xs font-black uppercase tracking-wider">
                           {dateLabel}
                         </p>
@@ -624,11 +630,12 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       </div>
                     </div>
 
-                    <h3 className="mb-4 text-xl font-black leading-tight text-gray-900 min-h-[3.5rem] line-clamp-2">
+                    <h3 className="mb-3 text-xl font-black leading-tight text-gray-900 min-h-[3.5rem] line-clamp-2">
                       {primary}
                     </h3>
 
-                    <div className="mb-4 h-[30px] flex items-center">
+                    {/* Budget section */}
+                    <div className="mb-1 h-[30px] flex items-center">
                       {budgetLabel ? (
                         <div className="inline-flex items-center gap-2 rounded-full border-2 border-black/10 bg-white/70 px-4 py-1.5 shadow-sm backdrop-blur-sm">
                           <svg className="h-3.5 w-3.5 text-[#8b7d6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

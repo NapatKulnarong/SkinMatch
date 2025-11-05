@@ -86,7 +86,7 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-6 sm:mt-8 border-t border-white/10 pt-6 sm:pt-8 text-center text-[10px] sm:text-xs text-white/60">
+        <div className="mt-4 sm:mt-6 border-t border-white/10 pt-6 sm:pt-8 text-center text-[10px] sm:text-xs text-white/60">
           <p>© {new Date().getFullYear()} SkinMatch. All rights reserved.</p>
         </div>
       </PageContainer>
