@@ -26,7 +26,7 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
 
   useEffect(() => {
     let active = true;
-    fetchTopicsBySection("knowledge", 10)
+    fetchTopicsBySection("ingredient_spotlight", 10)
       .then((data) => {
         if (!active) return;
         setTopics(data);
