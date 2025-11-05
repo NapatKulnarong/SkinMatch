@@ -52,7 +52,8 @@ else:
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
-from quiz.models import QuizSession
+from quiz.models import QuizSession, Product
+from .models import WishlistItem
 
 
 logger = logging.getLogger(__name__)
@@ -823,6 +824,83 @@ def _resolve_media_url(request, image_field) -> Optional[str]:
 
 
 # ------------------------------------------------------------------------------------
+
+# ----------------------------- Wishlist ---------------------------------------------
+
+class WishlistAddIn(Schema):
+    product_id: uuid.UUID
+
+
+class WishlistMutationOut(Schema):
+    ok: bool
+    status: str
+
+
+class WishlistProductOut(Schema):
+    id: uuid.UUID
+    slug: str
+    name: str
+    brand: str
+    category: str
+    price: float
+    currency: str
+    image: str | None = None
+    product_url: str | None = None
+    saved_at: datetime
+
+
+def _serialize_wishlist_item(item: WishlistItem) -> dict:
+    p: Product = item.product
+    return {
+        "id": p.id,
+        "slug": p.slug,
+        "name": p.name,
+        "brand": p.brand,
+        "category": p.category,
+        "price": float(p.price or 0),
+        "currency": p.currency,
+        "image": p.image or None,
+        "product_url": p.product_url or None,
+        "saved_at": item.created_at,
+    }
+
+
+@api.get("/wishlist", response=List[WishlistProductOut], auth=JWTAuth())
+def list_wishlist(request, limit: int = 100, offset: int = 0):
+    user: User = request.auth
+    limit = max(1, min(limit, 200))
+    qs = (
+        WishlistItem.objects
+        .select_related("product")
+        .filter(user=user, product__is_active=True)
+        .order_by("-created_at")
+    )
+    items = list(qs[offset: offset + limit])
+    return [_serialize_wishlist_item(it) for it in items]
+
+
+@api.post("/wishlist/add", response=WishlistMutationOut, auth=JWTAuth())
+def add_to_wishlist(request, payload: WishlistAddIn):
+    user: User = request.auth
+    try:
+        product = Product.objects.get(id=payload.product_id, is_active=True)
+    except Product.DoesNotExist:
+        raise HttpError(404, "Product not found")
+
+    obj, created = WishlistItem.objects.get_or_create(user=user, product=product)
+    return {"ok": True, "status": "added" if created else "already_saved"}
+
+
+@api.delete("/wishlist/{product_id}", response=WishlistMutationOut, auth=JWTAuth())
+def remove_from_wishlist(request, product_id: uuid.UUID):
+    user: User = request.auth
+    try:
+        item = WishlistItem.objects.select_related("product").get(user=user, product_id=product_id)
+    except WishlistItem.DoesNotExist:
+        return {"ok": True, "status": "not_present"}
+
+    item.delete()
+    return {"ok": True, "status": "removed"}
 
 def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
     """Very small heuristic mapping of concerns to ingredient/keyword hints."""
