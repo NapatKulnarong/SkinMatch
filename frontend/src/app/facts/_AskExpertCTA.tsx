@@ -43,7 +43,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
               Need a skincare myth debunked?
             </h2>
             <p className="text-sm leading-relaxed text-[#101b27]/70 md:text-base">
-              Tell Matchy the rumor, ingredient combo, or claim you keep seeing. We'll route it to our expert panel for a future Fact Check feature.
+              Tell Matchy the rumor, ingredient combo, or claim you keep seeing. We&apos;ll route it to our expert panel for a future Fact Check feature.
             </p>
           </div>
 

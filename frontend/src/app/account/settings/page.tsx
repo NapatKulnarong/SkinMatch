@@ -618,10 +618,11 @@ export default function AccountSettingsPage() {
             </div>
           </form>
           <div className="absolute -bottom-24 -right-20 hidden lg:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/img/mascot/matchy_set.png"
-              alt = "Matchy Mascot (Settings)"
-              className="w-120 h-120 md:w-150 md:h-150 xl:w-160 xl:h-160 object-contain"
+            src="/img/mascot/matchy_set.png"
+            alt = "Matchy Mascot (Settings)"
+            className="w-120 h-120 md:w-150 md:h-150 xl:w-160 xl:h-160 object-contain"
             />
           </div>
         </section>
