@@ -43,7 +43,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
 
   return (
     <PageContainer as="section" id={sectionId} className="pt-12">
-      <div className="rounded-[32px] border-2 border-black bg-gradient-to-br from-[#f6fbe8] via-[#fef8e7] to-[#f2f7e4] shadow-[10px_12px_0_rgba(0,0,0,0.18)]">
+      <div className="rounded-[32px] border-2 border-black bg-gradient-to-br from-[#FFF1CA] via-[#F9D689] to-[#FFF1CA] shadow-[10px_12px_0_rgba(0,0,0,0.18)]">
         <div className="flex flex-col gap-6 border-b border-black/10 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#11224a]/60">
@@ -58,7 +58,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           </div>
           <Link
             href="/quiz"
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fef4d8] px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
           >
             Update preferences
             <span aria-hidden>→</span>
@@ -80,7 +80,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                   className="group flex h-full flex-col gap-3 rounded-[24px] border-2 border-black bg-white px-4 py-5 shadow-[5px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1"
                 >
                   <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#11224a]/60">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#11224a]/20 bg-[#e8efff] text-sm font-bold">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#11224a] bg-[#FFF1CA] text-sm font-bold">
                       {topic.title.slice(0, 1)}
                     </span>
                     Match insight
@@ -93,7 +93,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                   </p>
                   <div className="mt-auto flex items-center justify-between text-xs uppercase tracking-[0.28em] text-[#11224a]/50">
                     <span>{new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads</span>
-                    <span className="inline-flex items-center gap-1 text-[#2667ff]">
+                    <span className="inline-flex items-center gap-1 text-black">
                       View guide <span aria-hidden>→</span>
                     </span>
                   </div>

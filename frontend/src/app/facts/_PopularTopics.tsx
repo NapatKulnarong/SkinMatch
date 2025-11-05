@@ -111,9 +111,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                   Read deep dive
                   <span aria-hidden className="text-lg">↗</span>
                 </Link>
-                <span className="text-xs uppercase tracking-[0.28em] text-white/65">
-                  Swipe for more stories
-                </span>
+                
               </div>
             </div>
           </div>
@@ -129,7 +127,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                   aria-current={isActive}
                   onClick={() => setIdx(i)}
                   className={`group relative flex flex-1 items-center gap-4 rounded-2xl border-2 border-black px-3 py-3 text-left transition ${
-                    isActive ? "bg-white shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "bg-white/70 hover:bg-white"
+                    isActive ? "bg-[#d1edc8] shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "bg-white hover:bg-white"
                   }`}
                 >
                   <span className="flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-black/20">
@@ -156,7 +154,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-2">
+      {/* <div className="mt-5 flex items-center justify-center gap-2">
         {topics.map((t, i) => (
           <button
             key={t.id}
@@ -165,7 +163,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
             className={`h-2.5 w-2.5 rounded-full transition ${i === idx ? "bg-[#4a6b47]" : "bg-[#c6d1be]"}`}
           />
         ))}
-      </div>
+      </div> */}
     </PageContainer>
   );
 }
