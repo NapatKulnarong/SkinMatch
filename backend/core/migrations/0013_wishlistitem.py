@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("core", "0012_rename_core_newsle_subscri_1d53d1_idx_core_newsle_subscri_8b135b_idx_and_more"),
-        ("quiz", "0001_initial"),
+        ("quiz", "0002_ingredient_product_restrictiontag_skinconcern_and_more"),
     ]
 
     operations = [
