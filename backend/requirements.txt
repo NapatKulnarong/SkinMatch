@@ -21,3 +21,4 @@ pytest-django
 cryptography>=42
 pyzbar
 opencv-python-headless
+pytesseract
