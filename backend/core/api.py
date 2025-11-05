@@ -52,6 +52,8 @@ else:
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
+from quiz.models import QuizSession, Product
+from .models import WishlistItem
 
 
 logger = logging.getLogger(__name__)
@@ -822,3 +824,204 @@ def _resolve_media_url(request, image_field) -> Optional[str]:
 
 
 # ------------------------------------------------------------------------------------
+
+# ----------------------------- Wishlist ---------------------------------------------
+
+class WishlistAddIn(Schema):
+    product_id: uuid.UUID
+
+
+class WishlistMutationOut(Schema):
+    ok: bool
+    status: str
+
+
+class WishlistProductOut(Schema):
+    id: uuid.UUID
+    slug: str
+    name: str
+    brand: str
+    category: str
+    price: float
+    currency: str
+    image: str | None = None
+    product_url: str | None = None
+    saved_at: datetime
+
+
+def _serialize_wishlist_item(item: WishlistItem) -> dict:
+    p: Product = item.product
+    return {
+        "id": p.id,
+        "slug": p.slug,
+        "name": p.name,
+        "brand": p.brand,
+        "category": p.category,
+        "price": float(p.price or 0),
+        "currency": p.currency,
+        "image": p.image or None,
+        "product_url": p.product_url or None,
+        "saved_at": item.created_at,
+    }
+
+
+@api.get("/wishlist", response=List[WishlistProductOut], auth=JWTAuth())
+def list_wishlist(request, limit: int = 100, offset: int = 0):
+    user: User = request.auth
+    limit = max(1, min(limit, 200))
+    qs = (
+        WishlistItem.objects
+        .select_related("product")
+        .filter(user=user, product__is_active=True)
+        .order_by("-created_at")
+    )
+    items = list(qs[offset: offset + limit])
+    return [_serialize_wishlist_item(it) for it in items]
+
+
+@api.post("/wishlist/add", response=WishlistMutationOut, auth=JWTAuth())
+def add_to_wishlist(request, payload: WishlistAddIn):
+    user: User = request.auth
+    try:
+        product = Product.objects.get(id=payload.product_id, is_active=True)
+    except Product.DoesNotExist:
+        raise HttpError(404, "Product not found")
+
+    obj, created = WishlistItem.objects.get_or_create(user=user, product=product)
+    return {"ok": True, "status": "added" if created else "already_saved"}
+
+
+@api.delete("/wishlist/{product_id}", response=WishlistMutationOut, auth=JWTAuth())
+def remove_from_wishlist(request, product_id: uuid.UUID):
+    user: User = request.auth
+    try:
+        item = WishlistItem.objects.select_related("product").get(user=user, product_id=product_id)
+    except WishlistItem.DoesNotExist:
+        return {"ok": True, "status": "not_present"}
+
+    item.delete()
+    return {"ok": True, "status": "removed"}
+
+def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
+    """Very small heuristic mapping of concerns to ingredient/keyword hints."""
+    concerns: list[str] = []
+    if not isinstance(profile_data, dict):
+        return concerns
+    for key in ("primary_concerns", "secondary_concerns", "eye_area_concerns"):
+        values = profile_data.get(key) or []
+        if isinstance(values, list):
+            concerns.extend([str(v).strip().lower() for v in values if v])
+
+    unique = list(dict.fromkeys(concerns))  # preserve order, drop dups
+
+    # Map concerns to ingredient keywords we may find in topic titles/subtitles
+    mapping: dict[str, list[str]] = {
+        "acne": ["salicylic", "bha", "azelaic", "niacinamide", "benzoyl"],
+        "blemishes": ["azelaic", "niacinamide", "bha", "salicylic"],
+        "oil": ["niacinamide", "salicylic", "bha", "clay"],
+        "oily": ["niacinamide", "salicylic", "bha"],
+        "dry": ["hyaluronic", "ceramide", "squalane", "glycerin"],
+        "dehydrated": ["hyaluronic", "glycerin", "panthenol"],
+        "pigmentation": ["vitamin c", "tranexamic", "azelaic", "niacinamide"],
+        "dark spots": ["vitamin c", "tranexamic", "azelaic"],
+        "melasma": ["tranexamic", "azelaic", "vitamin c"],
+        "redness": ["centella", "azelaic", "allantoin", "green tea"],
+        "sensitive": ["ceramide", "allantoin", "panthenol", "centella"],
+        "aging": ["retinol", "peptide", "bakuchiol", "vitamin c"],
+        "wrinkles": ["retinol", "peptide", "bakuchiol"],
+        "barrier": ["ceramide", "squalane", "panthenol"],
+    }
+
+    keywords: list[str] = []
+    for c in unique:
+        for k, vals in mapping.items():
+            if k in c:
+                keywords.extend(vals)
+    # if nothing matched, provide broad helpful defaults
+    if not keywords:
+        keywords = ["hyaluronic", "niacinamide", "vitamin c", "ceramide"]
+    # dedupe, keep order
+    return list(dict.fromkeys([kw.lower() for kw in keywords]))
+
+
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary], auth=JWTAuth())
+def recommended_facts(request, limit: int = 4):
+    """Personalized Skin Facts based on latest quiz profile and reading history."""
+    user: User = request.auth
+    limit = max(1, min(limit, 8))
+
+    # Try to find the latest completed quiz session with a result profile
+    latest_session: QuizSession | None = (
+        QuizSession.objects.filter(user=user).order_by("-completed_at", "-started_at").first()
+    )
+
+    keywords: list[str] = []
+    if latest_session and isinstance(latest_session.result_summary, dict):
+        # Prefer the profile snapshot/result summary which mirrors SkinProfile fields
+        profile_like = latest_session.result_summary or latest_session.profile_snapshot or {}
+        keywords = _concern_keywords_from_profile(profile_like)
+
+    qs = SkinFactTopic.objects.filter(is_published=True)
+
+    # Score topics by keyword occurrence in title/subtitle/excerpt
+    # Build a Q OR chain across keywords
+    keyword_q = Q()
+    for kw in keywords:
+        keyword_q |= (
+            Q(title__icontains=kw)
+            | Q(subtitle__icontains=kw)
+            | Q(excerpt__icontains=kw)
+        )
+
+    filtered = qs.filter(keyword_q) if keywords else qs
+
+    # If we have reading history, boost previously viewed topics and dedupe later
+    viewed_ids = list(
+        SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+    )
+
+    # Prefer ingredient spotlight and knowledge, then others, then by recency/views
+    ordered = (
+        filtered.annotate()
+        .order_by(
+            Case(
+                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
+                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
+                default=2,
+                output_field=IntegerField(),
+            ),
+            "-updated_at",
+            "-view_count",
+        )
+    )
+
+    topics = list(ordered[: limit * 3])  # overfetch a bit before re-ranking
+
+    # Light re-ranking: push already-viewed slightly down
+    def score(t: SkinFactTopic) -> tuple[int, int, int]:
+        section_rank = 0 if t.section == SkinFactTopic.Section.INGREDIENT_SPOTLIGHT else (1 if t.section == SkinFactTopic.Section.KNOWLEDGE else 2)
+        viewed_penalty = 1 if t.id in viewed_ids else 0
+        return (viewed_penalty, section_rank, -t.view_count)
+
+    topics.sort(key=score)
+    picked = []
+    seen = set()
+    for t in topics:
+        if t.id in seen:
+            continue
+        seen.add(t.id)
+        picked.append(t)
+        if len(picked) >= limit:
+            break
+
+    # Fallback to popular/knowledge if not enough
+    if len(picked) < limit:
+        extra = (
+            SkinFactTopic.objects.filter(is_published=True)
+            .exclude(id__in=[t.id for t in picked])
+            .order_by("-view_count", "-updated_at")[: limit - len(picked)]
+        )
+        picked.extend(list(extra))
+
+    return [_serialize_fact_topic_summary(t, request) for t in picked]
+

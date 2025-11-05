@@ -1,4 +1,4 @@
-export type SkinFactSection = "knowledge" | "trending" | "fact_check";
+export type SkinFactSection = "knowledge" | "trending" | "fact_check" | "ingredient_spotlight";
 
 export type FactContentBlock = {
   order: number;

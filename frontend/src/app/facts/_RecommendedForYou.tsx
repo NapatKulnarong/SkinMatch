@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import PageContainer from "@/components/PageContainer";
-import { fetchPopularTopics, fetchTopicsBySection } from "@/lib/api.facts";
+import { fetchPopularTopics, fetchTopicsBySection, fetchRecommendedTopics } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
 type RecommendedForYouProps = {
@@ -17,18 +17,43 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)])
-      .then(([knowledge, popular]) => {
+    // Try personalized endpoint first; fall back to blended list on failure
+    fetchRecommendedTopics(4)
+      .then((personalised) => {
         if (!active) return;
-        const combined = [...knowledge, ...popular].filter(
-          (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
+        if (personalised.length) {
+          setTopics(personalised);
+          return;
+        }
+        return Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
+          ([knowledge, popular]) => {
+            if (!active) return;
+            const combined = [...knowledge, ...popular].filter(
+              (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
+            );
+            combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
+            setTopics(combined.slice(0, 4));
+          }
         );
-        combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-        setTopics(combined.slice(0, 4));
       })
-      .catch((err) => {
+      .catch(() => {
         if (!active) return;
-        console.error("Failed to load recommended topics", err);
+        Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)])
+          .then(([knowledge, popular]) => {
+            if (!active) return;
+            const combined = [...knowledge, ...popular].filter(
+              (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
+            );
+            combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
+            setTopics(combined.slice(0, 4));
+          })
+          .catch((err) => {
+            if (!active) return;
+            console.error("Failed to load recommended topics", err);
+          })
+          .finally(() => {
+            if (active) setLoading(false);
+          });
       })
       .finally(() => {
         if (active) setLoading(false);

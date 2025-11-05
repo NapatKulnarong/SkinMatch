@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { ProductDetail, QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
 import { emailQuizSummary, fetchProductDetail, submitQuizFeedback } from "@/lib/api.quiz";
-import { getStoredProfile } from "@/lib/auth-storage";
+import { getStoredProfile, getAuthToken } from "@/lib/auth-storage";
 import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
@@ -40,12 +40,28 @@ export default function QuizResultPage() {
   const [productDetailError, setProductDetailError] = useState<string | null>(null);
   const detailCacheRef = useRef<Record<string, ProductDetail>>({});
   const currentDetailRequestRef = useRef<string | null>(null);
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
       finalize().catch(() => null);
     }
   }, [finalize, hasPrimary, isComplete, result]);
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      const token = getAuthToken();
+      if (!token) return;
+      try {
+        const { fetchWishlist } = await import("@/lib/api.wishlist");
+        const items = await fetchWishlist(token);
+        setWishlistedIds(new Set(items.map(item => item.id)));
+      } catch (err) {
+        console.error("Failed to load wishlist", err);
+      }
+    };
+    loadWishlist();
+  }, []);
 
   const sectionMaxWidth = navWidth ? `${navWidth}px` : "1200px";
   const fallbackWidth = navWidth ? `${navWidth}px` : "720px";
@@ -384,9 +400,9 @@ export default function QuizResultPage() {
           </aside>
 
           {/* PRODUCT MATCHES SECTION - MOVED UP */}
-          <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
+            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
             <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Product matches</h2>
-            {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails)}
+            {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails, wishlistedIds, setWishlistedIds)}
           </div>
 
           {/* EMAIL & RETAKE QUIZ ROW */}
@@ -677,8 +693,35 @@ function buildSummaryInsights(summary: QuizResultSummary | undefined) {
 function renderRecommendations(
   recommendations: QuizRecommendation[],
   requiresAuth: boolean,
-  onShowDetails: (item: QuizRecommendation) => void | Promise<void>
+  onShowDetails: (item: QuizRecommendation) => void | Promise<void>,
+  wishlistedIds: Set<string>,
+  setWishlistedIds: React.Dispatch<React.SetStateAction<Set<string>>>
 ) {
+  const handleFav = async (item: QuizRecommendation) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!item.productId) return;
+      const isWishlisted = wishlistedIds.has(item.productId);
+      const { addToWishlist, removeFromWishlist } = await import("@/lib/api.wishlist");
+      if (isWishlisted) {
+        await removeFromWishlist(item.productId, token);
+        setWishlistedIds(prev => {
+          const next = new Set(prev);
+          next.delete(item.productId);
+          return next;
+        });
+      } else {
+        await addToWishlist(item.productId, token);
+        setWishlistedIds(prev => new Set(prev).add(item.productId));
+      }
+    } catch (err) {
+      console.error("Failed to update wishlist", err);
+    }
+  };
   if (recommendations.length) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -759,10 +802,11 @@ function renderRecommendations(
                   {/* Wishlist Heart Button */}
                   <button
                     type="button"
-                    aria-label="Add to wishlist"
+                    aria-label={wishlistedIds.has(item.productId) ? "Remove from wishlist" : "Add to wishlist"}
+                    onClick={() => { void handleFav(item); }}
                     className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
-                    <svg className="h-3.5 w-3.5 text-[#B9375D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`h-3.5 w-3.5 ${wishlistedIds.has(item.productId) ? "text-pink-500" : "text-[#B9375D]"}`} fill={wishlistedIds.has(item.productId) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>

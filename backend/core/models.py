@@ -148,6 +148,7 @@ class SkinFactTopic(models.Model):
         KNOWLEDGE = "knowledge", "Skin Knowledge"
         TRENDING = "trending", "Trending Skincare"
         FACT_CHECK = "fact_check", "Fact Check"
+        INGREDIENT_SPOTLIGHT = "ingredient_spotlight", "Ingredient Spotlight"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=140, unique=True)
@@ -345,3 +346,35 @@ class NewsletterSubscriber(models.Model):
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.clean()
         super().save(*args, **kwargs)
+
+
+class WishlistItem(models.Model):
+    """User wishlist entry for a quiz.Product."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wishlist_items",
+        db_index=True,
+    )
+    product = models.ForeignKey(
+        "quiz.Product",
+        on_delete=models.CASCADE,
+        related_name="wishlisted_by",
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="uniq_user_product_wishlist")
+        ]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["product", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} - {getattr(self.product, 'name', 'product')}"
