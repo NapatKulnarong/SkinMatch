@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { getAuthToken } from "@/lib/auth-storage";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import { STEP_META, type StepMeta } from "@/app/quiz/_config";
@@ -18,7 +19,7 @@ import {
   type QuizRecommendation,
   type QuizResultSummary,
 } from "@/lib/api.quiz";
-import { getAuthToken, getStoredProfile } from "@/lib/auth-storage";
+import { getStoredProfile } from "@/lib/auth-storage";
 import { buildFeedbackMetadata } from "@/lib/feedback";
 
 const MATCH_INGREDIENT_REASON =
@@ -836,6 +837,20 @@ function renderRecommendations(
   recommendations: QuizRecommendation[],
   onShowDetails: (item: QuizRecommendation) => void
 ) {
+  const handleFav = async (item: QuizRecommendation) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!item.productId) return;
+      const { addToWishlist } = await import("@/lib/api.wishlist");
+      await addToWishlist(item.productId, token);
+    } catch (err) {
+      console.error("Failed to save to wishlist", err);
+    }
+  };
   if (!recommendations.length) {
     return (
       <div className="text-center py-8">
@@ -926,6 +941,7 @@ function renderRecommendations(
                 <button
                   type="button"
                   aria-label="Add to wishlist"
+                  onClick={() => { void handleFav(item); }}
                   className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                 >
                   <svg className="h-3.5 w-3.5 text-[#B9375D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
