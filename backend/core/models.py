@@ -148,6 +148,7 @@ class SkinFactTopic(models.Model):
         KNOWLEDGE = "knowledge", "Skin Knowledge"
         TRENDING = "trending", "Trending Skincare"
         FACT_CHECK = "fact_check", "Fact Check"
+        INGREDIENT_SPOTLIGHT = "ingredient_spotlight", "Ingredient Spotlight"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=140, unique=True)
