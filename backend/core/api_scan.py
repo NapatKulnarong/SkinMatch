@@ -10,7 +10,7 @@ scan_router = Router(tags=["Scan"])
 
 class ScanOut(Schema):
     ok: bool
-    barcode: str
+    barcode: str | None = None
     product: dict | None = None
     message: str | None = None
 
