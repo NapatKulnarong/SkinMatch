@@ -938,8 +938,9 @@ function WishlistPanel({ token }: { token: string | null }) {
       }
     >
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pr-2">
-        {items.map((p) => (
-          <div key={p.id} className="relative rounded-2xl border-2 border-black/10 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
+  {items.map((p) => (
+    <div key={p.id} className="relative">
+      <div className="rounded-2xl border-2 border-black/10 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
             <div className="aspect-[4/3] bg-[#f7f5ff] border-b-2 border-black/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.image ? (
@@ -1003,6 +1004,7 @@ function WishlistPanel({ token }: { token: string | null }) {
               </button>
             )}
           </div>
+         </div>
         ))}
       </div>
       {activeProduct && (

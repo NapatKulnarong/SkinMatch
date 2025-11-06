@@ -79,7 +79,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
       <div className="relative overflow-hidden rounded-[32px] border-2 border-black 
                      bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
         <div className="grid lg:grid-cols-[minmax(0,2.6fr)_minmax(280px,1fr)]">
-          <div className="relative h-[420px] md:h-[542px] w-full">
+          <div className="relative h-[420px] md:h-[550px] w-full">
             <Image
               src={heroImage}
               alt={current.heroImageAlt ?? current.title}
