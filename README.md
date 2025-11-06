@@ -53,6 +53,34 @@ The project is designed for skincare enthusiasts and individuals with specific c
 
 ---
 
+## 🧪 Testing
+
+SkinMatch includes comprehensive test suites for both backend and frontend. For detailed testing documentation, see [TESTING.md](./TESTING.md).
+
+**Quick Start:**
+
+**Backend:**
+```bash
+cd backend
+python manage.py test
+# or using pytest
+pytest
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm test
+# Watch mode
+npm run test:watch
+# E2E tests
+npm run test:e2e
+```
+
+Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./TESTING.md) for complete documentation on running tests, writing new tests, and troubleshooting.
+
+---
+
 ## ⚙️ Setup & Deployment  
 
 1. **Clone repo**  
@@ -67,9 +95,11 @@ The project is designed for skincare enthusiasts and individuals with specific c
     Frontend: http://localhost:3000
 
 4. **(Optional) Load the sample product catalog for local testing**
-    ```bash
-    cd backend
-    python manage.py load_sample --reset
-    ```
-    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
-    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the “View product” button in quiz results.
+   ```bash
+   cd backend
+   python manage.py load_sample --reset
+   ```
+   
+   The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
+   
+   You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
