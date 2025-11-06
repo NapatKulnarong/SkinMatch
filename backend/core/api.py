@@ -19,8 +19,6 @@ from django.shortcuts import get_object_or_404
 from ninja import File, ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
-from ninja.errors import HttpError
-from ninja.files import UploadedFile
 
 from .models import (
     UserProfile,
@@ -46,19 +44,17 @@ from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
 
-import google.generativeai as genai
-
 from .api_scan import scan_router
 from .api_scan_text import scan_text_router
+
+if genai:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
-api.add_router("/scan", scan_text_router)
+api.add_router("/scan-text", scan_text_router)
 User = get_user_model()
-
-if genai:
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --------------- Schemas ---------------
 

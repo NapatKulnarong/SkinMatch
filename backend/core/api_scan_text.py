@@ -1,79 +1,113 @@
-# core/api_scan_text.py  (append to your existing file)
+# backend/core/api_scan_text.py
 from __future__ import annotations
-import io, json, re, os
-from typing import List
-import cv2, numpy as np
+
+import io, os, re, json
+from typing import List, Optional
+
+import cv2
+import numpy as np
 from PIL import Image
 import pytesseract
 from ninja import Router, File, Schema
 from ninja.files import UploadedFile
 
-# ❗ Gemini SDK is optional — reuse the instance configured in core/api.py
+# Optional Gemini SDK (falls back if not configured)
 try:
-    import google.generativeai as genai
+    import google.generativeai as genai  # type: ignore
 except ModuleNotFoundError:
     genai = None
 
-scan_text_router = Router(tags=["scan"])
+# --- Optional project helpers (safe fallbacks if missing) ---
+try:
+    from .utils_ocr import preprocess_for_ocr  # if you kept it
+except Exception:  # pragma: no cover
+    preprocess_for_ocr = None  # type: ignore
 
-# ---------- existing OCR helpers (or import yours) ----------
-def _load_image(file: UploadedFile) -> np.ndarray:
+def clean_ocr_text(s: str) -> str:
+    s = s.replace("\u200b", "").replace("\ufeff", "")
+    s = re.sub(r"[^\S\r\n]{2,}", " ", s)  # collapse multi-spaces
+    s = re.sub(r"\n{3,}", "\n\n", s)       # collapse blank lines
+    return s.strip()
+
+scan_text_router = Router(tags=["scan-text"])
+
+# ---------------- OCR helpers (English only) ----------------
+def _load_pil(file: UploadedFile) -> Image.Image:
     data = file.read()
-    pil = Image.open(io.BytesIO(data)).convert("RGB")
-    return cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
+    return Image.open(io.BytesIO(data)).convert("RGB")
 
-def _preprocess(img: np.ndarray) -> np.ndarray:
+def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
+    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+def _ocr_text(pil_img: Image.Image) -> str:
+    if preprocess_for_ocr:
+        pil_img = preprocess_for_ocr(pil_img)
+        return pytesseract.image_to_string(pil_img, lang="eng")
+
+    img = _pil_to_bgr(pil_img)
+    img = cv2.resize(img, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
+    img = cv2.bilateralFilter(img, d=7, sigmaColor=75, sigmaSpace=75)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.bilateralFilter(gray, 7, 50, 50)
-    thr = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                cv2.THRESH_BINARY, 35, 10)
-    return thr
+    th = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 35, 11
+    )
+    return pytesseract.image_to_string(th, lang="eng")
 
-def _ocr_text(img: np.ndarray) -> str:
-    return pytesseract.image_to_string(img, lang="tha+eng")
-
-# ---------- fallback, same idea as before (short version) ----------
+# ---------------- Fallback extractor (English keywords) ----------------
 def _fallback_extract(text: str) -> dict:
     t = text.lower()
-    def has(p): return re.search(p, t, flags=re.I)
-    actives = []
-    if has(r"\bniacinamide\b"): actives.append("niacinamide")
-    if has(r"\burea\b"): actives.append("urea")
-    if has(r"saccharide\s+isomerate"): actives.append("saccharide isomerate")
-    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"): actives.append("beta-glucan / oat extract")
-    if has(r"\bceramide\b"): actives.append("ceramide complex")
-    if has(r"\bpanthenol\b"): actives.append("panthenol")
+    def has(p: str) -> bool:
+        return re.search(p, t, flags=re.I) is not None
 
-    concerns = []
-    if has(r"\bfragrance\b|\bparfum\b"): concerns.append("fragrance")
-    if has(r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl alcohol\b"): concerns.append("drying alcohol")
-    if has(r"\bparaben"): concerns.append("paraben")
-    if has(r"\bmineral\s*oil\b"): concerns.append("mineral oil")
+    actives: list[str] = []
+    if has(r"\bniacinamide\b"): actives.append("Niacinamide")
+    if has(r"\burea\b"): actives.append("Urea")
+    if has(r"saccharide\s+isomerate"): actives.append("Saccharide Isomerate")
+    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"):
+        actives.append("Avena Sativa (Oat) Extract")
+    if has(r"\bceramide\b"): actives.append("Ceramide Complex")
+    if has(r"\bpanthenol\b"): actives.append("Panthenol")
+    if has(r"tocopheryl\s*acetate|vitamin\s*e"): actives.append("Tocopheryl Acetate")
+    if has(r"oryza\s+sativa.*bran\s*oil"): actives.append("Oryza Sativa (Rice) Bran Oil")
+    if has(r"aloe\s+barbadensis"): actives.append("Aloe Barbadensis Leaf Juice Powder")
+
+    concerns: list[str] = []
+    if has(r"\bfragrance\b|\bparfum\b"): concerns.append("Fragrance")
+    if has(r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl\s+alcohol\b"):
+        concerns.append("Drying Alcohol")
+    if has(r"\bparaben"): concerns.append("Parabens")
+    if has(r"\bmineral\s*oil\b"): concerns.append("Mineral Oil")
     if has(r"\bmit\b|\bmethylisothiazolinone\b"): concerns.append("MIT")
-    # free-from overrides
-    if has(r"ปราศจาก\s*alcohol|alcohol[- ]?free"): concerns = [c for c in concerns if "alcohol" not in c]
-    if has(r"ปราศจาก\s*paraben|paraben[- ]?free"): concerns = [c for c in concerns if "paraben" not in c]
-    if has(r"ปราศจาก\s*mineral\s*oil|mineral\s*oil[- ]?free"): concerns = [c for c in concerns if "mineral oil" in c]
 
-    benefits = []
+    # Free-from overrides
+    if has(r"\balcohol[-\s]?free\b|free\s+from\s+alcohol"):
+        concerns = [c for c in concerns if "alcohol" not in c.lower()]
+    if has(r"\bparaben[-\s]?free\b|free\s+from\s+parabens?"):
+        concerns = [c for c in concerns if "paraben" not in c.lower()]
+    if has(r"\bmineral\s*oil[-\s]?free\b|free\s+from\s+mineral\s+oil"):
+        concerns = [c for c in concerns if "mineral oil" not in c.lower()]
+
+    benefits: list[str] = []
     for line in [ln.strip() for ln in text.splitlines() if ln.strip()]:
-        if re.search(r"บำรุง|ชุ่มชื้น|ลด|ช่วย|ปลอบประโลม|dermatolog(ically)? tested|hydrate|barrier", line, re.I):
+        if re.search(r"hydrate|moistur|nourish|soothe|reduce|barrier|dermatolog(ically)? tested", line, re.I):
             if len(line) <= 180:
                 benefits.append(line)
-    notes = []
-    if "ceramide" in " ".join(actives): notes.append("Ceramide complex suggests barrier-repair focus.")
-    if any("fragrance" in c for c in concerns): notes.append("Fragrance detected; sensitive skin may patch test.")
-    if "niacinamide" in actives: notes.append("Niacinamide may help tone/texture & barrier support.")
-    if "urea" in actives: notes.append("Urea is a humectant (NMF) — boosts hydration.")
+
+    notes: list[str] = []
+    if any("Ceramide" in a for a in actives): notes.append("Barrier support (ceramides).")
+    if any("fragrance" in c.lower() for c in concerns): notes.append("Contains fragrance — patch test if sensitive.")
+    if any("Niacinamide" == a for a in actives): notes.append("Niacinamide may help with tone/texture & barrier.")
+    if any("Urea" == a for a in actives): notes.append("Urea is a humectant (NMF) — boosts hydration.")
+
     return {
         "benefits": benefits[:8],
         "actives": sorted(set(actives)),
         "concerns": sorted(set(concerns)),
         "notes": notes[:6],
-        "confidence": 0.55,  # fallback is heuristic
+        "confidence": 0.55,
     }
 
-# ---------- pydantic response ----------
+# ---------------- Output schema ----------------
 class LabelLLMOut(Schema):
     raw_text: str
     benefits: List[str]
@@ -81,21 +115,22 @@ class LabelLLMOut(Schema):
     concerns: List[str]
     notes: List[str]
     confidence: float
+    free_from: List[str] = []
 
-# ---------- Gemini call ----------
+# ---------------- LLM call (English prompt) ----------------
 _GEMINI_MODELS = [
     os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.0-flash",
     "gemini-2.5-flash",
     "gemini-1.5-flash",
 ]
 
-def _call_gemini_for_json(ocr_text: str) -> dict | None:
+def _call_gemini_for_json(ocr_text: str) -> Optional[dict]:
     if genai is None or not os.getenv("GOOGLE_API_KEY"):
         return None
 
     sys_msg = (
-        "You are a skincare label analyst. Extract concise facts from OCR text "
-        "(Thai/English). Return STRICT JSON ONLY (no prose)."
+        "You are a skincare label analyst. Extract concise facts from OCR text. "
+        "Return STRICT JSON ONLY (no prose)."
     )
     schema_hint = {
         "type": "object",
@@ -110,11 +145,11 @@ def _call_gemini_for_json(ocr_text: str) -> dict | None:
         "additionalProperties": False
     }
     user_prompt = f"""
-Extract information from the following product label text. 
-Focus on skincare context (ingredients/claims). 
-If a “free from” box says the product is free of something (e.g., alcohol, parabens), DO NOT list it as a concern.
+Extract information from the following product label text (English).
+Focus on skincare claims and ingredients.
+If a “free from …” statement is present (e.g., alcohol-free, paraben-free), DO NOT list that item as a concern.
 
-Return JSON only matching this schema:
+Return ONLY JSON matching this schema:
 {json.dumps(schema_hint, ensure_ascii=False)}
 
 OCR_TEXT:
@@ -124,7 +159,6 @@ OCR_TEXT:
     gen_cfg = {
         "temperature": 0.2,
         "max_output_tokens": 768,
-        # Newer SDKs support forcing JSON responses:
         "response_mime_type": "application/json",
     }
 
@@ -132,16 +166,13 @@ OCR_TEXT:
         try:
             model = genai.GenerativeModel(model_name, system_instruction=sys_msg, generation_config=gen_cfg)
             resp = model.generate_content(user_prompt, safety_settings={
-                # be permissive; we’re analyzing labels
                 "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
                 "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
                 "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
                 "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
             })
-            # Prefer resp.text but handle blocked/parts
             raw = getattr(resp, "text", None)
-            if not raw:
-                # try parts
+            if not raw and getattr(resp, "candidates", None):
                 cand0 = resp.candidates[0]
                 parts = getattr(cand0, "content", None)
                 if parts and getattr(parts, "parts", None):
@@ -150,34 +181,50 @@ OCR_TEXT:
             if not raw:
                 continue
             data = json.loads(raw)
-            # minimal shape validation
             for k in ["benefits", "actives", "concerns", "notes", "confidence"]:
                 if k not in data:
-                    raise ValueError("missing key " + k)
+                    raise ValueError(f"missing key {k}")
             return data
         except Exception as e:
-            # try next model
             print(f"[LLM analyze] model {model_name} failed/blocked: {e}")
             continue
     return None
 
-# ---------- The endpoint ----------
+# ---------------- utilities ----------------
+def _derive_free_from(notes: List[str]) -> List[str]:
+    out: list[str] = []
+    for n in notes:
+        m = re.search(r"free\s*from[:\s]+(.+)", n, flags=re.I) or re.search(r"\b([\w\s/,-]+)-free\b", n, flags=re.I)
+        if m:
+            tail = m.group(1) if m.lastindex else n
+            toks = re.split(r"[,/|]| and ", tail, flags=re.I)
+            out.extend([t.strip() for t in toks if t.strip()])
+    return sorted(set(out))
+
+def norm_list(xs) -> list[str]:
+    return [str(s).strip() for s in (xs or []) if str(s).strip()]
+
+# ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
-    img = _load_image(file)
-    pre = _preprocess(img)
-    text = _ocr_text(pre)
+    pil = _load_pil(file)
+    raw = _ocr_text(pil)
+    text = clean_ocr_text(raw)
+ 
+    llm = _call_gemini_for_json(text) or _fallback_extract(text)
 
-    llm = _call_gemini_for_json(text)
-    if not llm:
-        llm = _fallback_extract(text)
-    # Deduplicate & trim
-    def norm_list(xs): return [s.strip() for s in xs if str(s).strip()]
+    benefits = norm_list(llm.get("benefits"))
+    actives  = sorted(set(norm_list(llm.get("actives"))))
+    concerns = sorted(set(norm_list(llm.get("concerns"))))
+    notes    = norm_list(llm.get("notes"))[:6]
+    free_from = _derive_free_from(notes)
+
     return LabelLLMOut(
         raw_text=text,
-        benefits=norm_list(llm.get("benefits", []))[:8],
-        actives=sorted(set(norm_list(llm.get("actives", [])))),
-        concerns=sorted(set(norm_list(llm.get("concerns", [])))),
-        notes=norm_list(llm.get("notes", []))[:6],
+        benefits=benefits[:8],
+        actives=actives,
+        concerns=concerns,
+        notes=notes,
         confidence=float(llm.get("confidence", 0.5)),
+        free_from=free_from,
     )
