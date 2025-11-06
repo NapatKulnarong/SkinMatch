@@ -114,6 +114,19 @@ INGREDIENTS: tuple[tuple[str, str, str], ...] = (
     ("oatmeal", "Colloidal Oatmeal", "Soothes itching, redness, and irritation while forming a protective barrier on the skin. Helps restore moisture balance and strengthen the skin barrier. Excellent for dry, sensitive, or eczema-prone skin."),
     ("shea-butter", "Shea Butter", "A rich natural emollient packed with fatty acids and vitamins A and E. Deeply moisturizes, softens, and nourishes dry skin while strengthening the protective barrier and improving elasticity."),
     ("turmeric", "Turmeric Root Extract", "A powerful natural antioxidant and anti-inflammatory ingredient that brightens dull skin, evens out tone, and helps calm irritation. Protects against environmental stress and supports a healthy, radiant complexion."),
+    ("glycerin", "Glycerin", "A powerful humectant that draws moisture from the air into the skin, providing deep hydration and maintaining the skin's moisture barrier. Helps improve skin texture, softness, and suppleness while preventing dryness and flakiness."),
+    ("aloe-vera", "Aloe Vera", "A soothing botanical extract that calms irritation, reduces redness, and provides gentle hydration. Rich in antioxidants and anti-inflammatory compounds that support healing, soothe sunburn, and help maintain healthy skin barrier function."),
+    ("azelaic-acid", "Azelaic Acid", "A multi-functional ingredient that helps reduce acne, fade hyperpigmentation, and even out skin tone. Works by inhibiting bacteria growth, reducing inflammation, and blocking melanin production for clearer, more uniform skin."),
+    ("ferulic-acid", "Ferulic Acid", "A potent antioxidant that stabilizes and enhances the effectiveness of vitamins C and E. Protects against UV damage, reduces signs of aging, and helps prevent free radical damage for healthier, more resilient skin."),
+    ("allantoin", "Allantoin", "A gentle, soothing ingredient that promotes skin healing and cell regeneration. Calms irritation, reduces redness, and helps maintain skin's natural moisture balance. Ideal for sensitive, damaged, or compromised skin."),
+    ("beta-glucan", "Beta Glucan", "A powerful skin barrier strengthener derived from oats or mushrooms. Enhances moisture retention, reduces inflammation, and supports wound healing. Helps improve skin elasticity and provides antioxidant protection."),
+    ("jojoba-oil", "Jojoba Oil", "A lightweight, non-comedogenic oil that closely mimics the skin's natural sebum. Provides balanced hydration without clogging pores, helps regulate oil production, and soothes irritation while maintaining skin barrier health."),
+    ("mandelic-acid", "Mandelic Acid", "A gentle AHA (alpha hydroxy acid) derived from almonds, ideal for sensitive skin. Exfoliates the skin's surface, improves texture, and helps fade dark spots with less irritation than other acids. Suitable for darker skin tones."),
+    ("kojic-acid", "Kojic Acid", "A natural brightening ingredient derived from fungi that helps reduce hyperpigmentation and dark spots. Inhibits melanin production to even out skin tone and restore radiance, particularly effective for post-acne marks and sun damage."),
+    ("coenzyme-q10", "Coenzyme Q10", "A powerful antioxidant naturally found in skin cells that helps fight free radical damage and supports cellular energy production. Reduces the appearance of fine lines, improves skin firmness, and protects against environmental stressors."),
+    ("n-acetyl-glucosamine", "N-Acetyl Glucosamine", "A gentle brightening ingredient that helps reduce hyperpigmentation and even out skin tone. Works synergistically with niacinamide to improve skin clarity and radiance while being gentle on sensitive skin."),
+    ("resveratrol", "Resveratrol", "A potent antioxidant found in grapes and berries that protects against environmental damage and premature aging. Helps reduce inflammation, improve skin elasticity, and neutralize free radicals for a more youthful complexion."),
+    ("witch-hazel", "Witch Hazel", "A natural astringent and anti-inflammatory ingredient that helps tighten pores, control excess oil, and soothe irritation. Provides gentle toning and helps reduce redness and inflammation, particularly beneficial for oily and acne-prone skin."),
 )
 
 INGREDIENT_NOTES: dict[str, dict[str, str]] = {
@@ -169,12 +182,12 @@ INGREDIENT_NOTES: dict[str, dict[str, str]] = {
     },
     "ceramides": {
         "helps_with": "- Dry or dehydrated skin\n- Compromised skin barrier\n- Sensitivity or irritation\n- Rough texture and tightness",
-        "aviod_with": "- No major ingredient conflicts, works well with most actives\n- Avoid pairing with overly stripping cleansers or harsh exfoliants that weaken barrier function",
+        "avoid_with": "- No major ingredient conflicts, works well with most actives\n- Avoid pairing with overly stripping cleansers or harsh exfoliants that weaken barrier function",
         "side_effects": "Extremely well tolerated. Rare cases of mild congestion may occur in very oily or acne-prone skin if used in heavy, occlusive formulations."
     },
     "chamomile": {
         "helps_with": "- Redness and sensitivity\n- Dry or irritated skin\n- Post-sun exposure care\n- Barrier recovery and soothing routines",
-        "aviod_with": "- Strong acids or retinoids if the skin is already inflamed\n- Other botanical actives if you have known plant allergies",
+        "avoid_with": "- Strong acids or retinoids if the skin is already inflamed\n- Other botanical actives if you have known plant allergies",
         "side_effects": "Generally very gentle. Rare allergic reactions may occur in people sensitive to plants from the Asteraceae/Compositae family (such as ragweed or calendula). Always patch test if prone to allergies."
     },
     "oatmeal": {
@@ -189,7 +202,7 @@ INGREDIENT_NOTES: dict[str, dict[str, str]] = {
     },
     "glycolic-acid": {
         "helps_with": "- Dull or uneven skin tone\n- Rough texture\n- Fine lines and wrinkles\n- Hyperpigmentation and post-acne marks",
-        "aviod_with": "- Retinoids, Vitamin C, or other strong acids (can cause irritation if combined)\n- Products containing alcohol or fragrances that may worsen sensitivity",
+        "avoid_with": "- Retinoids, Vitamin C, or other strong acids (can cause irritation if combined)\n- Products containing alcohol or fragrances that may worsen sensitivity",
         "side_effects": "May cause temporary redness, stinging, or mild peeling, especially during initial use. Not recommended for very sensitive or compromised skin. Always use sunscreen daily when using exfoliating acids."
     },
     "green-tea": {
@@ -271,6 +284,71 @@ INGREDIENT_NOTES: dict[str, dict[str, str]] = {
         "helps_with": "- Sun protection\n- Redness and irritation\n- Acne-prone or sensitive skin\n- Barrier repair and healing",
         "avoid_with": "- Generally safe and compatible with most ingredients\n- Avoid using pure powder form without proper formulation — uneven coverage may reduce UV protection",
         "side_effects": "Very gentle and non-comedogenic. May leave a white cast on deeper skin tones if not micronized. Rare irritation or dryness can occur with overuse in leave-on products."
+    },
+    "glycerin": {
+        "helps_with": "- Dehydration and dryness\n- Rough or flaky skin\n- Loss of moisture barrier\n- Dull, tight-feeling skin",
+        "avoid_with": "- Generally safe and compatible with most ingredients\n- Works well with other humectants like hyaluronic acid for enhanced hydration",
+        "side_effects": "Extremely gentle and well tolerated by all skin types. Rarely, very high concentrations in low-humidity environments may draw moisture from deeper skin layers if not sealed with an occlusive."
+    },
+    "aloe-vera": {
+        "helps_with": "- Redness and irritation\n- Sunburn or post-treatment recovery\n- Dry or sensitive skin\n- Minor wounds or inflammation",
+        "avoid_with": "- Generally safe and compatible with most ingredients\n- Avoid pairing with very strong actives if skin is already compromised",
+        "side_effects": "Very gentle and safe for most skin types. Rare allergic reactions may occur in individuals sensitive to plants in the Liliaceae family. Always patch test if prone to plant allergies."
+    },
+    "azelaic-acid": {
+        "helps_with": "- Acne and breakouts\n- Hyperpigmentation and dark spots\n- Rosacea and redness\n- Uneven skin tone",
+        "avoid_with": "- Strong acids (AHA/BHA) or retinoids in the same routine — may increase irritation\n- Over-layering multiple active ingredients without proper hydration",
+        "side_effects": "Generally well tolerated, especially compared to other acids. May cause mild tingling, dryness, or redness during initial use. Start with lower concentrations (10-15%) and gradually increase. Always use sunscreen during the day."
+    },
+    "ferulic-acid": {
+        "helps_with": "- Fine lines and wrinkles\n- Environmental damage and UV protection\n- Dull or stressed skin\n- Loss of firmness",
+        "avoid_with": "- Generally safe and often paired with vitamins C and E\n- Avoid using with very high concentrations of strong acids that may destabilize it",
+        "side_effects": "Very safe and well tolerated. Rarely may cause mild irritation in very sensitive skin. Best used in combination with other antioxidants for maximum effectiveness."
+    },
+    "allantoin": {
+        "helps_with": "- Irritation and redness\n- Damaged or compromised skin\n- Dryness and flakiness\n- Post-treatment recovery",
+        "avoid_with": "- No major conflicts; compatible with most ingredients\n- Works well with other soothing ingredients like panthenol and centella",
+        "side_effects": "Extremely gentle and safe for all skin types, including sensitive and compromised skin. No known side effects or irritation."
+    },
+    "beta-glucan": {
+        "helps_with": "- Compromised skin barrier\n- Dehydration and dryness\n- Redness and inflammation\n- Loss of elasticity",
+        "avoid_with": "- Generally safe and compatible with most ingredients\n- Works synergistically with other barrier-repair ingredients like ceramides",
+        "side_effects": "Very gentle and well tolerated. Rarely, individuals with mushroom allergies may experience mild reactions. Patch test if you have known fungal allergies."
+    },
+    "jojoba-oil": {
+        "helps_with": "- Dryness and dehydration\n- Excess oil production (helps balance)\n- Rough texture\n- Sensitive or irritated skin",
+        "avoid_with": "- Generally safe and non-comedogenic\n- Avoid heavy layering with other thick oils on very oily skin types",
+        "side_effects": "Very gentle and well tolerated. Rarely, very oily or acne-prone skin may experience minor congestion if used excessively. Generally considered non-comedogenic."
+    },
+    "mandelic-acid": {
+        "helps_with": "- Dull or uneven skin tone\n- Rough texture\n- Hyperpigmentation and dark spots\n- Sensitive skin needing gentle exfoliation",
+        "avoid_with": "- Retinoids or other strong acids in the same routine — may increase irritation\n- Overuse on already sensitive or compromised skin",
+        "side_effects": "Generally milder than other AHAs. May cause mild tingling, redness, or dryness during initial use. Start with low concentrations (5-10%) and introduce gradually. Always use sunscreen during the day."
+    },
+    "kojic-acid": {
+        "helps_with": "- Hyperpigmentation and dark spots\n- Uneven skin tone\n- Post-acne marks\n- Sun damage and melasma",
+        "avoid_with": "- Strong acids (AHA/BHA) or retinoids in the same routine — may increase sensitivity\n- Multiple brightening actives without proper hydration",
+        "side_effects": "Generally gentle but may cause mild irritation, dryness, or redness in sensitive skin. Start with lower concentrations and always use sunscreen daily to maintain results and prevent re-pigmentation."
+    },
+    "coenzyme-q10": {
+        "helps_with": "- Fine lines and wrinkles\n- Loss of firmness and elasticity\n- Dull or tired-looking skin\n- Environmental damage",
+        "avoid_with": "- Generally safe and compatible with most ingredients\n- Works well with other antioxidants like vitamins C and E",
+        "side_effects": "Very safe and well tolerated. Rarely may cause mild irritation in very sensitive skin. No known significant side effects."
+    },
+    "n-acetyl-glucosamine": {
+        "helps_with": "- Hyperpigmentation and dark spots\n- Uneven skin tone\n- Dull or stressed skin\n- Post-acne discoloration",
+        "avoid_with": "- Generally safe and often paired with niacinamide\n- Avoid combining with very strong exfoliating acids if skin becomes sensitive",
+        "side_effects": "Very gentle and well tolerated, even for sensitive skin. Rare irritation may occur at very high concentrations. Generally considered safe for all skin types."
+    },
+    "resveratrol": {
+        "helps_with": "- Fine lines and wrinkles\n- Environmental damage and oxidative stress\n- Dull or tired-looking skin\n- Loss of firmness",
+        "avoid_with": "- Generally safe and compatible with most ingredients\n- Works well with other antioxidants for enhanced protection",
+        "side_effects": "Very safe and well tolerated. Rarely may cause mild irritation in very sensitive skin. No known significant side effects."
+    },
+    "witch-hazel": {
+        "helps_with": "- Excess oil and shine\n- Enlarged pores\n- Acne and blemishes\n- Redness and inflammation",
+        "avoid_with": "- Very dry or sensitive skin (may be too astringent)\n- Overuse can lead to dryness or irritation",
+        "side_effects": "Generally safe but may cause dryness, irritation, or redness if overused or used on very sensitive skin. Avoid alcohol-based formulations if you have dry or sensitive skin. Use in moderation."
     }
 }
 
