@@ -19,3 +19,6 @@ uvicorn[standard]>=0.30.0,<0.31.0
 pytest
 pytest-django
 cryptography>=42
+pyzbar
+opencv-python-headless
+pytesseract
