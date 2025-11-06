@@ -5,10 +5,16 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install system dependencies (for psycopg2, etc.)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     postgresql-client \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-tha \
+    libgl1 \
+    libglib2.0-0 \
+    libzbar0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
