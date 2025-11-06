@@ -158,8 +158,9 @@ class SkinFactTopic(models.Model):
     section = models.CharField(max_length=20, choices=Section.choices)
     hero_image = models.ImageField(
         upload_to="facts/hero/",
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
         blank=True,
+        help_text="Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
     hero_image_alt = models.CharField(max_length=160, blank=True)
     is_published = models.BooleanField(default=True, db_index=True)
@@ -242,8 +243,8 @@ class SkinFactContentBlock(models.Model):
         upload_to="facts/blocks/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
-        help_text="Optional. Example: serum texture, hydrated skin close-up."
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        help_text="Optional. Example: serum texture, hydrated skin close-up. Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
 
     image_alt = models.CharField(
