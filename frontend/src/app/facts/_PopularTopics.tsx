@@ -52,7 +52,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-20">
         <div className="rounded-[28px] border-2 border-black bg-white/60 shadow-[8px_10px_0_rgba(0,0,0,0.2)]">
-          <div className="h-[420px] md:h-[520px] animate-pulse rounded-[28px]" />
+          <div className="animate-pulse rounded-[28px] min-h-[420px] md:min-h-[520px]" />
         </div>
       </PageContainer>
     );
@@ -76,10 +76,11 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
       <div className="relative -top-7 z-20 py-2 text-4xl font-extrabold text-gray-900">
           Skin Facts
       </div>
-      <div className="relative overflow-hidden rounded-[32px] border-2 border-black 
-                     bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
-        <div className="grid lg:grid-cols-[minmax(0,2.6fr)_minmax(280px,1fr)]">
-          <div className="relative h-[420px] md:h-[550px] w-full">
+      <div className="relative">
+        <div className="relative overflow-hidden rounded-[32px] border-2 border-black 
+                       bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
+        <div className="grid lg:grid-cols-[minmax(0,3fr)_300px] lg:items-stretch">
+          <div className="relative w-full min-h-[420px] md:min-h-[550px] lg:h-full lg:self-stretch">
             <Image
               src={heroImage}
               alt={current.heroImageAlt ?? current.title}
@@ -116,7 +117,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
             </div>
           </div>
 
-          <aside className="hidden lg:flex flex-col gap-3 border-l-2 border-[#2d4a2b]/10 bg-[#f7fbe5] p-6">
+          <aside className="hidden lg:flex flex-col gap-3 border-l-2 border-[#2d4a2b]/10 bg-black/10 p-5">
             {topics.slice(0, 5).map((topic, i) => {
               const isActive = i === idx;
               const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
@@ -126,11 +127,11 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                   type="button"
                   aria-current={isActive}
                   onClick={() => setIdx(i)}
-                  className={`group relative flex flex-1 items-center gap-4 rounded-2xl border-2 border-black px-3 py-3 text-left transition ${
-                    isActive ? "bg-[#d1edc8] shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "bg-white hover:bg-white"
+                  className={`group relative flex flex-1 items-center gap-4 rounded-2xl border-black px-3 py-3 text-left transition ${
+                    isActive ? "border-2 bg-white shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "border-0 bg-[#FFFAEC] hover:bg-white"
                   }`}
                 >
-                  <span className="flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-black/20">
+                  <span className="flex h-18 w-18 shrink-0 overflow-hidden rounded-xl border border-black/20">
                     <Image
                       src={image}
                       alt={topic.heroImageAlt ?? topic.title}
@@ -140,9 +141,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                     />
                   </span>
                   <span className="flex-1 space-y-1">
-                    <span className={`text-xs font-semibold uppercase tracking-[0.22em] ${isActive ? "text-[#1f2d26]" : "text-[#3c4c3f]/70"}`}>
-                      {i === 0 ? "Now reading" : "Up next"}
-                    </span>
+                    
                     <span className={`block text-sm font-bold leading-snug ${isActive ? "text-[#1f2d26]" : "text-[#2d3a2f]"}`}>
                       {topic.title}
                     </span>
@@ -152,6 +151,15 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
             })}
           </aside>
         </div>
+        </div>
+        <Image
+          src="/img/mascot/matchy_hiding.png"
+          alt="Matchy mascot smiling"
+          width={640}
+          height={480}
+          className="hidden pointer-events-none absolute -left-[288px] -bottom-22 z-30 w-[320px] sm:w-[520px] lg:block"
+          priority
+        />
       </div>
 
       {/* <div className="mt-5 flex items-center justify-center gap-2">

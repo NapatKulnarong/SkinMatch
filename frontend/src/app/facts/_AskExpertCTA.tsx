@@ -34,7 +34,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
   return (
     <PageContainer as="section" id={sectionId} className="pt-14 pb-16">
       <div className="flex w-full flex-col gap-6">
-        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#87BAC3] to-[#D6F4ED] p-8 shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
+        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#67C090] to-[#D6F4ED] p-8 shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
           <div className="space-y-5 text-center">
             
             <h2 className="text-3xl font-extrabold text-[#101b27] md:text-[2.1rem]">
@@ -74,7 +74,8 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
                   }
                 }}
                 placeholder="e.g. Is slugging safe if I'm already using retinaldehyde?"
-                className="mt-2 w-full min-h-[120px] rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm leading-relaxed text-[#101b27] shadow-sm transition focus:border-[#48307b] focus:outline-none focus:ring-2 focus:ring-[#48307b]/20"
+                className="mt-2 w-full min-h-[120px] rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm leading-relaxed text-[#101b27] shadow-sm 
+                          transition focus:border-[#48307b] focus:outline-none focus:ring-2 focus:ring-[#48307b]/20"
                 aria-invalid={status === "error"}
               />
             </label>

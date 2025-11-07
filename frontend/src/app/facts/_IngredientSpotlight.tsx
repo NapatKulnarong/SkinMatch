@@ -56,6 +56,14 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
             Swipe through the actives our community can’t stop talking about.
           </p>
         </div>
+        <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#3c4c3f]/30 bg-white/60 px-3 py-1 font-semibold">
+            Ingredients that work
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-[#3c4c3f]/30 bg-white/60 px-3 py-1 font-semibold">
+            Good match, good result
+            </span>
+          </div>
       </div>
 
       <div className="overflow-hidden">

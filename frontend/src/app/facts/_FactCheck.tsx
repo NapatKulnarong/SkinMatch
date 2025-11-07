@@ -81,14 +81,14 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
           </p>
         </div>
         <p className="text-xs uppercase tracking-[0.3em] text-[#102320]/50">
-          Verified by our formulation team
+          Verified by our experts
         </p>
       </div>
 
       <div className="relative pl-6 sm:pl-10">
         <div className="absolute left-2 sm:left-4 top-0 h-full w-0.5 bg-gradient-to-b from-[#102320]/30 via-[#102320]/15 to-transparent"/>
 
-        <ul className="space-y-10">
+        <ul className="space-y-10 sm:space-y-12">
           {visibleTopics.map((topic, index) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
             const description = topic.subtitle || topic.excerpt || "We break down the science.";
@@ -96,7 +96,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
             const verdictColor = verdict === "Verified" ? "bg-[#d6f0d1] text-[#134620]" : "bg-[#fde2e2] text-[#8b1c1c]";
 
             return (
-              <li key={topic.slug} className="relative ml-auto">
+              <li key={topic.slug} className="relative ml-auto sm:pl-4">
                 <span className="absolute -left-6 sm:-left-11 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-black 
                                 bg-[#fef7e3] text-sm font-bold text-[#102320] shadow-[3px_4px_0_rgba(0,0,0,0.25)]">
                   {String(index + 1).padStart(2, "0")}
@@ -158,7 +158,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
         </ul>
       </div>
 
-        {topics.length > 0 && (
+        {topics.length > 4 && (
           <div className="mt-8 flex justify-center">
             <button
               type="button"

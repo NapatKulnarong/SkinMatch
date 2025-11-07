@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { SparklesIcon } from "@heroicons/react/24/solid";
 
 import PageContainer from "@/components/PageContainer";
 import { fetchPopularTopics, fetchTopicsBySection, fetchRecommendedTopics } from "@/lib/api.facts";
@@ -69,12 +71,13 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
   return (
     <PageContainer as="section" id={sectionId} className="pt-12">
       <div className="rounded-[32px] border-2 border-black bg-gradient-to-br from-[#FFF1CA] via-[#F9D689] to-[#FFF1CA] shadow-[10px_12px_0_rgba(0,0,0,0.18)]">
-        <div className="flex flex-col gap-6 border-b border-black/10 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex flex-col gap-6 border-b border-black/10 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#11224a]/60">
               Tailored insights
             </p>
-            <h2 className="mt-2 text-3xl font-extrabold text-[#11224a]">
+            <h2 className="mt-2 flex items-center gap-2 text-3xl font-extrabold text-[#11224a]">
+              <SparklesIcon className="h-6 w-6 text-[#B6771D]" aria-hidden />
               Recommended for your routine
             </h2>
             <p className="mt-2 text-sm text-[#11224a]/70 sm:text-base">
@@ -83,7 +86,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           </div>
           <Link
             href="/quiz"
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+            className="absolute right-6 top-8 inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
           >
             Update preferences
             <span aria-hidden>→</span>

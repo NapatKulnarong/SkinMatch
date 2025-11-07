@@ -164,7 +164,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
           })}
         </div>
 
-        {topics.length > 0 && (
+        {topics.length > 6 && (
           <div className="mt-8 flex justify-center">
             <button
               type="button"
