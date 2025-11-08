@@ -22,7 +22,6 @@ import {
   deleteQuizHistory,
   fetchProductDetail,
   type QuizHistoryItem,
-  type QuizRecommendation,
   type ProductDetail,
 } from "@/lib/api.quiz";
 
@@ -186,14 +185,16 @@ function AccountContent() {
             <div className="flex flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
               {/* Avatar */}
               <div className="relative mx-auto w-[240px] h-[240px] flex-shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
+                  <Image
                     key={avatarSrc}
                     src={avatarError ? "/img/avatar_placeholder.png" : avatarSrc}
                     alt={displayName}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
                     onError={() => setAvatarError(true)}
+                    sizes="240px"
+                    unoptimized
                   />
                 </div>
               </div>
@@ -942,9 +943,16 @@ function WishlistPanel({ token }: { token: string | null }) {
     <div key={p.id} className="relative">
       <div className="rounded-2xl border-2 border-black/10 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
             <div className="aspect-[4/3] bg-[#f7f5ff] border-b-2 border-black/5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.image ? (
-                <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                <Image
+                  src={p.image}
+                  alt={p.name}
+                  width={400}
+                  height={300}
+                  className="h-full w-full object-cover"
+                  sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
+                  unoptimized
+                />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
               )}
