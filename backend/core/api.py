@@ -237,6 +237,172 @@ class SendTermsEmailOut(Schema):
 # --------------- Newsletter ---------------
 
 
+def _get_newsletter_welcome_email_html(email: str = "") -> str:
+    """Generate HTML email template for newsletter welcome email."""
+    from urllib.parse import quote
+    
+    # Use FRONTEND_ORIGIN for development, or SITE_URL for production
+    site_url = (
+        getattr(settings, "SITE_URL", None) 
+        or os.environ.get("SITE_URL") 
+        or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+        or "http://localhost:3000"
+    ).rstrip("/")
+    unsubscribe_url = f"{site_url}/newsletter/unsubscribe"
+    if email:
+        unsubscribe_url += f"?email={quote(email)}"
+    
+    return f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinMatch Weekly Tips</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f4f0; line-height: 1.6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #f0f4f0; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container - matches rounded-[32px] and shadow-[10px_12px_0_rgba(0,0,0,0.22)] -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: linear-gradient(to bottom right, #fff1d6, #ffe9c8, #f4f1df); border-radius: 32px; border: 2px solid #000000; box-shadow: 10px 12px 0 rgba(0,0,0,0.22); overflow: hidden;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; color: #3c4c3f; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">Personalized Skincare Insights</p>
+                            <h1 style="margin: 0 0 8px 0; color: #101b27; font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.1;">SkinMatch</h1>
+                            <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.4; font-style: italic;">"Your skin, Your match, Your best care!"</p>
+                        </td>
+                    </tr>
+
+                    <!-- Welcome Card - matches rounded-3xl and shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] -->
+                    <tr>
+                        <td style="padding: 30px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #FFFFFF; border: 2px solid #000000; border-radius: 24px; box-shadow: 8px 8px 0 0 rgba(0,0,0,0.25);">
+                                <tr>
+                                    <td style="padding: 30px;">
+                                        <h2 style="margin: 0 0 16px 0; color: #101b27; font-size: 24px; font-weight: 800; line-height: 1.2;">Welcome to SkinMatch weekly skincare tips!</h2>
+                                        <p style="margin: 0; color: #2d3a2f; font-size: 16px; line-height: 1.7;">Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, product routines, and community wins tailored for healthy, happy skin.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- What You'll Get Section -->
+                    <tr>
+                        <td style="padding: 0 40px 30px 40px;">
+                            <h3 style="margin: 0 0 18px 0; color: #101b27; font-size: 20px; font-weight: 800;">What you'll get every week:</h3>
+                            
+                            <!-- Feature 1 - matches design patterns -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 12px; background: #E7EFC7; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">🔬</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Ingredient Deep Dives</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Discover what's really inside your favorite products and how ingredients work with your unique skin type.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Feature 2 -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 12px; background: #FFFAEC; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">✨</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Personalized Product Routines</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Build your perfect skincare routine with recommendations tailored to your goals and sensitivities.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Feature 3 -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #D6F4ED; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">💬</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Community Success Stories</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Get inspired by real results from the SkinMatch community and share your own glow-up journey.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button - matches shadow-[0_6px_0_rgba(0,0,0,0.35)] -->
+                    <tr>
+                        <td style="padding: 0 40px 35px 40px;" align="center">
+                            <a href="{site_url}" style="display: inline-block; background: #fef9ef; color: #2d4a2b; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; border: 2px solid #000000; box-shadow: 0 6px 0 rgba(0,0,0,0.35);">
+                                Explore Your Dashboard →
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Closing Message -->
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: rgba(255, 255, 255, 0.7); border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 25px; text-align: center;">
+                                        <p style="margin: 0 0 8px 0; color: #101b27; font-size: 16px; line-height: 1.6;">We're excited to share the glow with you!</p>
+                                        <p style="margin: 0; color: #2d3a2f; font-size: 14px; font-weight: 600;">- The SkinMatch Team</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background: #fef9ef; border-top: 2px solid #000000;">
+                            <p style="margin: 0 0 10px 0; color: #3c4c3f; font-size: 12px; line-height: 1.6; text-align: center;">
+                                You're receiving this email because you subscribed to SkinMatch weekly skincare tips.
+                            </p>
+                            <p style="margin: 0 0 16px 0; text-align: center; font-size: 12px;">
+                                <a href="{site_url}/newsletter/preferences" style="color: #2d4a2b; text-decoration: underline; margin: 0 8px;">Update preferences</a>
+                                <span style="color: #3c4c3f;">|</span>
+                                <a href="{unsubscribe_url}" style="color: #2d4a2b; text-decoration: underline; margin: 0 8px;">Unsubscribe</a>
+                            </p>
+                            <p style="margin: 0; color: #3c4c3f; font-size: 11px; text-align: center;">
+                                © 2025 SkinMatch. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    """.strip()
+
+
 @api.post("/newsletter/subscribe", response=NewsletterSubscribeOut)
 def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
     email_value = str(payload.email or "").strip().lower()
@@ -272,14 +438,16 @@ def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
     if created:
         try:
             sender = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@skinmatch.local"
+            plain_message = (
+                "Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, "
+                "product routines, and community wins tailored for healthy, happy skin.\n\n"
+                "We're excited to share the glow with you!\n"
+                "- The SkinMatch Team"
+            )
             send_mail(
                 subject="Welcome to SkinMatch weekly skincare tips!",
-                message=(
-                    "Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, "
-                    "product routines, and community wins tailored for healthy, happy skin.\n\n"
-                    "We're excited to share the glow with you!\n"
-                    "- The SkinMatch Team"
-                ),
+                message=plain_message,
+                html_message=_get_newsletter_welcome_email_html(email_value),
                 from_email=sender,
                 recipient_list=[email_value],
                 fail_silently=False,
@@ -311,6 +479,42 @@ def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
         "message": "You're already subscribed. Thanks for staying with us!",
         "already_subscribed": True,
     }
+
+
+class NewsletterUnsubscribeIn(Schema):
+    email: EmailStr
+
+
+class NewsletterUnsubscribeOut(Schema):
+    ok: bool
+    message: str
+
+
+@api.post("/newsletter/unsubscribe", response=NewsletterUnsubscribeOut)
+def unsubscribe_newsletter(request, payload: NewsletterUnsubscribeIn):
+    """Unsubscribe an email from the newsletter."""
+    email_value = str(payload.email or "").strip().lower()
+    if not email_value:
+        raise HttpError(400, "Email address is required.")
+
+    try:
+        subscriber = NewsletterSubscriber.objects.filter(email=email_value).first()
+        if subscriber:
+            subscriber.delete()
+            logger.info("Unsubscribed email: %s", email_value)
+            return {
+                "ok": True,
+                "message": "You have been successfully unsubscribed from SkinMatch weekly skincare tips.",
+            }
+        else:
+            # Return success even if not found (don't reveal if email exists)
+            return {
+                "ok": True,
+                "message": "You have been successfully unsubscribed from SkinMatch weekly skincare tips.",
+            }
+    except Exception as exc:
+        logger.exception("Error unsubscribing email %s: %s", email_value, exc)
+        raise HttpError(500, "We couldn't process your unsubscribe request. Please try again soon.")
 
 
 class SendTermsEmailIn(Schema):

@@ -383,8 +383,13 @@ function LoginContent() {
         }
       }
 
-      // Regular user - go to account page
-      router.push("/account");
+      // Regular user - check for redirect parameter or go to account page
+      const redirectParam = searchParams.get("redirect");
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else {
+        router.push("/account");
+      }
     } catch (error: unknown) {
       clearSession();
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";

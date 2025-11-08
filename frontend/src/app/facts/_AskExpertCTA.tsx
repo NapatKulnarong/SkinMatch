@@ -34,7 +34,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
   return (
     <PageContainer as="section" id={sectionId} className="pt-14 pb-16">
       <div className="flex w-full flex-col gap-6">
-        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#67C090] to-[#D6F4ED] p-8 shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
+        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#84AE92] to-[#D6F4ED] p-8 shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
           <div className="space-y-5 text-center">
             
             <h2 className="text-3xl font-extrabold text-[#101b27] md:text-[2.1rem]">
@@ -53,7 +53,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
             ].map((item) => (
               <li
                 key={item}
-                className="flex items-center justify-center gap-2 rounded-full border-2 border-dashed border-gray-500 bg-[#FFE797]/70 px-4 py-2 text-center"
+                className="flex items-center justify-center gap-2 rounded-full border-2 border-dashed border-gray-500 bg-white/80 px-4 py-2 text-center"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-black" />
                 <span>{item}</span>
@@ -80,14 +80,16 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
               />
             </label>
 
-            <button
-              type="submit"
-              className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#FFE797] px-6 py-2.5 text-sm font-semibold text-black 
-                        shadow-md transition hover:shadow-lg active:shadow-sm"
-            >
-              Suggest a myth
-              <span aria-hidden className="text-base">✶</span>
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#E7EFC7] px-6 py-2.5 text-sm font-semibold text-black 
+                          shadow-md transition hover:shadow-lg active:shadow-sm"
+              >
+                Suggest a myth
+                <span aria-hidden className="text-base">✶</span>
+              </button>
+            </div>
           </form>
 
           {message && (
