@@ -3,6 +3,19 @@
 import os
 import sys
 
+# Set library path for pyzbar on macOS (Homebrew installation)
+# This ensures zbar library can be found even if DYLD_FALLBACK_LIBRARY_PATH is not set
+if sys.platform == 'darwin':  # macOS
+    homebrew_lib_path = '/opt/homebrew/lib'
+    if os.path.exists(homebrew_lib_path):
+        current_lib_path = os.environ.get('DYLD_FALLBACK_LIBRARY_PATH', '')
+        if homebrew_lib_path not in current_lib_path:
+            os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = (
+                f'{homebrew_lib_path}:' + current_lib_path
+                if current_lib_path
+                else homebrew_lib_path
+            )
+
 
 def main():
     """Run administrative tasks."""
