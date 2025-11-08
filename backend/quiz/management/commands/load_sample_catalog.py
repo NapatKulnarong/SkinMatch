@@ -43,21 +43,34 @@ CONCERNS: tuple[tuple[str, str], ...] = (
     ("acne-breakouts", "Acne & Breakouts"),
     ("blackheads", "Blackheads"),
     ("fine-lines-wrinkles", "Fine Lines & Wrinkles"),
+    ("fine-lines", "Fine Lines"),
+    ("wrinkles", "Wrinkles"),
     ("uneven-skin-texture", "Uneven Skin Texture"),
+    ("uneven-skin-tone", "Uneven Skin Tone"),
     ("hyperpigmentation", "Hyperpigmentation"),
+    ("dark-spots", "Dark Spots"),
     ("redness", "Redness"),
     ("damaged-skin-barrier", "Damaged Skin Barrier"),
+    ("barrier-damage", "Barrier Damage"),
     ("dull-skin", "Dull Skin"),
     ("dehydrated-skin", "Dehydrated Skin"),
+    ("dehydration", "Dehydration"),
     ("excess-oil", "Excess Oil"),
+    ("oily-skin", "Oily Skin"),
     ("large-pores", "Large Pores"),
+    ("congested-pores", "Congested Pores"),
+    ("clogged-pores", "Clogged Pores"),
     ("dark-circles", "Dark Circles"),
     ("puffiness", "Puffiness"),
     ("sensitivity", "Sensitivity"),
+    ("sensitive-skin", "Sensitive Skin"),
     ("dryness", "Dryness"),
+    ("flakiness", "Flakiness"),
     ("sun-protection", "Sun Protection"),
     ("firmness", "Firmness & Elasticity"),
     ("blemishes", "Blemishes"),
+    ("makeup-prep", "Makeup Prep"),
+    ("texture", "Texture"),
 )
 
 SKIN_TYPES: tuple[tuple[str, str], ...] = (
@@ -66,6 +79,7 @@ SKIN_TYPES: tuple[tuple[str, str], ...] = (
     ("normal", "Normal"),
     ("combination", "Combination"),
     ("sensitive", "Sensitive"),
+    ("mature", "Mature"),
 )
 
 RESTRICTIONS: tuple[tuple[str, str], ...] = (
@@ -80,6 +94,7 @@ RESTRICTIONS: tuple[tuple[str, str], ...] = (
     ("silicone-free", "Silicone-Free"),
     ("oil-free", "Oil-Free"),
     ("water-resistant", "Water Resistant"),
+    ("pregnancy-warning", "Pregnancy Warning"),
 )
 
 INGREDIENTS: tuple[tuple[str, str, str], ...] = (
@@ -2510,6 +2525,9 @@ def _set_product_relations(
 ) -> None:
     ProductConcern.objects.filter(product=product).delete()
     for index, concern_key in enumerate(seed.concerns):
+        if concern_key not in concern_map:
+            print(f"Warning: Concern '{concern_key}' not found in CONCERNS for product {product.brand} - {product.name}. Skipping.")
+            continue
         concern = concern_map[concern_key]
         ProductConcern.objects.create(
             product=product,
@@ -2519,6 +2537,9 @@ def _set_product_relations(
 
     ProductIngredient.objects.filter(product=product).delete()
     for order, ingredient_key in enumerate(seed.ingredients):
+        if ingredient_key not in ingredient_map:
+            print(f"Warning: Ingredient '{ingredient_key}' not found in INGREDIENTS for product {product.brand} - {product.name}. Skipping.")
+            continue
         ingredient = ingredient_map[ingredient_key]
         ProductIngredient.objects.create(
             product=product,
@@ -2529,6 +2550,9 @@ def _set_product_relations(
 
     ProductSkinType.objects.filter(product=product).delete()
     for skin_type_key in seed.skin_types:
+        if skin_type_key not in skin_type_map:
+            print(f"Warning: Skin type '{skin_type_key}' not found in SKIN_TYPES for product {product.brand} - {product.name}. Skipping.")
+            continue
         skin_type = skin_type_map[skin_type_key]
         ProductSkinType.objects.create(
             product=product,
@@ -2536,7 +2560,12 @@ def _set_product_relations(
             compatibility=85,
         )
 
-    restriction_objects = [restriction_map[key] for key in seed.restrictions]
+    restriction_objects = []
+    for key in seed.restrictions:
+        if key not in restriction_map:
+            print(f"Warning: Restriction '{key}' not found in RESTRICTIONS for product {product.brand} - {product.name}. Skipping.")
+            continue
+        restriction_objects.append(restriction_map[key])
     product.restrictions.set(restriction_objects)
 
 
