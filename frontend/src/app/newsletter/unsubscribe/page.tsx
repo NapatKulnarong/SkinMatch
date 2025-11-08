@@ -55,12 +55,13 @@ export default function UnsubscribePage() {
   };
 
   return (
-    <PageContainer as="main" className="min-h-screen flex items-center justify-center py-20">
+  <div className="min-h-screen w-full bg-[#f8cc8c] flex items-center justify-center">
+    <PageContainer as="main" className="flex items-center justify-center py-20">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] p-8 shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
+        <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#bbe6e8] to-[#def2eb] p-8 shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
           {status === "success" ? (
             <div className="text-center space-y-4">
-              <div className="text-6xl mb-4">✓</div>
+              <div className="text-6xl mb-4 text-[#41A67E]">✓</div>
               <h1 className="text-3xl font-extrabold text-[#101b27]">
                 Unsubscribed Successfully
               </h1>
@@ -125,6 +126,7 @@ export default function UnsubscribePage() {
         </div>
       </div>
     </PageContainer>
+  </div>
   );
 }
 
