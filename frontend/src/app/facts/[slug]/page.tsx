@@ -9,10 +9,11 @@ import ArticleBlock from "@/components/facts/ArticleBlock";
 
 const FALLBACK_COVER = "/img/facts_img/sheet_mask.jpg";
 
-type Params = { params: { slug: string } };
+type Params = { params: Promise<{ slug: string }> };
 
 export default async function FactTopicPage({ params }: Params) {
-  const topic = await fetchFactTopicDetail(params.slug);
+  const { slug } = await params;
+  const topic = await fetchFactTopicDetail(slug);
   if (!topic) {
     notFound();
   }

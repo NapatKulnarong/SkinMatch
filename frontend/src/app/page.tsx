@@ -772,12 +772,15 @@ export default function HomePage() {
                 aria-label="Email address"
                 aria-describedby={newsletterFeedbackId}
                 aria-invalid={newsletterStatus === "error"}
-                className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
+                className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] 
+                          focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
               />
               <button
                 type="submit"
                 disabled={newsletterStatus === "loading"}
-                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white 
+                          shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] 
+                          active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
               </button>

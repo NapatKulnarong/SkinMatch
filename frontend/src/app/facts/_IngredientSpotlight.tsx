@@ -56,11 +56,10 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
             Swipe through the actives our community can’t stop talking about.
           </p>
         </div>
-        <p className="text-xs uppercase tracking-[0.32em] text-[#0f1f17]/50">Swipe ∙ Save ∙ Share</p>
       </div>
 
       <div className="overflow-hidden">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+        <div className="pt-1 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6">
           {loading && spotlight.length === 0
             ? Array.from({ length: 4 }).map((_, idx) => (
                 <div
@@ -88,9 +87,6 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
                           sizes="(max-width: 768px) 60vw, 320px"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                        <span className="absolute left-4 top-4 inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[#0f1f17]">
-                          Hero
-                        </span>
                       </div>
 
                       <div className="flex flex-1 flex-col justify-between gap-4 p-4 text-[#0f1f17]">

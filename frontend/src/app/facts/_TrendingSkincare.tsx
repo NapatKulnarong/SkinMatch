@@ -101,7 +101,8 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
             <Link
               key={item.slug}
               href={`/facts/${item.slug}`}
-              className="relative flex flex-col gap-4 rounded-[28px] border-2 border-black bg-gradient-to-br from-white via-[#f6f1ff] to-white shadow-[6px_8px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1.5"
+              className="relative flex flex-col gap-4 rounded-[28px] border-2 border-black bg-gradient-to-br from-white via-[#f6f1ff] to-white 
+                        shadow-[6px_8px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1.5"
               aria-label={`Read review for ${item.title}`}
             >
               <div className="relative h-44 overflow-hidden rounded-t-[26px]">

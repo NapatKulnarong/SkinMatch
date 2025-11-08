@@ -58,9 +58,13 @@ from .models import WishlistItem
 
 logger = logging.getLogger(__name__)
 
+from .api_scan import scan_router
+from .api_scan_text import scan_text_router
 
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
+api.add_router("/scan", scan_router)
+api.add_router("/scan", scan_text_router)
 User = get_user_model()
 
 if genai:
@@ -357,6 +361,9 @@ def _stamp_last_login(user: User) -> None:
 
 # --------------- Auth endpoints ---------------
 
+@api.get("/healthz")
+def healthz(request):
+    return {"status": "ok"}
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
