@@ -3,6 +3,7 @@ from __future__ import annotations
 import io, os, re, json
 from typing import List, Optional
 
+from ninja.errors import HttpError
 import cv2
 import numpy as np
 from PIL import Image
@@ -11,7 +12,7 @@ from ninja import Router, File, Schema
 from ninja.files import UploadedFile
 
 try:
-    import google.generativeai as genai  # type: ignore
+    import google.generativeai as genai
 except ModuleNotFoundError:
     genai = None
 
@@ -47,7 +48,7 @@ def _ocr_text(pil_img: Image.Image) -> str:
     return pytesseract.image_to_string(th, lang="eng")
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
-    """Run full preprocess → OCR → cleanup"""
+    """Run full preprocess -> OCR -> cleanup"""
     data = file.read()
     pil = Image.open(io.BytesIO(data)).convert("RGB")
 
@@ -58,7 +59,6 @@ def _ocr_text_from_file(file: UploadedFile) -> str:
     return clean_ocr_text(raw_text)
 
 def cv2_to_text(img: np.ndarray) -> str:
-    import pytesseract
     return pytesseract.image_to_string(img, lang="tha+eng")
 
 # ---------------- Fallback extractor (English keywords) ----------------
@@ -417,7 +417,10 @@ class LabelLLMOut(Schema):
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
     text = _ocr_text_from_file(file)
-    llm = _call_gemini_ensemble(text) or _fallback_extract(text)
+    # llm = _call_gemini_ensemble(text) or _fallback_extract(text)
+    llm = _call_gemini_ensemble(text)
+    if not llm:
+        raise HttpError(503, "AI analyzer failed")
 
     def norm_list(xs): return [str(s).strip() for s in xs if str(s).strip()]
     return LabelLLMOut(
