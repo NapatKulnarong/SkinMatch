@@ -80,35 +80,35 @@ const CONTACTS_BY_NAME: Record<
 
 const TIMELINE_EVENTS = [
   {
-    date: "January 2024",
+    date: "August 2025",
     title: "The Spark",
     description: "After countless skincare struggles and confusing ingredient lists, our team realized there had to be a better way. SkinMatch was born from a simple idea: make skincare personal and stress-free.",
     icon: "💡",
     color: "#FFE8D8",
   },
   {
-    date: "March 2024",
+    date: "September 2025",
     title: "Research & Planning",
     description: "We dove deep into dermatology research, interviewed skincare enthusiasts, and analyzed hundreds of ingredients to build our comprehensive database.",
     icon: "📚",
     color: "#D4F1E8",
   },
   {
-    date: "May 2024",
+    date: "October 2025",
     title: "Building the Foundation",
     description: "Development kicked off! Our team crafted the matching algorithm, designed the user experience, and built the infrastructure to support personalized skincare journeys.",
     icon: "⚙️",
     color: "#E8D8FF",
   },
   {
-    date: "August 2024",
+    date: "November 2025",
     title: "Testing & Refinement",
     description: "Beta testing with real users helped us fine-tune recommendations, improve the interface, and ensure our matches were truly helpful for diverse skin types.",
     icon: "🧪",
     color: "#FFD8E8",
   },
   {
-    date: "November 2024",
+    date: "End of November 2025",
     title: "Launch Day!",
     description: "SkinMatch went live! We're now helping people discover their perfect skincare matches and feel confident in every product choice they make.",
     icon: "🚀",
@@ -121,25 +121,25 @@ const VALUES = [
     title: "Science-Backed",
     description: "Every recommendation is rooted in dermatological research and ingredient science.",
     icon: "🔬",
-    color: "#D4F1E8",
+    color: "#d7ebf4",
   },
   {
     title: "User-First",
     description: "Your skin goals, sensitivities, and preferences guide everything we build.",
     icon: "🙋🏻",
-    color: "#E8D8FF",
+    color: "#ddd3ee",
   },
   {
     title: "Transparency",
     description: "No hidden agendas. We tell you exactly what's in your products and why it matters.",
     icon: "🔍",
-    color: "#FFE8D8",
+    color: "#f3e6d8",
   },
   {
     title: "Personalized",
     description: "One size doesn't fit all. Your unique skin profile deserves custom care.",
     icon: "✔️",
-    color: "#FFD8E8",
+    color: "#e1f0e5",
   },
 ];
 
@@ -398,7 +398,7 @@ function TeamCard({ member }: { member: Member }) {
   return (
     <div className="relative [perspective:1200px]">
       <div
-        className={`relative h-[280px] sm:h-[320px] md:h-[300px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
+        className={`relative h-[240px] sm:h-[280px] md:h-[260px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
           flipped ? "[transform:rotateY(180deg)]" : ""
         }`}
       >
@@ -410,7 +410,7 @@ function TeamCard({ member }: { member: Member }) {
           <div
             className="
               relative mr-3 sm:mr-5 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden
-              aspect-[3/4] w-[36%] sm:w-[34%] md:w-[30%]
+              aspect-[3/4] w-[32%] sm:w-[30%] md:w-[28%]
             "
             style={{ background: member.thumbBg }}
           >
