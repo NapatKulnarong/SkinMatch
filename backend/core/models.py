@@ -258,8 +258,7 @@ class SkinFactContentBlock(models.Model):
         
         if has_content and has_image:
             raise ValidationError("Block cannot have both content and image. Choose either text OR image.")
-        
-        # Require alt text if image is provided
+
         if has_image and not (self.image_alt or "").strip():
             raise ValidationError("Please provide image alt text for accessibility when using an image block.")
 

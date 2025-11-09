@@ -63,28 +63,34 @@ class SkinFactSerializationTests(TestCase):
         self.assertTrue(summary.hero_image_url.startswith("http://backend:8000/"))
         self.assertIsNone(summary.hero_image_alt)
 
-    def test_block_serialization_preserves_alt_and_text(self):
+    def test_block_serialization_preserves_text_and_image_meta(self):
         topic = SkinFactTopic.objects.create(
             slug="vitamin-c",
             title="Vitamin C Guide",
             section=SkinFactTopic.Section.FACT_CHECK,
         )
-        block = SkinFactContentBlock.objects.create(
+        text_block = SkinFactContentBlock.objects.create(
             topic=topic,
-            block_type=SkinFactContentBlock.BlockType.TEXT,
-            text="Vitamin C helps brighten skin tone.",
+            content="Vitamin C helps brighten skin tone.",
+            order=1,
+        )
+        image_block = SkinFactContentBlock.objects.create(
+            topic=topic,
             image=_fake_jpg("vitc_block.jpg"),
             image_alt="A bottle of vitamin C serum.",
-            order=1,
+            order=2,
         )
 
         request = self.factory.get("/", HTTP_HOST="backend:8000")
-        payload = _serialize_fact_block(block, request)
+        text_payload = _serialize_fact_block(text_block, request)
+        image_payload = _serialize_fact_block(image_block, request)
 
-        self.assertEqual(payload.block_type, "text")
-        self.assertEqual(payload.text, "Vitamin C helps brighten skin tone.")
-        self.assertEqual(payload.image_alt, "A bottle of vitamin C serum.")
-        self.assertTrue(payload.image_url.startswith("http://backend:8000"))
+        self.assertEqual(text_payload.order, 1)
+        self.assertEqual(text_payload.content, "Vitamin C helps brighten skin tone.")
+        self.assertIsNone(text_payload.image_url)
+
+        self.assertEqual(image_payload.image_alt, "A bottle of vitamin C serum.")
+        self.assertTrue(image_payload.image_url.startswith("http://backend:8000"))
 
     def test_anonymous_block_alt_defaults_to_none(self):
         topic = SkinFactTopic.objects.create(
@@ -94,7 +100,6 @@ class SkinFactSerializationTests(TestCase):
         )
         block = SkinFactContentBlock.objects.create(
             topic=topic,
-            block_type=SkinFactContentBlock.BlockType.IMAGE,
             image=_fake_jpg("retinol.jpg"),
             image_alt="",
             order=2,

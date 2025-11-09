@@ -538,16 +538,38 @@ def _initials_from_name(name: str) -> str:
 
 @router.get("/feedback/highlights", response=list[FeedbackOut])
 def list_feedback_highlights(request, limit: int = 6):
+    """Return up to `limit` feedback entries, deduplicated per user by rating/newness."""
+
     capped_limit = max(1, min(limit, 12))
+    fetch_ceiling = capped_limit * 6  # pull extra rows to allow deduplication
+
     try:
         queryset = (
             QuizFeedback.objects.select_related("session__user")
             .filter(rating__isnull=False)
             .exclude(message__isnull=True)
             .exclude(message__exact="")
-            .order_by("-created_at")[:capped_limit]
+            .order_by("-rating", "-created_at")
         )
-        return [_serialize_feedback(feedback) for feedback in queryset]
+
+        highlights: list[QuizFeedback] = []
+        seen_user_ids: set[int] = set()
+
+        for feedback in queryset[:fetch_ceiling]:
+            user_id = None
+            if feedback.session_id and feedback.session and feedback.session.user_id:
+                user_id = feedback.session.user_id
+
+            if user_id is not None:
+                if user_id in seen_user_ids:
+                    continue
+                seen_user_ids.add(user_id)
+
+            highlights.append(feedback)
+            if len(highlights) >= capped_limit:
+                break
+
+        return [_serialize_feedback(feedback) for feedback in highlights]
     except Exception as error:
         logger.warning("Unable to load feedback highlights: %s", error)
         return []
