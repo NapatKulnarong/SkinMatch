@@ -319,8 +319,13 @@ def _call_gemini_ensemble(ocr_text: str) -> dict | None:
     sys_msg = (
         "You are a dermatologist-grade skincare product analyst. "
         "Extract concise, factual insights from OCR text (Thai/English). "
-        "Return JSON ONLY that matches the schema exactly. Include all required keys - especially 'confidence' as a number between 0 and 1."
+        "Return JSON ONLY that matches the schema exactly. "
+        "Each category should include both "
+        "a concise name and a one-line description. Return strictly valid JSON."
+        "Include all required keys - especially 'confidence' as a number between 0 and 1."
+        "Each category should include both "
     )
+
     user_prompt = f"""
     Analyze the OCR text below and extract structured product insights.
 
