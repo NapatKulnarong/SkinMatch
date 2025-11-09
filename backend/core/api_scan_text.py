@@ -1,4 +1,3 @@
-# backend/core/api_scan_text.py
 from __future__ import annotations
 
 import io, os, re, json
@@ -124,7 +123,8 @@ _GEMINI_MODELS = [
     "gemini-1.5-flash",
 ]
 
-def _call_gemini_for_json(ocr_text: str) -> Optional[dict]:
+# ---------------- LLM call (English prompt) # No Description ----------------
+'''def _call_gemini_for_json(ocr_text: str) -> Optional[dict]:
     if genai is None or not os.getenv("GOOGLE_API_KEY"):
         return None
 
@@ -188,7 +188,120 @@ OCR_TEXT:
         except Exception as e:
             print(f"[LLM analyze] model {model_name} failed/blocked: {e}")
             continue
+    return None'''
+# ---------------- LLM call (English prompt) # With Description ----------------
+def _call_gemini_for_json(ocr_text: str) -> dict | None:
+    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+        return None
+
+    sys_msg = (
+        "You are a skincare label analyst. Analyze the OCR text (Thai/English) "
+        "and extract structured product facts. Each category should include both "
+        "a concise name and a one-line description. Return strictly valid JSON."
+    )
+
+    schema_hint = {
+        "type": "object",
+        "properties": {
+            "benefits": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    },
+                    "required": ["name", "description"]
+                }
+            },
+            "actives": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    },
+                    "required": ["name", "description"]
+                }
+            },
+            "concerns": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    },
+                    "required": ["name", "description"]
+                }
+            },
+            "notes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "description": {"type": "string"}
+                    },
+                    "required": ["name", "description"]
+                }
+            },
+            "confidence": {"type": "number"}
+        },
+        "required": ["benefits", "actives", "concerns", "notes", "confidence"],
+        "additionalProperties": False
+    }
+
+    user_prompt = f"""
+Extract skincare facts from the following OCR text.
+
+For each list, include a short, clear one-line description:
+- "actives" → list key ingredients (with short effect summary)
+- "benefits" → describe skin benefits or product claims
+- "concerns" → ingredients users may avoid (and why)
+- "notes" → extra helpful observations or warnings
+
+⚠️ If something says “free from” (e.g., “alcohol-free”), do NOT list it under concerns.
+
+Return JSON matching this schema:
+{json.dumps(schema_hint, ensure_ascii=False, indent=2)}
+
+OCR_TEXT:
+\"\"\"{ocr_text}\"\"\"
+"""
+
+    gen_cfg = {
+        "temperature": 0.25,
+        "max_output_tokens": 1024,
+        "response_mime_type": "application/json",
+    }
+
+    for model_name in _GEMINI_MODELS:
+        try:
+            model = genai.GenerativeModel(model_name, system_instruction=sys_msg, generation_config=gen_cfg)
+            resp = model.generate_content(user_prompt)
+            raw = getattr(resp, "text", None)
+            if not raw and hasattr(resp, "candidates"):
+                cand = resp.candidates[0]
+                parts = getattr(cand, "content", None)
+                if parts and getattr(parts, "parts", None):
+                    chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
+                    raw = "\n".join(chunks).strip()
+
+            if not raw:
+                continue
+
+            data = json.loads(raw)
+            for k in ["benefits", "actives", "concerns", "notes", "confidence"]:
+                if k not in data:
+                    raise ValueError(f"Missing key: {k}")
+            return data
+        except Exception as e:
+            print(f"[LLM analyze] {model_name} failed: {e}")
+            continue
     return None
+
 
 # ---------------- utilities ----------------
 def _derive_free_from(notes: List[str]) -> List[str]:
