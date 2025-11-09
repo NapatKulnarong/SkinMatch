@@ -28,8 +28,8 @@ export default function StepNavArrows({ current, side, disabled = false }: Props
   const href = isPrev ? prevHref : nextHref;
 
   const baseClass = `
-    grid place-items-center h-12 w-12 rounded-full border-2 border-black
-    shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all select-none
+    grid place-items-center h-10 w-10 sm:h-12 sm:w-12 rounded-full border-2 border-black
+    shadow-[0_5px_0_rgba(0,0,0,0.35)] transition-all select-none
   `;
 
   if (disabled) {
@@ -44,7 +44,7 @@ export default function StepNavArrows({ current, side, disabled = false }: Props
     <Link
       href={href}
       aria-label={isPrev ? "Previous question" : "Next question"}
-      className={`${baseClass} bg-white/40 hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]`}
+      className={`${baseClass} bg-white/60 hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)]`}
     >
       {/* simple chevrons; swap for your icons if you want */}
       <span className="text-2xl leading-none text-black">

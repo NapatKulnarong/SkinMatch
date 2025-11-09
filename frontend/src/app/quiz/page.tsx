@@ -33,7 +33,7 @@ export default function QuizPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f8cc8c] pb-10 pt-28 sm:pt-32">
+    <main className="min-h-screen bg-[#f8cc8c] pb-10 pt-38 sm:pt-32 sm:flex sm:items-center sm:justify-center sm:py-10">
       <PageContainer className="w-full max-w-3xl">
         <div className="relative w-full overflow-hidden rounded-[30px] border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] min-h-[620px] sm:min-h-[660px]">
           <div
@@ -49,8 +49,8 @@ export default function QuizPage() {
               {STEP_ONE_META.title}
             </h1>
 
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-              <div className="grid w-full grid-cols-2 gap-3 sm:gap-4 pb-2">
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1 pt-4 flex items-center justify-center">
+              <div className="grid w-full max-w-4xl grid-cols-2 gap-3 sm:gap-4 pb-2">
                 {availableChoices.map((choice) => {
                   const selected = value === choice.label;
                   return (

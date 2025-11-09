@@ -402,58 +402,57 @@ function LoginContent() {
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
-    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:justify-center md:gap-12">
-      <div className="md:mr-6">
+    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-10 sm:px-6 lg:flex-row lg:gap-16">
+      <div className="hidden lg:flex justify-end lg:mr-0">
         <Image
           src="/img/mascot/matchy_2.png"
           alt="Matchy mascot waving hello"
-          width={700}
-          height={700}
+          width={520}
+          height={520}
           priority
-          className="drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-6 md:translate-y-8"
+          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>
       <div
         className={[
-          "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
+          "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
           "shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
           cardBg,
         ].join(" ")}
       >
         {mode === "intro" && (
           <>
-            <div className="p-8">
+          <div className="p-5 sm:p-7">
               <h2 className="text-3xl font-extrabold text-[#3B2F4A]">
                 Join our <span className="text-[#3B2F4A]">MatchClub</span>
               </h2>
 
-              <ul className="mt-6 text-[15.5px] text-gray-700 font-semibold">
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+              <ul className="mt-4 text-gray-700 font-semibold text-sm sm:text-base">
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Save your match result</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Read &amp; write reviews on your product matches</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="pt-3 pb-1 flex gap-3 items-start">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Be the first to get updates about the skincare industry</span>
-                </li>
-                <li className="py-3.5 flex gap-3 items-start whitespace-nowrap">
-                  <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Product discount alerts</span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-[#B6A6D8] p-6">
+            <div className="bg-[#B6A6D8] p-4 sm:p-6">
               <button
                 data-testid="signup-google"
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base 
+                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
                 <span className="leading-none">
@@ -475,7 +474,10 @@ function LoginContent() {
                 data-testid="signup-email"
                 type="button"
                 onClick={() => changeMode("signup")}
-                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base
+                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
                 <MailIcon className="block h-6 w-6 flex-shrink-0" />
                 <span className="leading-none">Sign up with Email</span>
@@ -497,7 +499,7 @@ function LoginContent() {
         )}
 
         {mode === "signup" && (
-          <div className="p-8" data-testid="signup-form">
+          <div className="p-6 sm:p-8" data-testid="signup-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
               Create your account
             </h2>
@@ -623,7 +625,7 @@ function LoginContent() {
         )}
 
         {mode === "login" && (
-          <div className="p-8" data-testid="login-form">
+          <div className="p-6 sm:p-8" data-testid="login-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
             <form onSubmit={handleLogin} className="mt-4 space-y-6">
@@ -685,7 +687,7 @@ function LoginContent() {
         )}
 
         {mode === "forgot" && (
-          <div className="p-8" data-testid="forgot-form">
+          <div className="p-6 sm:p-8" data-testid="forgot-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
               Reset your password
             </h2>
