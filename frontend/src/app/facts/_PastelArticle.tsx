@@ -2,6 +2,7 @@
 
 import type { FactContentBlock } from "@/lib/types";
 import Image from "next/image";
+import FactRichText from "@/components/facts/FactRichText";
 
 export type PastelArticleProps = {
   blocks: FactContentBlock[];
@@ -34,35 +35,20 @@ export function PastelArticle({ blocks, updatedAt }: PastelArticleProps) {
 }
 
 function BlockSection({ block }: { block: FactContentBlock }) {
-  const paragraphs = (block.text ?? "")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
   return (
     <section className="mb-10 last:mb-0">
-      {/* Heading */}
-      {block.heading ? (
-        <h2 className="text-lg md:text-xl font-extrabold text-gray-900 mb-3">
-          {block.heading}
-        </h2>
+      {/* Content (markdown) */}
+      {block.content ? (
+        <div className="mb-4">
+          <FactRichText text={block.content} />
+        </div>
       ) : null}
-
-      {/* Body text */}
-      {paragraphs.map((para, idx) => (
-        <p
-          key={idx}
-          className="text-gray-800 leading-relaxed md:text-base mb-4"
-        >
-          {para}
-        </p>
-      ))}
 
       {/* Image frame */}
       {block.imageUrl ? (
         <FigureImage
           src={block.imageUrl}
-          alt={block.imageAlt ?? block.heading ?? ""}
+          alt={block.imageAlt ?? ""}
         />
       ) : null}
     </section>

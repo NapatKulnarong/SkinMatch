@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 import {
   fetchProfile,
   updateProfile,
@@ -242,12 +243,6 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    if (next.length < 8) {
-      setPasswordError("New password must be at least 8 characters long.");
-      setPasswordSaving(false);
-      return;
-    }
-
     if (next !== confirm) {
       setPasswordError("New password confirmation does not match.");
       setPasswordSaving(false);
@@ -256,6 +251,13 @@ export default function AccountSettingsPage() {
 
     if (current === next) {
       setPasswordError("New password must be different from the current password.");
+      setPasswordSaving(false);
+      return;
+    }
+    
+    // Backend will validate password policy
+    if (!next) {
+      setPasswordError("Please enter a new password.");
       setPasswordSaving(false);
       return;
     }
@@ -574,10 +576,13 @@ export default function AccountSettingsPage() {
                   value={passwordState.next}
                   onChange={handlePasswordFieldChange("next")}
                   autoComplete="new-password"
-                  minLength={8}
                   className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
-                  placeholder="At least 8 characters"
+                  placeholder="••••••••"
                   disabled={passwordSaving}
+                />
+                <PasswordRequirements
+                  password={passwordState.next}
+                  className="mt-2"
                 />
               </label>
 

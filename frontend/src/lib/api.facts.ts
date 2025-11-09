@@ -21,9 +21,7 @@ type RawFactTopicSummary = {
 
 type RawFactContentBlock = {
   order: number;
-  block_type: "heading" | "text" | "paragraph" | "image";
-  heading?: string | null;
-  text?: string | null;
+  content?: string | null;
   image_url?: string | null;
   image_alt?: string | null;
 };
@@ -79,9 +77,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
 
 const mapBlock = (raw: RawFactContentBlock): FactContentBlock => ({
   order: raw.order,
-  blockType: raw.block_type, // "heading" | "text"
-  heading: raw.heading ?? null,
-  text: raw.text ?? null,
+  content: raw.content ?? null,
   imageUrl: raw.image_url ?? null,
   imageAlt: raw.image_alt ?? null,
 });
