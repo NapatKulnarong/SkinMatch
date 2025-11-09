@@ -81,13 +81,6 @@ class SignUpIn(Schema):
     date_of_birth: str | None = None # 'YYYY-MM-DD'
     gender: str | None = None #'male'|'female'|'prefer_not'
 
-    @field_validator("password")
-    @classmethod
-    def strong(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
 class SignUpOut(Schema):
     ok: bool
     message: str
@@ -508,6 +501,21 @@ def signup(request, payload: SignUpIn):
     
     if User.objects.filter(email__iexact=str(payload.email)).exists():
         return {"ok": False, "message": "Email already in use"}
+    
+    # Validate password using Django's password validators
+    # Create a temporary user object for validation (username/email similarity checks)
+    temp_user = User(
+        username=payload.username,
+        email=str(payload.email),
+        first_name=payload.first_name.strip(),
+        last_name=payload.last_name.strip(),
+    )
+    try:
+        validate_password(payload.password, user=temp_user)
+    except ValidationError as exc:
+        # Join all validation error messages
+        error_message = " ".join(exc.messages)
+        return {"ok": False, "message": error_message}
     
     # create user
     try:
