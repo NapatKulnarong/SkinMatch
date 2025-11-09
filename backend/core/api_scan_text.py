@@ -10,23 +10,17 @@ import pytesseract
 from ninja import Router, File, Schema
 from ninja.files import UploadedFile
 
-# Optional Gemini SDK (falls back if not configured)
 try:
     import google.generativeai as genai  # type: ignore
 except ModuleNotFoundError:
     genai = None
 
-# --- Optional project helpers (safe fallbacks if missing) ---
-try:
-    from .utils_ocr import preprocess_for_ocr  # if you kept it
-except Exception:  # pragma: no cover
-    preprocess_for_ocr = None  # type: ignore
+API_KEY = os.getenv("GOOGLE_API_KEY")
+if genai is not None and API_KEY:
+    genai.configure(api_key=API_KEY)
 
-def clean_ocr_text(s: str) -> str:
-    s = s.replace("\u200b", "").replace("\ufeff", "")
-    s = re.sub(r"[^\S\r\n]{2,}", " ", s)  # collapse multi-spaces
-    s = re.sub(r"\n{3,}", "\n\n", s)       # collapse blank lines
-    return s.strip()
+from .utils_ocr import preprocess_for_ocr
+from .text_cleaner import clean_ocr_text
 
 scan_text_router = Router(tags=["scan-text"])
 
@@ -52,6 +46,21 @@ def _ocr_text(pil_img: Image.Image) -> str:
     )
     return pytesseract.image_to_string(th, lang="eng")
 
+def _ocr_text_from_file(file: UploadedFile) -> str:
+    """Run full preprocess → OCR → cleanup"""
+    data = file.read()
+    pil = Image.open(io.BytesIO(data)).convert("RGB")
+
+    # Preprocess + clean up
+    pre_pil = preprocess_for_ocr(pil)
+    pre_np = cv2.cvtColor(np.array(pre_pil), cv2.COLOR_RGB2BGR)
+    raw_text = cv2_to_text(pre_np)
+    return clean_ocr_text(raw_text)
+
+def cv2_to_text(img: np.ndarray) -> str:
+    import pytesseract
+    return pytesseract.image_to_string(img, lang="tha+eng")
+
 # ---------------- Fallback extractor (English keywords) ----------------
 def _fallback_extract(text: str) -> dict:
     t = text.lower()
@@ -62,8 +71,7 @@ def _fallback_extract(text: str) -> dict:
     if has(r"\bniacinamide\b"): actives.append("Niacinamide")
     if has(r"\burea\b"): actives.append("Urea")
     if has(r"saccharide\s+isomerate"): actives.append("Saccharide Isomerate")
-    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"):
-        actives.append("Avena Sativa (Oat) Extract")
+    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"): actives.append("Avena Sativa (Oat) Extract")
     if has(r"\bceramide\b"): actives.append("Ceramide Complex")
     if has(r"\bpanthenol\b"): actives.append("Panthenol")
     if has(r"tocopheryl\s*acetate|vitamin\s*e"): actives.append("Tocopheryl Acetate")
@@ -72,19 +80,15 @@ def _fallback_extract(text: str) -> dict:
 
     concerns: list[str] = []
     if has(r"\bfragrance\b|\bparfum\b"): concerns.append("Fragrance")
-    if has(r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl\s+alcohol\b"):
-        concerns.append("Drying Alcohol")
+    if has(r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl\s+alcohol\b"):concerns.append("Drying Alcohol")
     if has(r"\bparaben"): concerns.append("Parabens")
     if has(r"\bmineral\s*oil\b"): concerns.append("Mineral Oil")
     if has(r"\bmit\b|\bmethylisothiazolinone\b"): concerns.append("MIT")
 
     # Free-from overrides
-    if has(r"\balcohol[-\s]?free\b|free\s+from\s+alcohol"):
-        concerns = [c for c in concerns if "alcohol" not in c.lower()]
-    if has(r"\bparaben[-\s]?free\b|free\s+from\s+parabens?"):
-        concerns = [c for c in concerns if "paraben" not in c.lower()]
-    if has(r"\bmineral\s*oil[-\s]?free\b|free\s+from\s+mineral\s+oil"):
-        concerns = [c for c in concerns if "mineral oil" not in c.lower()]
+    if has(r"\balcohol[-\s]?free\b|free\s+from\s+alcohol"):concerns = [c for c in concerns if "alcohol" not in c.lower()]
+    if has(r"\bparaben[-\s]?free\b|free\s+from\s+parabens?"):concerns = [c for c in concerns if "paraben" not in c.lower()]
+    if has(r"\bmineral\s*oil[-\s]?free\b|free\s+from\s+mineral\s+oil"):concerns = [c for c in concerns if "mineral oil" not in c.lower()]
 
     benefits: list[str] = []
     for line in [ln.strip() for ln in text.splitlines() if ln.strip()]:
@@ -106,89 +110,27 @@ def _fallback_extract(text: str) -> dict:
         "confidence": 0.55,
     }
 
-# ---------------- Output schema ----------------
-class LabelLLMOut(Schema):
-    raw_text: str
-    benefits: List[str]
-    actives: List[str]
-    concerns: List[str]
-    notes: List[str]
-    confidence: float
-    free_from: List[str] = []
+# ---------------- Utility: Jaccard + Merge ----------------
+def _jaccard(a: list[str], b: list[str]) -> float:
+    sa, sb = set(map(str.lower, a)), set(map(str.lower, b))
+    return len(sa & sb) / max(1, len(sa | sb))
 
-# ---------------- LLM call (English prompt) ----------------
+def _merge_lists(*lists: list[str]) -> list[str]:
+    seen, out = set(), []
+    for L in lists:
+        for x in L or []:
+            k = str(x).strip()
+            if k and k.lower() not in seen:
+                seen.add(k.lower())
+                out.append(k)
+    return out
+
 _GEMINI_MODELS = [
     os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.0-flash",
     "gemini-2.5-flash",
     "gemini-1.5-flash",
 ]
 
-# ---------------- LLM call (English prompt) # No Description ----------------
-'''def _call_gemini_for_json(ocr_text: str) -> Optional[dict]:
-    if genai is None or not os.getenv("GOOGLE_API_KEY"):
-        return None
-
-    sys_msg = (
-        "You are a skincare label analyst. Extract concise facts from OCR text. "
-        "Return STRICT JSON ONLY (no prose)."
-    )
-    schema_hint = {
-        "type": "object",
-        "properties": {
-            "benefits": {"type": "array", "items": {"type": "string"}},
-            "actives": {"type": "array", "items": {"type": "string"}},
-            "concerns": {"type": "array", "items": {"type": "string"}},
-            "notes": {"type": "array", "items": {"type": "string"}},
-            "confidence": {"type": "number"}
-        },
-        "required": ["benefits", "actives", "concerns", "notes", "confidence"],
-        "additionalProperties": False
-    }
-    user_prompt = f"""
-Extract information from the following product label text (English).
-Focus on skincare claims and ingredients.
-If a “free from …” statement is present (e.g., alcohol-free, paraben-free), DO NOT list that item as a concern.
-
-Return ONLY JSON matching this schema:
-{json.dumps(schema_hint, ensure_ascii=False)}
-
-OCR_TEXT:
-\"\"\"{ocr_text}\"\"\"
-"""
-
-    gen_cfg = {
-        "temperature": 0.2,
-        "max_output_tokens": 768,
-        "response_mime_type": "application/json",
-    }
-
-    for model_name in _GEMINI_MODELS:
-        try:
-            model = genai.GenerativeModel(model_name, system_instruction=sys_msg, generation_config=gen_cfg)
-            resp = model.generate_content(user_prompt, safety_settings={
-                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
-                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
-                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
-                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
-            })
-            raw = getattr(resp, "text", None)
-            if not raw and getattr(resp, "candidates", None):
-                cand0 = resp.candidates[0]
-                parts = getattr(cand0, "content", None)
-                if parts and getattr(parts, "parts", None):
-                    chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-                    raw = "\n".join(chunks).strip()
-            if not raw:
-                continue
-            data = json.loads(raw)
-            for k in ["benefits", "actives", "concerns", "notes", "confidence"]:
-                if k not in data:
-                    raise ValueError(f"missing key {k}")
-            return data
-        except Exception as e:
-            print(f"[LLM analyze] model {model_name} failed/blocked: {e}")
-            continue
-    return None'''
 # ---------------- LLM call (English prompt) # With Description ----------------
 def _call_gemini_for_json(ocr_text: str) -> dict | None:
     if genai is None or not os.getenv("GOOGLE_API_KEY"):
@@ -254,27 +196,36 @@ def _call_gemini_for_json(ocr_text: str) -> dict | None:
     }
 
     user_prompt = f"""
-Extract skincare facts from the following OCR text.
+    You are a dermatologist-grade skincare product analyst.
+    Analyze the OCR text below and extract structured product insights.
 
-For each list, include a short, clear one-line description:
-- "actives" → list key ingredients (with short effect summary)
-- "benefits" → describe skin benefits or product claims
-- "concerns" → ingredients users may avoid (and why)
-- "notes" → extra helpful observations or warnings
+    Rules:
+    - Ignore non-ingredient text, random codes, or numbers unrelated to skincare.
+    - Use only meaningful skincare terms (ingredients, claims, or cautions).
+    - Return concise one-line descriptions — no marketing fluff.
+    - Assign a "confidence" score between 0 and 1, where:
+        * 1.0 = highly confident (clear ingredient list & claims)
+        * 0.7–0.9 = fairly confident (some OCR noise but recognizable)
+        * <0.6 = uncertain (many garbled or missing terms)
 
-⚠️ If something says “free from” (e.g., “alcohol-free”), do NOT list it under concerns.
+    Output format:
+    {
+    "actives": [{"name": "Niacinamide", "description": "Improves skin tone and barrier resilience"}],
+    "benefits": [{"name": "Hydration Boost", "description": "Locks in moisture and soothes dryness"}],
+    "concerns": [{"name": "Fragrance", "description": "May irritate sensitive skin"}],
+    "notes": [{"name": "Alcohol-free", "description": "Gentle for daily use"}],
+    "confidence": 0.92
+    }
 
-Return JSON matching this schema:
-{json.dumps(schema_hint, ensure_ascii=False, indent=2)}
-
-OCR_TEXT:
-\"\"\"{ocr_text}\"\"\"
-"""
+    OCR_TEXT:
+    \"\"\"{ocr_text}\"\"\"
+    """
 
     gen_cfg = {
-        "temperature": 0.25,
-        "max_output_tokens": 1024,
-        "response_mime_type": "application/json",
+    "temperature": 0.2,        # less creativity → more precision
+    "max_output_tokens": 768, # longer if OCR text is long
+    "top_p": 0.8,
+    "response_mime_type": "application/json",
     }
 
     for model_name in _GEMINI_MODELS:
@@ -302,6 +253,137 @@ OCR_TEXT:
             continue
     return None
 
+def _shape_guard(d: dict) -> bool:
+    keys = {"benefits", "actives", "concerns", "notes", "confidence"}
+    return isinstance(d, dict) and keys.issubset(set(d.keys()))
+
+def _call_one_model(model_name: str, user_prompt: str, sys_msg: str, gen_cfg: dict) -> dict | None:
+    # --- 1 Force Gemini to output JSON ---
+    model = genai.GenerativeModel(
+        model_name,
+        system_instruction=sys_msg,
+        generation_config={
+            **gen_cfg,
+            "response_mime_type": "application/json",  # ← ensures Gemini replies in strict JSON only
+        },
+    )
+    # --- 2 Run the model safely ---
+    resp = model.generate_content(user_prompt, safety_settings = {"HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE", 
+                                                                  "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE", 
+                                                                  "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE", 
+                                                                  "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",})
+
+    # --- 3 Extract raw text (Gemini SDK differences) ---
+    raw = getattr(resp, "text", None)
+    if not raw and getattr(resp, "candidates", None):
+        cand0 = resp.candidates[0]
+        parts = getattr(cand0, "content", None)
+        if parts and getattr(parts, "parts", None):
+            chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
+            raw = "\n".join(chunks).strip()
+
+    if not raw:
+        return None
+
+    # --- 4 Try to parse JSON, with debug help ---
+    try:
+        data = json.loads(raw)
+    except Exception as e:
+        print("[LLM] JSON parse failed, raw:", raw[:400])
+        return None
+
+    # --- 5 Normalize confidence key (ai_confidence → confidence) ---
+    if "confidence" not in data and "ai_confidence" in data:
+        data["confidence"] = data["ai_confidence"]
+
+    # --- ⑥ Return only if it has required shape ---
+    return data if _shape_guard(data) else None
+
+def _call_gemini_ensemble(ocr_text: str) -> dict | None:
+    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+        return None
+
+    schema_hint = {
+        "type": "object",
+        "properties": {
+            "benefits": {"type": "array", "items": {"type": "string"}},
+            "actives": {"type": "array", "items": {"type": "string"}},
+            "concerns": {"type": "array", "items": {"type": "string"}},
+            "notes": {"type": "array", "items": {"type": "string"}},
+            "confidence": {"type": "number"}
+        },
+        "required": ["benefits", "actives", "concerns", "notes", "confidence"],
+        "additionalProperties": False
+    }
+
+    sys_msg = (
+        "You are a dermatologist-grade skincare product analyst. "
+        "Extract concise, factual insights from OCR text (Thai/English). "
+        "Return JSON ONLY that matches the schema exactly. Include all required keys - especially 'confidence' as a number between 0 and 1."
+    )
+    user_prompt = f"""
+    Analyze the OCR text below and extract structured product insights.
+
+    Rules:
+    - Use concise one-line descriptions.
+    - Ignore marketing fluff or nonsense OCR fragments.
+    - If label says “free from X”, do NOT list X under concerns.
+    - confidence: 0..1 (1=very sure, 0.7-0.9=pretty sure, <0.6=uncertain).
+
+    Schema:
+    {json.dumps(schema_hint, ensure_ascii=False, indent=2)}
+
+    OCR_TEXT:
+    \"\"\"{ocr_text}\"\"\"
+    """
+
+    gen_cfg = {
+        "temperature": 0.4,
+        "max_output_tokens": 2048,
+        "top_p": 0.8,
+        "response_mime_type": "application/json",
+    }
+
+    models = [
+        os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-1.5-pro",
+        "gemini-2.5-flash",
+    ]
+
+    results = []
+    for name in models:
+        try:
+            r = _call_one_model(name, user_prompt, sys_msg, gen_cfg)
+            if r: results.append(r)
+        except Exception as e:
+            print(f"[LLM analyze] model {name} failed: {e}")
+
+    if not results:
+        return None
+    if len(results) == 1:
+        return results[0]
+
+    # Merge two+ results
+    acts = _merge_lists(*(r.get("actives", []) for r in results))
+    bens = _merge_lists(*(r.get("benefits", []) for r in results))
+    cons = _merge_lists(*(r.get("concerns", []) for r in results))
+    notes = _merge_lists(*(r.get("notes", []) for r in results))
+
+    # Agreement bonus from actives overlap (strongest signal)
+    if len(results) >= 2:
+        j = _jaccard(results[0].get("actives", []), results[1].get("actives", []))
+    else:
+        j = 0.0
+
+    base_conf = sum(float(r.get("confidence", 0.6)) for r in results) / len(results)
+    final_conf = max(0.0, min(1.0, base_conf * (0.9 + 0.2 * j)))  # + up to +20% w/ agreement
+
+    return {
+        "benefits": bens,
+        "actives": acts,
+        "concerns": cons,
+        "notes": notes,
+        "confidence": final_conf,
+    }
 
 # ---------------- utilities ----------------
 def _derive_free_from(notes: List[str]) -> List[str]:
@@ -317,27 +399,30 @@ def _derive_free_from(notes: List[str]) -> List[str]:
 def norm_list(xs) -> list[str]:
     return [str(s).strip() for s in (xs or []) if str(s).strip()]
 
+# ---------------- Output schema ----------------
+class LabelLLMOut(Schema):
+    raw_text: str
+    benefits: List[str]
+    actives: List[str]
+    concerns: List[str]
+    notes: List[str]
+    confidence: float
+
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
-    pil = _load_pil(file)
-    raw = _ocr_text(pil)
-    text = clean_ocr_text(raw)
- 
-    llm = _call_gemini_for_json(text) or _fallback_extract(text)
+    text = _ocr_text_from_file(file)
+    llm = _call_gemini_ensemble(text) or _fallback_extract(text)
 
-    benefits = norm_list(llm.get("benefits"))
-    actives  = sorted(set(norm_list(llm.get("actives"))))
-    concerns = sorted(set(norm_list(llm.get("concerns"))))
-    notes    = norm_list(llm.get("notes"))[:6]
-    free_from = _derive_free_from(notes)
-
+    def norm_list(xs): return [str(s).strip() for s in xs if str(s).strip()]
     return LabelLLMOut(
         raw_text=text,
-        benefits=benefits[:8],
-        actives=actives,
-        concerns=concerns,
-        notes=notes,
-        confidence=float(llm.get("confidence", 0.5)),
-        free_from=free_from,
+        benefits=norm_list(llm.get("benefits", []))[:8],
+        actives=sorted(set(norm_list(llm.get("actives", [])))),
+        concerns=sorted(set(norm_list(llm.get("concerns", [])))),
+        notes=norm_list(llm.get("notes", []))[:6],
+        confidence=float(
+            llm.get("confidence") if llm.get("confidence") is not None
+            else llm.get("ai_confidence", 0.5)
+        ),
     )
