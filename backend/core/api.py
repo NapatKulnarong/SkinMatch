@@ -61,10 +61,13 @@ logger = logging.getLogger(__name__)
 from .api_scan import scan_router
 from .api_scan_text import scan_text_router
 
+if genai:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
-api.add_router("/scan", scan_text_router)
+api.add_router("/scan-text", scan_text_router)
 User = get_user_model()
 
 if genai:
