@@ -5,13 +5,68 @@ from django.db import migrations, models
 from django.db import connection
 
 
+def migrate_old_fields_to_content(apps, schema_editor):
+    """
+    Migrate data from old fields (heading, text) to new content field.
+    Combines heading and text into markdown content.
+    """
+    with connection.cursor() as cursor:
+        # Check if old fields exist (they should at this point)
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='core_skinfactcontentblock' 
+            AND column_name IN ('heading', 'text')
+        """)
+        existing_columns = [row[0] for row in cursor.fetchall()]
+        has_heading = 'heading' in existing_columns
+        has_text = 'text' in existing_columns
+        
+        if not (has_heading or has_text):
+            return  # Old fields don't exist, nothing to migrate
+        
+        # Migrate data: combine heading and text into content
+        if has_heading and has_text:
+            cursor.execute("""
+                UPDATE core_skinfactcontentblock
+                SET content = CASE
+                    WHEN heading IS NOT NULL AND heading != '' AND text IS NOT NULL AND text != '' THEN heading || E'\n\n' || text
+                    WHEN heading IS NOT NULL AND heading != '' THEN heading
+                    WHEN text IS NOT NULL AND text != '' THEN text
+                    ELSE COALESCE(content, '')
+                END
+                WHERE (heading IS NOT NULL AND heading != '') OR (text IS NOT NULL AND text != '')
+            """)
+        elif has_heading:
+            cursor.execute("""
+                UPDATE core_skinfactcontentblock
+                SET content = COALESCE(heading, content, '')
+                WHERE heading IS NOT NULL AND heading != ''
+            """)
+        elif has_text:
+            cursor.execute("""
+                UPDATE core_skinfactcontentblock
+                SET content = COALESCE(text, content, '')
+                WHERE text IS NOT NULL AND text != ''
+            """)
+
+
 def enforce_either_or_logic(apps, schema_editor):
     """
     Enforce either/or logic: blocks should have either content OR image, not both.
     If both exist, prioritize image (clear content).
     """
-    # Use raw SQL to avoid ORM issues with model state
     with connection.cursor() as cursor:
+        # Check if content column exists
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='core_skinfactcontentblock' 
+            AND column_name='content'
+        """)
+        if cursor.fetchone() is None:
+            return  # Content column doesn't exist, skip
+        
         # Get all blocks with both content and image
         cursor.execute("""
             SELECT id 
@@ -44,50 +99,48 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Enforce either/or data logic
+        # Step 1: Add content field to database with default empty string
+        migrations.AddField(
+            model_name='skinfactcontentblock',
+            name='content',
+            field=models.TextField(blank=True, default='', help_text='Markdown content for text blocks. Supports headings (# ## ###), lists, links, bold (**text**), italic (*text*). Leave empty if this is an image block.'),
+        ),
+        # Step 2: Migrate data from old fields to content (if old fields exist)
+        migrations.RunPython(migrate_old_fields_to_content, reverse_migrate_blocks),
+        # Step 3: Remove old fields from database
+        migrations.RemoveField(
+            model_name='skinfactcontentblock',
+            name='block_type',
+        ),
+        migrations.RemoveField(
+            model_name='skinfactcontentblock',
+            name='heading',
+        ),
+        migrations.RemoveField(
+            model_name='skinfactcontentblock',
+            name='text',
+        ),
+        # Step 4: Enforce either/or data logic
         migrations.RunPython(enforce_either_or_logic, reverse_migrate_blocks),
-        # Update field definitions to match the model (state operations only)
-        # These don't change the database, just update Django's migration state
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                # No database operations needed - schema is already correct
-            ],
-            state_operations=[
-                # Add content field to migration state if it doesn't exist
-                migrations.AddField(
-                    model_name='skinfactcontentblock',
-                    name='content',
-                    field=models.TextField(blank=True, help_text='Markdown content for text blocks. Supports headings (# ## ###), lists, links, bold (**text**), italic (*text*). Leave empty if this is an image block.'),
-                ),
-                # Remove old fields from migration state
-                migrations.RemoveField(
-                    model_name='skinfactcontentblock',
-                    name='block_type',
-                ),
-                migrations.RemoveField(
-                    model_name='skinfactcontentblock',
-                    name='heading',
-                ),
-                migrations.RemoveField(
-                    model_name='skinfactcontentblock',
-                    name='text',
-                ),
-                # Update field definitions
-                migrations.AlterField(
-                    model_name='skinfactcontentblock',
-                    name='image',
-                    field=models.ImageField(blank=True, help_text='Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block.', null=True, upload_to='facts/blocks/', validators=[django.core.validators.FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp', 'avif'])]),
-                ),
-                migrations.AlterField(
-                    model_name='skinfactcontentblock',
-                    name='image_alt',
-                    field=models.CharField(blank=True, help_text='Required if image is provided. Describe the image for accessibility.', max_length=160),
-                ),
-                migrations.AlterField(
-                    model_name='skinfacttopic',
-                    name='section',
-                    field=models.CharField(choices=[('knowledge', 'Skin Knowledge'), ('trending', 'Trending Skincare'), ('fact_check', 'Fact Check'), ('ingredient_spotlight', 'Ingredient Spotlight')], max_length=20),
-                ),
-            ],
+        # Step 5: Update field definitions to match model
+        migrations.AlterField(
+            model_name='skinfactcontentblock',
+            name='content',
+            field=models.TextField(blank=True, help_text='Markdown content for text blocks. Supports headings (# ## ###), lists, links, bold (**text**), italic (*text*). Leave empty if this is an image block.'),
+        ),
+        migrations.AlterField(
+            model_name='skinfactcontentblock',
+            name='image',
+            field=models.ImageField(blank=True, help_text='Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block.', null=True, upload_to='facts/blocks/', validators=[django.core.validators.FileExtensionValidator(['jpg', 'jpeg', 'png', 'webp', 'avif'])]),
+        ),
+        migrations.AlterField(
+            model_name='skinfactcontentblock',
+            name='image_alt',
+            field=models.CharField(blank=True, help_text='Required if image is provided. Describe the image for accessibility.', max_length=160),
+        ),
+        migrations.AlterField(
+            model_name='skinfacttopic',
+            name='section',
+            field=models.CharField(choices=[('knowledge', 'Skin Knowledge'), ('trending', 'Trending Skincare'), ('fact_check', 'Fact Check'), ('ingredient_spotlight', 'Ingredient Spotlight')], max_length=20),
         ),
     ]

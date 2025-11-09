@@ -42,9 +42,7 @@ def reverse_migrate_blocks(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        # Migration 0015 was already applied but file was deleted
-        # The database already has: content field added, old fields removed
-        ('core', '0014_add_webp_avif_support_to_fact_images'),
+        ('core', '0015_simplify_content_block_either_or'),
     ]
 
     operations = [
