@@ -368,9 +368,8 @@ export const topicDetailMock: FactTopicDetail = {
   contentBlocks: [
     {
       order: 1,
-      blockType: "heading",
-      heading: "The Theory Behind Sheet Masks",
-      text:
+      content:
+        "## The Theory Behind Sheet Masks\n\n" +
         "Sheet masks create a temporary occlusive seal to help humectants and emollients penetrate.\n\n" +
         "They work best as a hydration boost rather than a full routine replacement.",
       imageUrl: "/img/facts_img/sheet_mask.jpg",
@@ -378,9 +377,8 @@ export const topicDetailMock: FactTopicDetail = {
     },
     {
       order: 2,
-      blockType: "text",
-      heading: "How Dermatologists Use Them",
-      text:
+      content:
+        "## How Dermatologists Use Them\n\n" +
         "Dermatologists recommend sheet masks for short-term radiance, calming flare ups, " +
         "or soothing barrier damage after active treatments.",
       imageUrl: null,

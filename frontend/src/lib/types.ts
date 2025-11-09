@@ -2,9 +2,7 @@ export type SkinFactSection = "knowledge" | "trending" | "fact_check" | "ingredi
 
 export type FactContentBlock = {
   order: number;
-  blockType: "heading" | "text" | "paragraph" | "image";
-  heading: string | null;
-  text: string | null;
+  content: string | null; // Markdown content for text blocks
   imageUrl: string | null;
   imageAlt: string | null;
 };

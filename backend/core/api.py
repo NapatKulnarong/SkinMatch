@@ -194,12 +194,11 @@ class FactTopicSummary(Schema):
     view_count: int
 
 class FactContentBlockOut(Schema):
+    """Content block - either text (content) OR image"""
     order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
+    content: Optional[str] = None  # Markdown content (if text block)
+    image_url: Optional[str] = None  # Image URL (if image block)
+    image_alt: Optional[str] = None  # Image alt text (if image block)
 
 
 class FactTopicDetailOut(FactTopicSummary):
@@ -803,12 +802,11 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
 
 
 def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
+    """Serialize a content block - either text or image"""
     return FactContentBlockOut(
         order=block.order,
-        block_type=block.block_type,
-        heading=block.heading or None,
-        text=block.text or None,
-        image_url=_resolve_media_url(request, block.image),
+        content=block.content or None,
+        image_url=_resolve_media_url(request, block.image) if block.image else None,
         image_alt=block.image_alt or None,
     )
 
