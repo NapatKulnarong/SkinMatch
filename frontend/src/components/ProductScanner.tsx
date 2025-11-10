@@ -125,6 +125,17 @@ export function ProductScanner() {
 
   const isUploading = status === "uploading";
 
+  const handleReset = useCallback(() => {
+    setSelectedFile(null);
+    setManualText("");
+    setResult(null);
+    setError(null);
+    setStatus("idle");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }, []);
+
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
       <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
@@ -139,17 +150,18 @@ export function ProductScanner() {
         <div className="mx-auto w-full max-w-7xl text-center space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-center gap-3">
-              <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#a85b5b]" />
-              <h2 className="text-xl sm:text-2xl font-bold text-[#6b3e3e]">
+              <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8C1007]" />
+              <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007]">
                 Instant Product Scanner
               </h2>
-              <div className="inline-flex items-center gap-2 rounded-full border-2 border-[#a82b36] bg-[#ffcdc3] px-3 py-1">
+              
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border-2 border-[#a82b36] bg-[#ffcdc3] px-3 py-1">
                 <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#a82b36]" />
                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#a82b36]">
                   BETA
                 </span>
               </div>
-            </div>
             
             <p className="text-sm sm:text-base text-[#6b3e3e]/90 max-w-2xl mx-auto">
               Upload a clear photo of the ingredient list. We will read the label, extract the key
@@ -213,23 +225,23 @@ export function ProductScanner() {
               <p>Analyzing ingredients… sit tight!</p>
             </div>
           )}
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-            <button
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <button
               type="button"
-              onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2.5 text-sm font-semibold text-[#5a4230] shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+              onClick={handleReset}
+              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#ffbd95] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)]"
             >
-              Choose Image
+              Reset
             </button>
             <button
               type="button"
               onClick={handleScan}
               disabled={isUploading}
-              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#D25D5D] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#FFFCFB] px-6 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isUploading ? "Analyzing..." : "Scan Product"}
             </button>
+            
           </div>
 
           {result && infoLists && (
