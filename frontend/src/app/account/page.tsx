@@ -22,7 +22,6 @@ import {
   deleteQuizHistory,
   fetchProductDetail,
   type QuizHistoryItem,
-  type QuizRecommendation,
   type ProductDetail,
 } from "@/lib/api.quiz";
 
@@ -192,8 +191,11 @@ function AccountContent() {
                     key={avatarSrc}
                     src={avatarError ? "/img/avatar_placeholder.png" : avatarSrc}
                     alt={displayName}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
                     onError={() => setAvatarError(true)}
+                    sizes="240px"
+                    unoptimized
                   />
                 </div>
               </div>

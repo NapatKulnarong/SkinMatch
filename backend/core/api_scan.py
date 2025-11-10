@@ -2,11 +2,21 @@ from ninja import Router, File, Schema
 from ninja.files import UploadedFile
 from PIL import Image
 from ninja.errors import HttpError
-from pyzbar.pyzbar import decode
 from io import BytesIO
 from quiz.models import Product
 
 scan_router = Router(tags=["Scan"])
+
+# Lazy import pyzbar to avoid ImportError when zbar library is not installed
+def get_decode():
+    try:
+        from pyzbar.pyzbar import decode
+        return decode
+    except ImportError:
+        raise ImportError(
+            "pyzbar requires the zbar system library. "
+            "On macOS, install it with: brew install zbar"
+        )
 
 class ScanOut(Schema):
     ok: bool
@@ -18,6 +28,7 @@ class ScanOut(Schema):
 def scan_barcode(request, file: UploadedFile = File(...)):
     # Decode
     try:
+        decode = get_decode()
         image = Image.open(BytesIO(file.read()))
         decoded_objects = decode(image)
         if not decoded_objects:
@@ -32,6 +43,7 @@ def scan_barcode(request, file: UploadedFile = File(...)):
 def scan_and_resolve(request, file: UploadedFile = File(...)):
     # Decode and resolve in database
     try:
+        decode = get_decode()
         image = Image.open(BytesIO(file.read()))
         decoded_objects = decode(image)
         if not decoded_objects:

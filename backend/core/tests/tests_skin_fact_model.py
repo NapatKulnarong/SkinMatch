@@ -65,8 +65,7 @@ class SkinFactModelTest(TestCase):
         )
         blk = SkinFactContentBlock(
             topic=topic,
-            block_type=SkinFactContentBlock.BlockType.TEXT,
-            text="",
+            content="",
         )
         with self.assertRaises(ValidationError):
             blk.full_clean()
@@ -77,11 +76,9 @@ class SkinFactModelTest(TestCase):
         )
         blk = SkinFactContentBlock(
             topic=topic,
-            block_type=SkinFactContentBlock.BlockType.TEXT,
-            text="Retinol helps with cell turnover.",
+            image=fake_jpg("retinol.jpg"),
+            image_alt="",
         )
-
-        blk.image = fake_jpg("retinol.jpg")
         with self.assertRaises(ValidationError):
             blk.full_clean()
 

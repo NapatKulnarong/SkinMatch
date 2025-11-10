@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { resetPassword } from "@/lib/api.auth";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 
 type ResetStatus = "idle" | "submitting" | "success" | "error";
 
@@ -61,15 +62,16 @@ function ResetPasswordContent() {
       return;
     }
 
-    if (password.length < 8) {
-      setStatus("error");
-      setError("Password must be at least 8 characters long.");
-      return;
-    }
-
     if (password !== confirm) {
       setStatus("error");
       setError("Passwords do not match.");
+      return;
+    }
+    
+    // Backend will validate password policy
+    if (!password) {
+      setStatus("error");
+      setError("Please enter a password.");
       return;
     }
 
@@ -132,6 +134,10 @@ function ResetPasswordContent() {
                   className="w-full rounded-lg border-2 border-black px-3 py-2 text-black focus:outline-none"
                   placeholder="••••••••"
                   disabled={disabled}
+                />
+                <PasswordRequirements
+                  password={password}
+                  className="mt-2"
                 />
               </div>
 

@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 
 export default function UnsubscribePage() {
+  return (
+    <Suspense fallback={<UnsubscribeFallback />}>
+      <UnsubscribeContent />
+    </Suspense>
+  );
+}
+
+function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -42,6 +50,7 @@ export default function UnsubscribePage() {
         setMessage(data.message || "Something went wrong. Please try again.");
       }
     } catch (error) {
+      console.error("Failed to unsubscribe from newsletter", error);
       setStatus("error");
       setMessage("Unable to process your request. Please try again later.");
     }
@@ -69,7 +78,7 @@ export default function UnsubscribePage() {
                 {message || "You have been successfully unsubscribed from SkinMatch weekly skincare tips."}
               </p>
               <p className="text-[#3c4c3f] text-sm">
-                You will no longer receive our weekly emails. We're sorry to see you go!
+                You will no longer receive our weekly emails. We&apos;re sorry to see you go!
               </p>
               <button
                 onClick={() => router.push("/")}
@@ -130,3 +139,13 @@ export default function UnsubscribePage() {
   );
 }
 
+function UnsubscribeFallback() {
+  return (
+    <div className="min-h-screen w-full bg-[#f8cc8c] flex items-center justify-center">
+      <div className="rounded-3xl border-2 border-black bg-white px-8 py-6 text-center shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7C6DB1] mx-auto mb-4" />
+        <p className="text-base font-semibold text-gray-800">Loading unsubscribe options…</p>
+      </div>
+    </div>
+  );
+}

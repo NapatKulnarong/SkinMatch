@@ -61,10 +61,13 @@ logger = logging.getLogger(__name__)
 from .api_scan import scan_router
 from .api_scan_text import scan_text_router
 
+if genai:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 api = NinjaAPI()
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
-api.add_router("/scan", scan_text_router)
+api.add_router("/scan-text", scan_text_router)
 User = get_user_model()
 
 if genai:
@@ -80,13 +83,6 @@ class SignUpIn(Schema):
     confirm_password: str
     date_of_birth: str | None = None # 'YYYY-MM-DD'
     gender: str | None = None #'male'|'female'|'prefer_not'
-
-    @field_validator("password")
-    @classmethod
-    def strong(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
 
 class SignUpOut(Schema):
     ok: bool
@@ -194,12 +190,11 @@ class FactTopicSummary(Schema):
     view_count: int
 
 class FactContentBlockOut(Schema):
+    """Content block - either text (content) OR image"""
     order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
+    content: Optional[str] = None  # Markdown content (if text block)
+    image_url: Optional[str] = None  # Image URL (if image block)
+    image_alt: Optional[str] = None  # Image alt text (if image block)
 
 
 class FactTopicDetailOut(FactTopicSummary):
@@ -714,6 +709,21 @@ def signup(request, payload: SignUpIn):
     if User.objects.filter(email__iexact=str(payload.email)).exists():
         return {"ok": False, "message": "Email already in use"}
     
+    # Validate password using Django's password validators
+    # Create a temporary user object for validation (username/email similarity checks)
+    temp_user = User(
+        username=payload.username,
+        email=str(payload.email),
+        first_name=payload.first_name.strip(),
+        last_name=payload.last_name.strip(),
+    )
+    try:
+        validate_password(payload.password, user=temp_user)
+    except ValidationError as exc:
+        # Join all validation error messages
+        error_message = " ".join(exc.messages)
+        return {"ok": False, "message": error_message}
+    
     # create user
     try:
         user = User.objects.create_user(
@@ -1007,12 +1017,11 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
 
 
 def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
+    """Serialize a content block - either text or image"""
     return FactContentBlockOut(
         order=block.order,
-        block_type=block.block_type,
-        heading=block.heading or None,
-        text=block.text or None,
-        image_url=_resolve_media_url(request, block.image),
+        content=block.content or None,
+        image_url=_resolve_media_url(request, block.image) if block.image else None,
         image_alt=block.image_alt or None,
     )
 

@@ -17,6 +17,7 @@ import {
   type StoredProfile,
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
 
@@ -249,12 +250,15 @@ function LoginContent() {
     event.preventDefault();
     setSignupError(null);
 
-    if (signup.password.length < 8) {
-      setSignupError("Password must be at least 8 characters.");
-      return;
-    }
+    // Basic client-side validation
     if (signup.password !== signup.confirmPassword) {
       setSignupError("Passwords do not match.");
+      return;
+    }
+    
+    // Backend will validate password policy, but we do a basic check for UX
+    if (!signup.password) {
+      setSignupError("Please enter a password.");
       return;
     }
 
@@ -580,7 +584,7 @@ function LoginContent() {
                   />
                 </Field>
 
-                <Field label="Password" hint="(at least 8 characters)" colSpan={2}>
+                <Field label="Password" colSpan={2}>
                   <input
                     type="password"
                     name="password"
@@ -588,6 +592,10 @@ function LoginContent() {
                     onChange={onSignupChange}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                     placeholder="••••••••"
+                  />
+                  <PasswordRequirements
+                    password={signup.password}
+                    className="mt-2"
                   />
                 </Field>
 
