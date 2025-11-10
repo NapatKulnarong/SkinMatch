@@ -424,7 +424,7 @@ function LoginContent() {
           <>
           <div className="p-5 sm:p-7">
               <h2 className="text-3xl font-extrabold text-[#3B2F4A]">
-                Join our <span className="text-[#3B2F4A]">MatchClub</span>
+                Join <span className="text-[#3B2F4A]">MatchClub</span>
               </h2>
 
               <ul className="mt-4 text-gray-700 font-semibold text-sm sm:text-base">
@@ -434,11 +434,15 @@ function LoginContent() {
                 </li>
                 <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Read &amp; write reviews on your product matches</span>
+                  <span>Save your skincare wish lists</span>
+                </li>
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
+                  <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
+                  <span>Read &amp; write reviews on your matches</span>
                 </li>
                 <li className="pt-3 pb-1 flex gap-3 items-start">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Be the first to get updates about the skincare industry</span>
+                  <span>Get the latest updates on the skincare industry.</span>
                 </li>
               </ul>
             </div>

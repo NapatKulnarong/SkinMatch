@@ -166,11 +166,11 @@ function AccountContent() {
   return (
     <>
       <main className="min-h-screen bg-[#d3cbe0]">
-      <PageContainer className="pt-28 pb-16 lg:px-8">
+      <PageContainer className="pt-38 sm:pt-28 pb-16 lg:px-8">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Account</h1>
-          <p className="text-base text-gray-700">Manage your profile and view your skincare journey</p>
+          <p className="hidden sm:block text-base text-gray-700">Manage your profile and view your skincare journey</p>
         </div>
 
         {error && (
@@ -182,10 +182,10 @@ function AccountContent() {
 
         <section className="grid grid-cols-12 gap-6">
           {/* LEFT PROFILE CARD */}
-          <aside className="col-span-12 lg:col-span-3">
-            <div className="flex flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
+          <aside className="col-span-12 lg:col-span-3 -mt-4 sm:mt-0">
+            <div className="flex flex-row items-start gap-4 lg:flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
               {/* Avatar */}
-              <div className="relative mx-auto w-[240px] h-[240px] flex-shrink-0">
+              <div className="relative w-24 h-24 lg:w-[240px] lg:h-[240px] flex-shrink-0">
                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -198,40 +198,42 @@ function AccountContent() {
                 </div>
               </div>
 
-              {/* Profile Info */}
-              <div className="mt-auto space-y-2 text-left flex-shrink-0">
-                <h2 className="text-2xl font-extrabold leading-tight text-gray-900">
-                  {displayName}
-                </h2>
-                {profile?.username && (
-                  <p className="text-base font-semibold text-[#7C6DB1]">
-                    {profile.username}
-                  </p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className=" pt-6 flex flex-col gap-3 flex-shrink-0">
-                <Link
-                  href="/account/settings"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-3 text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Profile Settings
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#e8dcd4] px-5 py-3 text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Logout
-                </button>
+              {/* Right: Name + Buttons (on mobile) */}
+              <div className="flex flex-col lg:mt-auto flex-1 w-full">
+                {/* Profile Info */}
+                <div className="space-y-1 text-left">
+                  <h2 className="text-lg lg:text-2xl font-extrabold leading-tight text-gray-900">
+                    {displayName}
+                  </h2>
+                  {profile?.username && (
+                    <p className="text-xs lg:text-base font-semibold text-[#7C6DB1]">
+                      {profile.username}
+                    </p>
+                  )}
+                </div>
+                {/* Action Buttons */}
+                <div className="pt-3 lg:pt-6 flex flex-row lg:flex-col gap-2 lg:gap-3 w-full">
+                  <Link
+                    href="/account/settings"
+                    className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 lg:py-3 text-xs lg:text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#e8dcd4] px-4 py-2 lg:py-3 text-xs lg:text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
           </aside>
@@ -239,7 +241,7 @@ function AccountContent() {
           {/* RIGHT: MATCH HISTORY WITH MASCOT */}
           <div className="col-span-12 lg:col-span-9 relative">
             {/* Matchy Mascot - Positioned on top center of the Match History box */}
-            <div className="absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
+            <div className="hidden sm:block absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
               <Image
                 src="/img/mascot/matchy_hourglass.png"
                 alt="Matchy mascot"
@@ -256,7 +258,7 @@ function AccountContent() {
           {/* SECOND ROW - Wishlist */}
           <div className="col-span-12 lg:col-span-12 relative">
             <WishlistPanel token={authToken} />
-            <div className="absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
+            <div className="hidden sm:block absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
               <Image
                 src="/img/mascot/matchy_heart.png"
                 alt="Matchy mascot"
@@ -304,7 +306,7 @@ function Panel({
         {headerAction}
       </header>
       <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-hidden px-6 pb-6 pt-4">
+      <div className="flex-1 overflow-visible px-6 pb-6 pt-4">
           {children ? (
             <div className="h-full">{children}</div>
           ) : (
@@ -498,13 +500,13 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
         </button>
       }
     >
-      <div className="h-full overflow-y-auto pr-2">
+      <div className="h-full overflow-y-auto pr-[8px]">
         {actionError && (
           <div className="mb-4 rounded-2xl border-2 border-[#f0c0c0] bg-[#fbecec] px-4 py-3 text-sm font-semibold text-[#8b4949]">
             {actionError}
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mt-4 mr-1">
+        <div className="grid grid-cols-2 md:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-5 mt-3 sm:mt-4 mr-1">
           {visibleHistory.map((item, index) => {
             const key = item.sessionId ?? item.profileId ?? `${item.completedAt}-${index}`;
             const completedDate = new Date(item.completedAt);
@@ -604,21 +606,21 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                 <div key={key} className="relative">
                   <Link
                     href={profileLink}
-                    className={`group relative rounded-3xl border-2 ${style.border} bg-gradient-to-br ${style.gradient} p-4 
-                              shadow-[0_6px_0_rgba(0,0,0,0.15)] transition-all hover:-translate-y-2 hover:shadow-[0_10px_0_rgba(0,0,0,0.2)] 
+                    className={`group relative rounded-xl sm:rounded-3xl border-2 ${style.border} bg-gradient-to-br ${style.gradient} p-3 sm:p-4 
+                              shadow-[0_6px_0_rgba(0,0,0,0.15)] transition-all hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-[0_8px_0_rgba(0,0,0,0.18)] 
                               active:translate-y-0 active:shadow-[0_4px_0_rgba(0,0,0,0.12)] focus:outline-none focus-visible:ring-4 
-                              focus-visible:ring-[#7C6DB1]/40 flex flex-col block`}
+                              focus-visible:ring-[#7C6DB1]/40 flex flex-col block aspect-square sm:aspect-auto`}
                     prefetch
                   >
-                    <div className="mb-2 flex items-start justify-between">
+                    <div className="mb-1.5 sm:mb-2 flex items-start justify-between">
                       {/* Date badge */}
-                      <div className={`rounded-2xl border-2 ${style.badge} px-3 py-1.5 shadow-sm`}>
-                        <p className="text-xs font-black uppercase tracking-wider">
+                      <div className={`rounded-2xl border-2 ${style.badge} px-2.5 py-1.5 shadow-sm`}>
+                        <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider">
                           {dateLabel}
                         </p>
-                        <p className="text-[10px] font-semibold opacity-70 mt-0.5">{timeLabel}</p>
+                        <p className="text-[9px] sm:text-[10px] font-semibold opacity-70 mt-0.5">{timeLabel}</p>
                       </div>
-                      <div className={`rounded-full ${style.accent} p-2 shadow-sm transition-transform group-hover:translate-x-1 group-hover:scale-110`}>
+                      <div className={`hidden sm:block rounded-full ${style.accent} p-2 shadow-sm transition-transform group-hover:translate-x-1 group-hover:scale-110`}>
                         <svg 
                           className="h-4 w-4 text-white" 
                           fill="none" 
@@ -630,21 +632,21 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       </div>
                     </div>
 
-                    <h3 className="mb-3 text-xl font-black leading-tight text-gray-900 min-h-[3.5rem] line-clamp-2">
+                    <h3 className="mb-2 sm:mb-3 text-base sm:text-xl font-black leading-tight text-gray-900 min-h-[2.4rem] sm:min-h-[3.5rem] line-clamp-2">
                       {primary}
                     </h3>
 
                     {/* Budget section */}
-                    <div className="mb-1 h-[30px] flex items-center">
+                    <div className="mt-auto mb-0.5 sm:mb-1 h-[26px] sm:h-[30px] flex items-center">
                       {budgetLabel ? (
-                        <div className="inline-flex items-center gap-2 rounded-full border-2 border-black/10 bg-white/70 px-4 py-1.5 shadow-sm backdrop-blur-sm">
-                          <svg className="h-3.5 w-3.5 text-[#8b7d6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border-2 border-black/10 bg-white/70 px-3 sm:px-4 py-1.5 shadow-sm backdrop-blur-sm">
+                          <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#8b7d6b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-xs font-bold text-gray-700">{budgetLabel}</span>
+                          <span className="text-[10px] sm:text-xs font-bold text-gray-700">{budgetLabel}</span>
                         </div>
                       ) : (
-                        <div className="h-[30px]"></div>
+                        <div className="h-[26px] sm:h-[30px]"></div>
                       )}
                     </div>
                   </Link>
@@ -656,7 +658,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                         void handleDelete(item, key);
                       }}
                       disabled={isDeleting}
-                      className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                      className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                         isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                       }`}
                       aria-label="Delete match"
@@ -709,7 +711,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       void handleDelete(item, key);
                     }}
                     disabled={isDeleting}
-                    className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                    className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                       isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                     }`}
                     aria-label="Delete match"
@@ -937,46 +939,48 @@ function WishlistPanel({ token }: { token: string | null }) {
         </button>
       }
     >
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pr-2">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pr-2 items-stretch">
   {items.map((p) => (
-    <div key={p.id} className="relative">
-      <div className="rounded-2xl border-2 border-black/10 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="aspect-[4/3] bg-[#f7f5ff] border-b-2 border-black/5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {p.image ? (
-                <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
-              )}
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
-                  <h4 className="text-base font-extrabold text-gray-900 line-clamp-2">{p.name}</h4>
-                </div>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
-              </div>
-              <div className="mt-3 flex items-center gap-1.5 border-t border-black/10 pt-3">
-                <button
-                  type="button"
-                  onClick={() => handleShowProductDetails(p)}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
-                >
-                  Details
-                </button>
-                {p.product_url && (
-                  <a
-                    href={p.product_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
-                  >
-                    Shop
-                  </a>
+    <div key={p.id} className="relative h-full">
+      <div className="h-full flex flex-col rounded-2xl border-2 border-black/80 sm:border-black/80 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
+            <div className="flex sm:block h-36 sm:h-auto relative">
+              <div className="w-32 h-full sm:w-auto sm:h-auto sm:aspect-[4/3] bg-[#f7f5ff] border-r-2 border-black/80 sm:border-r-0 sm:border-b-2 z-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {p.image ? (
+                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
                 )}
+              </div>
+              <div className="p-3 sm:p-4 flex-1 relative pb-14 sm:pb-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
+                    <h4 className="text-sm sm:text-base font-extrabold text-gray-900 line-clamp-2">{p.name}</h4>
+                  </div>
+                </div>
+                <div className="mt-1 sm:mt-2 flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
+                </div>
+                <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:border-t border-black/10 pt-2 sm:pt-3 sm:static absolute bottom-3 right-3 z-10 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleShowProductDetails(p)}
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                  >
+                    Details
+                  </button>
+                  {p.product_url && (
+                    <a
+                      href={p.product_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    >
+                      Shop
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             {editMode && (
@@ -1100,7 +1104,8 @@ function WishlistProductDetailModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-[#1f2d26] shadow-[0_3px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:bg-[#f7f7f7] hover:shadow-[0_4px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-black bg-white text-[#1f2d26] shadow-[0_3px_0_rgba(0,0,0,0.18)] 
+                            transition hover:-translate-y-0.5 hover:bg-[#f7f7f7] hover:shadow-[0_4px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   aria-label="Close product details"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -1135,7 +1140,9 @@ function WishlistProductDetailModal({
                   href={affiliateUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#B9375D] px-4 py-2 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#B9375D] px-4 py-2 text-sm 
+                            font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] 
+                            hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
                 >
                   Shop with affiliate
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -1339,7 +1346,7 @@ function AccountFallback() {
 function formatBudgetLabel(value: string | null) {
   if (!value) return "Not provided";
   if (value === "mid") return "Mid-range";
-  if (value === "premium") return "Premium / Luxury";
+  if (value === "premium") return "Premium";
   return capitalizeLabel(value);
 }
 
