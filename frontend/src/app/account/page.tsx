@@ -185,9 +185,8 @@ function AccountContent() {
             <div className="flex flex-row items-start gap-4 lg:flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
               {/* Avatar */}
               <div className="relative w-24 h-24 lg:w-[240px] lg:h-[240px] flex-shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
+                  <Image
                     key={avatarSrc}
                     src={avatarError ? "/img/avatar_placeholder.png" : avatarSrc}
                     alt={displayName}
