@@ -7,12 +7,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
-import { GlobeAltIcon, CameraIcon } from "@heroicons/react/24/outline";
+import { GlobeAltIcon } from "@heroicons/react/24/outline";
 
 import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
+import { ProductScanner } from "@/components/ProductScanner";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
 import { subscribeToNewsletter } from "@/lib/api.newsletter";
@@ -537,13 +538,7 @@ export default function HomePage() {
                 <GlobeAltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#4a6b47]" />
                 <h2 className="text-xl sm:text-2xl font-bold text-[#2d4a2b]">Ingredient Quick Search</h2>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/30 bg-[#4a6b47]/10 px-3 py-1">
-                <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a6b47]" />
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#4a6b47]">
-                  BETA
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-[#2d4a2b]/70">
+              <p className="text-sm sm:text-base text-[#2d4a2b]/70">
                 Discover what&apos;s inside your favorite products
               </p>
             </div>
@@ -648,49 +643,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Product Scanner Teaser */}
-        <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-dashed border-black bg-gradient-to-br from-[#f9e8e8] to-[#f5d4d4] shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-          {/* Mascot Image - positioned absolutely to overflow the box */}
-          <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-59 md:-right-13 z-10 pointer-events-none">
-            <Image
-              src="/img/mascot/matchy_scan.png"
-              alt="Matchy with scanner"
-              width={180}
-              height={180}
-              className="h-auto w-[100px] sm:w-[140px] md:w-[330px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
-            />
-        </div>
-
-          <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-8 sm:pt-12">
-            <div className="mx-auto max-w-3xl text-center space-y-4 sm:space-y-">
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-3">
-                  <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#a85b5b]" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#6b3e3e]">
-                    Instant Product Scanner
-                  </h2>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#a85b5b]/30 bg-[#a85b5b]/10 px-3 py-1">
-                  <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#a85b5b]" />
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#a85b5b]">
-                    Coming Soon
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base text-[#6b3e3e]/70 max-w-xl mx-auto">
-                  Upload a product photo to analyze ingredients instantly and get personalized safety ratings based on your skin profile.
-                </p>
-              </div>
-
-              <button
-                disabled
-                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-[#5a4230] opacity-50 cursor-not-allowed shadow-[0_4px_0_rgba(0,0,0,0.2)]"
-              >
-                <CameraIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                Scan Product
-              </button>
-            </div>
-          </div>
-        </section>
+        {/* Product Scanner */}
+        <ProductScanner />
 
         {/* Testimonials */}
         <section className="space-y-4 sm:space-y-6">

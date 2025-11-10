@@ -68,15 +68,23 @@ def _fallback_extract(text: str) -> dict:
         return re.search(p, t, flags=re.I) is not None
 
     actives: list[str] = []
-    if has(r"\bniacinamide\b"): actives.append("Niacinamide")
-    if has(r"\burea\b"): actives.append("Urea")
-    if has(r"saccharide\s+isomerate"): actives.append("Saccharide Isomerate")
-    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"): actives.append("Avena Sativa (Oat) Extract")
-    if has(r"\bceramide\b"): actives.append("Ceramide Complex")
-    if has(r"\bpanthenol\b"): actives.append("Panthenol")
-    if has(r"tocopheryl\s*acetate|vitamin\s*e"): actives.append("Tocopheryl Acetate")
-    if has(r"oryza\s+sativa.*bran\s*oil"): actives.append("Oryza Sativa (Rice) Bran Oil")
-    if has(r"aloe\s+barbadensis"): actives.append("Aloe Barbadensis Leaf Juice Powder")
+    def describe(name: str, description: str) -> str:
+        return f"{name}: {description}"
+
+    if has(r"\bniacinamide\b"): actives.append(describe("Niacinamide", "Vitamin B3 that improves tone, strengthens barrier and calms redness."))
+    if has(r"\burea\b"): actives.append(describe("Urea", "NMF humectant that draws water into skin and smooths texture."))
+    if has(r"saccharide\s+isomerate"): actives.append(describe("Saccharide Isomerate", "Plant-derived sugar complex that binds moisture for long-lasting hydration."))
+    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"): actives.append(describe("Avena Sativa (Oat) Extract", "Soothes irritation and reinforces skin barrier."))
+    if has(r"\bceramide\b"): actives.append(describe("Ceramide Complex", "Skin-identical lipids that patch up a weakened barrier."))
+    if has(r"\bpanthenol\b"): actives.append(describe("Panthenol", "Pro-Vitamin B5 that hydrates and speeds up barrier recovery."))
+    if has(r"tocopheryl\s*acetate|vitamin\s*e"): actives.append(describe("Tocopheryl Acetate (Vitamin E)", "Antioxidant support that protects against free radicals."))
+    if has(r"oryza\s+sativa.*bran\s*oil"): actives.append(describe("Oryza Sativa (Rice) Bran Oil", "Nourishing oil rich in vitamin E and ferulic acid."))
+    if has(r"aloe\s+barbadensis"): actives.append(describe("Aloe Barbadensis Leaf Juice", "Calms irritation and replenishes moisture."))
+    if has(r"\bglycerin\b"): actives.append(describe("Glycerin", "Classic humectant that draws moisture from the air into skin."))
+    if has(r"centella|asiatica"): actives.append(describe("Centella Asiatica Extract", "Cica botanical that soothes and supports barrier repair."))
+    if has(r"hyaluronic\s+acid|sodium\s+hyaluronate"): actives.append(describe("Hyaluronic Acid", "Water-binding molecule that plumps and hydrates."))
+    if has(r"trehalose"): actives.append(describe("Trehalose", "Sugar humectant that protects cells from dehydration."))
+    if has(r"sorbitol"): actives.append(describe("Sorbitol", "Humectant that boosts moisture retention."))
 
     concerns: list[str] = []
     if has(r"\bfragrance\b|\bparfum\b"): concerns.append("Fragrance")
@@ -401,8 +409,35 @@ def _derive_free_from(notes: List[str]) -> List[str]:
             out.extend([t.strip() for t in toks if t.strip()])
     return sorted(set(out))
 
-def norm_list(xs) -> list[str]:
-    return [str(s).strip() for s in (xs or []) if str(s).strip()]
+def norm_list(values) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for value in values or []:
+        if isinstance(value, dict):
+            name = str(value.get("name", "")).strip()
+            desc = str(value.get("description", "")).strip()
+            if name and desc:
+                normalized = f"{name}: {desc}"
+            else:
+                normalized = name or desc
+        else:
+            normalized = str(value).strip()
+        key = normalized.lower()
+        if normalized and key not in seen:
+            seen.add(key)
+            out.append(normalized)
+    return out
+
+def _combine_lists(primary, fallback):
+    primary_norm = norm_list(primary)
+    fallback_norm = norm_list(fallback)
+    existing = {item.lower() for item in primary_norm}
+    combined = list(primary_norm)
+    for item in fallback_norm:
+        if item.lower() not in existing:
+            combined.append(item)
+            existing.add(item.lower())
+    return combined
 
 # ---------------- Output schema ----------------
 class LabelLLMOut(Schema):
@@ -413,24 +448,59 @@ class LabelLLMOut(Schema):
     notes: List[str]
     confidence: float
 
+class LabelTextIn(Schema):
+    text: str
+
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
     text = _ocr_text_from_file(file)
-    # llm = _call_gemini_ensemble(text) or _fallback_extract(text)
-    llm = _call_gemini_ensemble(text)
-    if not llm:
-        raise HttpError(503, "AI analyzer failed")
+    primary = _call_gemini_ensemble(text)
+    fallback = _fallback_extract(text)
+    combined = {
+        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits")),
+        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives")),
+        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns")),
+        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes")),
+    }
+    confidence = primary.get("confidence") if primary and primary.get("confidence") is not None else fallback.get("confidence", 0.55)
+    total_items = sum(len(combined[key]) for key in combined)
+    if total_items < 3:
+        raise HttpError(422, "We couldn't confidently interpret that label. Please try a clearer photo or paste the text manually.")
 
-    def norm_list(xs): return [str(s).strip() for s in xs if str(s).strip()]
     return LabelLLMOut(
         raw_text=text,
-        benefits=norm_list(llm.get("benefits", []))[:8],
-        actives=sorted(set(norm_list(llm.get("actives", [])))),
-        concerns=sorted(set(norm_list(llm.get("concerns", [])))),
-        notes=norm_list(llm.get("notes", []))[:6],
-        confidence=float(
-            llm.get("confidence") if llm.get("confidence") is not None
-            else llm.get("ai_confidence", 0.5)
-        ),
+        benefits=combined["benefits"][:8],
+        actives=combined["actives"],
+        concerns=combined["concerns"],
+        notes=combined["notes"][:6],
+        confidence=float(confidence),
+    )
+
+@scan_text_router.post("/label/analyze-text", response=LabelLLMOut)
+def analyze_label_text(request, payload: LabelTextIn):
+    text = payload.text.strip()
+    if not text:
+        raise HttpError(400, "Please provide ingredient text to analyze.")
+
+    primary = _call_gemini_ensemble(text)
+    fallback = _fallback_extract(text)
+    combined = {
+        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits")),
+        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives")),
+        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns")),
+        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes")),
+    }
+    confidence = primary.get("confidence") if primary and primary.get("confidence") is not None else fallback.get("confidence", 0.55)
+    total_items = sum(len(combined[key]) for key in combined)
+    if total_items < 3:
+        raise HttpError(422, "We couldn't confidently interpret that text. Please double-check the ingredient list and try again.")
+
+    return LabelLLMOut(
+        raw_text=text,
+        benefits=combined["benefits"][:8],
+        actives=combined["actives"],
+        concerns=combined["concerns"],
+        notes=combined["notes"][:6],
+        confidence=float(confidence),
     )
