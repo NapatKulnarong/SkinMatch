@@ -557,15 +557,22 @@ const mapStrategyNotes = (notes?: string[] | null): string[] =>
     })
     .filter((note) => Boolean(note.length));
 
-const mapFinalize = (raw: RawFinalize): QuizFinalize => ({
-  sessionId: raw.session_id,
-  completedAt: raw.completed_at,
-  requiresAuth: Boolean(raw.requires_auth),
-  profile: raw.profile ? mapProfile(raw.profile) : null,
-  summary: mapSummary(raw.result_summary?.summary ?? {}),
-  strategyNotes: mapStrategyNotes(raw.result_summary?.strategy_notes),
-  recommendations: (raw.result_summary?.recommendations ?? []).map(mapRecommendation),
-});
+const mapFinalize = (raw: RawFinalize): QuizFinalize => {
+  const resultSummary = raw.result_summary ?? {};
+  // Ensure we properly extract strategy_notes from the result_summary
+  // The backend returns: { summary: {...}, recommendations: [...], strategy_notes: [...] }
+  const strategyNotes = resultSummary.strategy_notes ?? null;
+  
+  return {
+    sessionId: raw.session_id,
+    completedAt: raw.completed_at,
+    requiresAuth: Boolean(raw.requires_auth),
+    profile: raw.profile ? mapProfile(raw.profile) : null,
+    summary: mapSummary(resultSummary.summary ?? {}),
+    strategyNotes: mapStrategyNotes(strategyNotes),
+    recommendations: (resultSummary.recommendations ?? []).map(mapRecommendation),
+  };
+};
 
 const mapHistoryItem = (raw: RawHistoryItem): QuizHistoryItem => {
   const summaryWrapper = raw.result_summary ?? null;
