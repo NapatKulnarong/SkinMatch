@@ -506,7 +506,7 @@ class LabelTextIn(Schema):
 def _generate_insights_with_retry(text: str, max_attempts: int = 3):
     """
     Try the LLM helper a few times. If it never produces a payload we trust,
-    return a 503 with heuristics attached so the client can show a fallback message.
+    return the heuristic fallback so the UI can still render something.
     """
     fallback_result = _fallback_extract(text)
     attempt = 0
@@ -525,19 +525,26 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
             }
             confidence = float(primary.get("confidence", fallback_result.get("confidence", 0.55)))
             if sum(len(values) for values in combined.values()) >= 3:
-                return combined, confidence
+                return combined, confidence, False
         else:
             # Primary helper returned nothing — no reason to keep retrying.
             break
         attempt += 1
 
-    raise HttpError(503, "Still analyzing — please retry in a few seconds.")
+    combined_fallback = {
+        "benefits": list(fallback_result.get("benefits", [])),
+        "actives": list(fallback_result.get("actives", [])),
+        "concerns": list(fallback_result.get("concerns", [])),
+        "notes": list(fallback_result.get("notes", [])),
+    }
+    confidence = float(fallback_result.get("confidence", 0.55))
+    return combined_fallback, confidence, True
 
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
     text = _ocr_text_from_file(file)
-    combined, confidence = _generate_insights_with_retry(text)
+    combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(
         raw_text=text,
@@ -554,7 +561,7 @@ def analyze_label_text(request, payload: LabelTextIn):
     if not text:
         raise HttpError(400, "Please provide ingredient text to analyze.")
 
-    combined, confidence = _generate_insights_with_retry(text)
+    combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(
         raw_text=text,

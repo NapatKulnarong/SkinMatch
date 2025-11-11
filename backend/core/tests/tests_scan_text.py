@@ -89,7 +89,7 @@ class ScanTextEndpointTests(TestCase):
     @patch("core.api_scan_text._fallback_extract")
     @patch("core.api_scan_text._call_gemini_ensemble")
     @patch("core.api_scan_text._ocr_text_from_file")
-    def test_returns_503_when_gemini_returns_none(
+    def test_returns_fallback_when_gemini_returns_none(
         self,
         mock_ocr,
         mock_gemini,
@@ -119,9 +119,20 @@ class ScanTextEndpointTests(TestCase):
             format="multipart",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
-        self.assertIn("Still analyzing", data.get("detail", ""))
+        self.assertEqual(
+            data["actives"],
+            [
+                "Niacinamide: Vitamin B3",
+                "Urea: Humectant",
+                "Ceramide Complex: Barrier helper",
+            ],
+        )
+        self.assertEqual(data["benefits"], ["Hydrating: Locks moisture in."])
+        self.assertEqual(data["concerns"], ["Fragrance: May irritate."])
+        self.assertEqual(data["notes"], ["Alcohol-free claim noted."])
+        self.assertGreaterEqual(data["confidence"], 0.55)
 
     @patch("core.api_scan_text._fallback_extract")
     @patch("core.api_scan_text._call_gemini_ensemble")
