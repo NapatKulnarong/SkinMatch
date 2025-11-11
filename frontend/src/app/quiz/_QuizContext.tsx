@@ -25,6 +25,7 @@ const SESSION_STORAGE_KEY = "skinmatch.quizSession";
 
 export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
 export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
+export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
 
 type QuizAnswerKey =
   | "primaryConcern"
@@ -324,6 +325,19 @@ export function QuizProvider({ children }: PropsWithChildren) {
         finalizedSessionRef.current = payload.sessionId;
         setResult(payload);
         setError(null);
+        
+        // Dispatch event to notify other components that quiz was completed
+        if (typeof window !== "undefined") {
+          try {
+            const event = new CustomEvent(QUIZ_COMPLETED_EVENT, {
+              detail: { sessionId: payload.sessionId },
+            });
+            window.dispatchEvent(event);
+          } catch (err) {
+            console.warn("Failed to dispatch quiz completed event", err);
+          }
+        }
+        
         return payload;
       })
       .catch((err) => {
