@@ -6,6 +6,7 @@ import type {
   SkinFactSection,
 } from "@/lib/types";
 import { getAuthToken } from "@/lib/auth-storage";
+import { resolveApiBase, resolveMediaUrl } from "@/lib/apiBase";
 
 type RawFactTopicSummary = {
   id: string;
@@ -33,36 +34,6 @@ type RawFactTopicDetail = RawFactTopicSummary & {
 
 const shouldUseMock = process.env.NEXT_PUBLIC_USE_MOCK === "1";
 
-const getApiBase = () => {
-  // what frontend calls in browser
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-
-  // what server calls (in container vs localhost)
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    // prefer internal URL first if provided
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    // if they gave us just "/api", turn it into http://backend:8000/api
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    // remove trailing slash
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  // client side: just strip trailing slash
-  return baseFromClient.replace(/\/+$/, "");
-};
-
 const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
   id: raw.id,
   slug: raw.slug,
@@ -70,7 +41,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
   subtitle: raw.subtitle ?? null,
   excerpt: raw.excerpt ?? null,
   section: raw.section,
-  heroImageUrl: raw.hero_image_url ?? null,
+  heroImageUrl: resolveMediaUrl(raw.hero_image_url),
   heroImageAlt: raw.hero_image_alt ?? null,
   viewCount: raw.view_count ?? 0,
 });
@@ -78,7 +49,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
 const mapBlock = (raw: RawFactContentBlock): FactContentBlock => ({
   order: raw.order,
   content: raw.content ?? null,
-  imageUrl: raw.image_url ?? null,
+  imageUrl: resolveMediaUrl(raw.image_url),
   imageAlt: raw.image_alt ?? null,
 });
 
@@ -104,7 +75,7 @@ export async function fetchPopularTopics(
     return popularTopicsMock.slice(0, limit);
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/facts/topics/popular?limit=${limit}`, {
     cache: "no-store",
   });
@@ -126,7 +97,7 @@ export async function fetchTopicsBySection(
     return sectionTopicsMock[section]?.slice(offset, offset + limit) ?? [];
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
@@ -154,7 +125,7 @@ export async function fetchFactTopicDetail(
     return null;
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/facts/topics/${slug}`, {
     cache: "no-store",
   });
@@ -195,7 +166,7 @@ export async function fetchRecommendedTopics(
     return deduped.slice(0, limit);
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const token = getAuthToken();
   const res = await fetch(`${base}/facts/topics/recommended?limit=${limit}`, {
     cache: "no-store",

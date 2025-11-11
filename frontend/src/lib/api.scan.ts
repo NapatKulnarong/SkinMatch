@@ -1,4 +1,4 @@
-// src/lib/api.scan.ts
+import { resolveApiBase } from "./apiBase";
 
 export type ScanLabelResult = {
   raw_text: string;
@@ -10,10 +10,7 @@ export type ScanLabelResult = {
 };
 
 export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
-  if (!base) {
-    throw new Error("API base URL is not configured.");
-  }
+  const base = resolveApiBase();
 
   const formData = new FormData();
   formData.append("file", file);
@@ -32,10 +29,7 @@ export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
 }
 
 export async function scanIngredientsText(text: string): Promise<ScanLabelResult> {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
-  if (!base) {
-    throw new Error("API base URL is not configured.");
-  }
+  const base = resolveApiBase();
 
   const response = await fetch(`${base}/scan-text/label/analyze-text`, {
     method: "POST",

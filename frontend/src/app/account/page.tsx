@@ -187,7 +187,7 @@ function AccountContent() {
               <div className="relative w-24 h-24 lg:w-[240px] lg:h-[240px] flex-shrink-0">
                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     key={avatarSrc}
                     src={avatarError ? "/img/avatar_placeholder.png" : avatarSrc}
                     alt={displayName}
@@ -972,9 +972,9 @@ function WishlistPanel({ token }: { token: string | null }) {
                   >
                     Details
                   </button>
-                  {p.product_url && (
+                  {p.productUrl && (
                     <a
-                      href={p.product_url}
+                      href={p.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
@@ -1087,7 +1087,7 @@ function WishlistProductDetailModal({
   const skinTypes = display?.skinTypes ?? [];
   const restrictions = display?.restrictions ?? [];
   const affiliateUrl =
-    display?.affiliateUrl ?? display?.productUrl ?? product.product_url ?? null;
+    display?.affiliateUrl ?? display?.productUrl ?? product.productUrl ?? null;
 
   const ingredientPreview = ingredientDetails.slice(0, 8);
 

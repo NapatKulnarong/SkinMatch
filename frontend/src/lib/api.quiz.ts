@@ -1,4 +1,5 @@
 import { getAuthToken } from "./auth-storage";
+import { resolveApiBase, resolveMediaUrl } from "./apiBase";
 
 type RawChoice = {
   id: string;
@@ -174,28 +175,6 @@ type RawProductDetail = {
   affiliate_url?: string | null;
 };
 
-const getApiBase = () => {
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  return baseFromClient.replace(/\/+$/, "");
-};
 
 export type QuizChoice = {
   id: string;
@@ -425,7 +404,7 @@ const mapRecommendation = (raw: RawRecommendation): QuizRecommendation => ({
   score: Number(raw.score),
   priceSnapshot: raw.price_snapshot ?? null,
   currency: raw.currency,
-  imageUrl: raw.image_url ?? null,
+  imageUrl: resolveMediaUrl(raw.image_url),
   productUrl: raw.product_url ?? null,
   ingredients: raw.ingredients ?? [],
   rationale: raw.rationale ?? {},
@@ -480,7 +459,7 @@ const mapProductDetail = (raw: RawProductDetail): ProductDetail => {
     currency: raw.currency,
     averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
     reviewCount: typeof raw.review_count === "number" ? raw.review_count : 0,
-    imageUrl: raw.image_url ?? null,
+    imageUrl: resolveMediaUrl(raw.image_url),
     productUrl: raw.product_url ?? null,
     affiliateUrl: raw.affiliate_url ?? raw.product_url ?? null,
   };
@@ -633,7 +612,7 @@ const withAuth = (headers: HeadersInit = {}): HeadersInit => {
 };
 
 export async function fetchQuizQuestions(): Promise<QuizQuestion[]> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/questions`, {
     cache: "no-store",
   });
@@ -645,7 +624,7 @@ export async function fetchQuizQuestions(): Promise<QuizQuestion[]> {
 }
 
 export async function startQuizSession(): Promise<QuizSession> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/start`, {
     method: "POST",
     headers: {
@@ -664,7 +643,7 @@ export async function submitQuizAnswer(
   questionId: string,
   choiceIds: string[]
 ): Promise<void> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/answer`, {
     method: "POST",
     headers: {
@@ -683,7 +662,7 @@ export async function submitQuizAnswer(
 }
 
 export async function finalizeQuizSession(sessionId: string): Promise<QuizFinalize> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/submit?session_id=${encodeURIComponent(sessionId)}`, {
     method: "POST",
     headers: {
@@ -699,7 +678,7 @@ export async function finalizeQuizSession(sessionId: string): Promise<QuizFinali
 }
 
 export async function fetchQuizHistory(token: string): Promise<QuizHistoryItem[]> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/history`, {
     method: "GET",
     headers: {
@@ -721,7 +700,7 @@ export async function fetchQuizHistory(token: string): Promise<QuizHistoryItem[]
 }
 
 export async function deleteQuizHistory(historyId: string, token: string): Promise<QuizHistoryDeleteAck> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/history/${encodeURIComponent(historyId)}`, {
     method: "DELETE",
     headers: {
@@ -749,7 +728,7 @@ export async function deleteQuizHistory(historyId: string, token: string): Promi
 }
 
 export async function fetchQuizSessionDetail(sessionId: string): Promise<QuizSessionDetail> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/session/${encodeURIComponent(sessionId)}`, {
     method: "GET",
     headers: withAuth(),
@@ -769,7 +748,7 @@ export async function fetchQuizSessionDetail(sessionId: string): Promise<QuizSes
 }
 
 export async function fetchQuizHistoryDetail(profileId: string): Promise<QuizHistoryDetail> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/history/profile/${encodeURIComponent(profileId)}`, {
     method: "GET",
     headers: withAuth(),
@@ -793,7 +772,7 @@ export async function fetchProductDetail(productId: string): Promise<ProductDeta
     throw new Error("Product ID is required to load details.");
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/products/${encodeURIComponent(productId)}`, {
     method: "GET",
     headers: withAuth(),
@@ -813,7 +792,7 @@ export async function fetchProductDetail(productId: string): Promise<ProductDeta
 }
 
 export async function emailQuizSummary(sessionId: string, email?: string): Promise<void> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/email-summary`, {
     method: "POST",
     headers: {
@@ -832,7 +811,7 @@ export async function emailQuizSummary(sessionId: string, email?: string): Promi
 }
 
 export async function submitQuizFeedback(payload: SubmitFeedbackPayload): Promise<void> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/feedback`, {
     method: "POST",
     headers: {
@@ -853,7 +832,7 @@ export async function submitQuizFeedback(payload: SubmitFeedbackPayload): Promis
 }
 
 export async function fetchFeedbackHighlights(limit = 3): Promise<FeedbackHighlight[]> {
-  const base = getApiBase();
+  const base = resolveApiBase();
   const params = new URLSearchParams({ limit: String(limit) });
   const res = await fetch(`${base}/quiz/feedback/highlights?${params.toString()}`, {
     cache: "no-store",

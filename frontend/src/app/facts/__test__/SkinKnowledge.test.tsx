@@ -57,13 +57,13 @@ describe("SkinKnowledge imagery", () => {
     render(<SkinKnowledge />);
 
     const moisturizerImage = await screen.findByRole("img", { name: "Moisturizer bottles" });
-    expect(moisturizerImage).toHaveAttribute("src", "http://backend:8000/media/topics/moisturizer.jpg");
+    expect(moisturizerImage).toHaveAttribute("src", "/media/topics/moisturizer.jpg");
 
     const fallbackImage = await screen.findByRole("img", { name: "Cleanser Basics" });
     expect(fallbackImage?.getAttribute("src")).toContain("/img/facts_img/green_tea.jpg");
 
     const serumImage = await screen.findByRole("img", { name: "Serum bottles" });
-    expect(serumImage).toHaveAttribute("src", "http://backend:8000/media/topics/serum.jpg");
+    expect(serumImage).toHaveAttribute("src", "/media/topics/serum.jpg");
 
     expect(fetchMock).toHaveBeenCalled();
   });
