@@ -148,7 +148,7 @@ export default function AboutPage() {
     <>
       <main className="min-h-screen bg-[#bcdcf6]">
         {/* Intro Letter */}
-        <PageContainer as="section" className="pt-32 sm:pt-44 pb-10 sm:pb-14 px-4">
+        <PageContainer as="section" className="pt-32 sm:pt-44 pb-10 px-4">
           {/* Mascot outside the card on mobile */}
           <div className="flex justify-center mb-[-83px] sm:hidden relative z-10">
             <Image
@@ -206,7 +206,7 @@ export default function AboutPage() {
 
         {/* Our Values Section */}
         <PageContainer as="section" className="pb-12 sm:pb-16 px-4">
-          <div className="text-center mb-8 sm:mb-12">
+          <div className="lg:text-center mb-8 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Our Values
             </h2>
@@ -237,11 +237,11 @@ export default function AboutPage() {
 
         {/* Timeline Section */}
         <PageContainer as="section" className="pb-12 sm:pb-16 px-4">
-          <div className="text-center mb-8 sm:mb-12">
+          <div className="lg:text-center mb-8 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Our Journey
             </h2>
-            <p className="text-sm sm:text-base text-gray-700 max-w-2xl mx-auto px-4">
+            <p className="text-sm sm:text-base text-gray-700 max-w-2xl mx-auto lg:px-4">
               From idea to launch: How SkinMatch came to life
             </p>
           </div>
@@ -359,7 +359,7 @@ export default function AboutPage() {
 
         {/* Team Grid */}
         <PageContainer as="section" className="pb-12 sm:pb-16 px-4">
-          <div className="text-center mb-8 sm:mb-12">
+          <div className="lg:text-center mb-8 sm:mb-12">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Meet the Team
             </h2>
@@ -398,7 +398,7 @@ function TeamCard({ member }: { member: Member }) {
   return (
     <div className="relative [perspective:1200px]">
       <div
-        className={`relative h-[240px] sm:h-[280px] md:h-[260px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
+        className={`relative min-h-[205px] sm:min-h-[280px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
           flipped ? "[transform:rotateY(180deg)]" : ""
         }`}
       >
@@ -425,28 +425,12 @@ function TeamCard({ member }: { member: Member }) {
             />
           </div>
 
-          <div className="relative flex-1 flex flex-col justify-end">
-            <button
-              onClick={() => setFlipped(true)}
-              className="
-                absolute right-3 top-3 sm:right-4 sm:top-4 md:right-5 md:top-5
-                inline-flex items-center gap-1 sm:gap-2 rounded-full
-                border-2 border-black bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-semibold text-gray-800
-                shadow-[0_3px_0_rgba(0,0,0,0.25)] sm:shadow-[0_4px_0_rgba(0,0,0,0.25)]
-                hover:translate-y-[-1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:hover:shadow-[0_6px_0_rgba(0,0,0,0.25)]
-                active:translate-y-[2px] active:shadow-[0_1px_0_rgba(0,0,0,0.25)] sm:active:shadow-[0_2px_0_rgba(0,0,0,0.25)]
-                transition-all duration-150
-              "
-              aria-label={`Show contacts for ${member.name}`}
-            >
-              Contacts <span className="text-base sm:text-lg leading-none">→</span>
-            </button>
-
-            <div className="pr-20 sm:pr-28 pb-2">
-              <h4 className="text-lg sm:text-2xl font-extrabold text-gray-800 leading-tight">
+          <div className="relative flex-1 flex flex-col">
+            <div className="pr-2 sm:pr-10">
+              <h4 className="text-lg sm:text-2xl lg:text-[2.4rem] font-extrabold text-gray-800 leading-tight">
                 {member.name}
               </h4>
-              <p className="mt-1.5 sm:mt-2 text-xs sm:text-base font-semibold text-gray-700 leading-snug">
+              <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-semibold text-gray-700 leading-snug">
                 {roleTitle}
                 {roleDetail && (
                   <>
@@ -456,6 +440,13 @@ function TeamCard({ member }: { member: Member }) {
                 )}
               </p>
             </div>
+            <button
+              onClick={() => setFlipped(true)}
+              className="mt-auto inline-flex w-full items-center justify-center gap-1 rounded-full border-2 border-black bg-white px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-[0_3px_0_rgba(0,0,0,0.25)] transition-all duration-150 sm:w-fit sm:px-3 sm:py-1.5 sm:text-sm lg:text-base sm:gap-2 sm:shadow-[0_4px_0_rgba(0,0,0,0.25)] lg:px-5 lg:py-2 hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_1px_0_rgba(0,0,0,0.25)] sm:active:shadow-[0_2px_0_rgba(0,0,0,0.25)]"
+              aria-label={`Show contacts for ${member.name}`}
+            >
+              Contacts <span className="text-base sm:text-lg lg:text-xl leading-none">→</span>
+            </button>
           </div>
         </div>
 

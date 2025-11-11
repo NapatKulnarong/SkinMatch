@@ -112,7 +112,7 @@ WSGI_APPLICATION = "apidemo.wsgi.application"
 
 # Database
 db_url = os.getenv("DATABASE_URL") 
-conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "0"))
 ssl_require = env_bool("DB_SSL_REQUIRE", False)
 
 if db_url:
@@ -135,6 +135,10 @@ else:
             "CONN_MAX_AGE": conn_max_age,
         }
     }
+
+for cfg in DATABASES.values():
+    cfg.setdefault("CONN_MAX_AGE", conn_max_age)
+    cfg["CONN_HEALTH_CHECKS"] = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

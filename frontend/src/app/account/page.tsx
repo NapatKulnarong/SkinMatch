@@ -153,7 +153,7 @@ function AccountContent() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#d3cbe0] flex items-center justify-center">
-        <div className="rounded-2xl border-2 border-black bg-white px-8 py-6 text-center shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <div className="rounded-2xl border-2 border-black bg-white px-8 py-6 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7C6DB1] mx-auto mb-4"></div>
           <p className="text-base font-semibold text-gray-800">Loading your account…</p>
           <p className="text-sm text-gray-600 mt-2">This may take a moment</p>
@@ -173,7 +173,7 @@ function AccountContent() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl border-2 border-[#c89b9b] bg-[#f5e6e6] p-5 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+          <div className="mb-6 rounded-2xl border-2 border-[#c89b9b] bg-[#f5e6e6] p-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
             <p className="text-sm font-semibold text-[#8b4949]">{error}</p>
             <p className="mt-1 text-xs text-[#8b4949]/80">Redirecting to login...</p>
           </div>
@@ -182,7 +182,7 @@ function AccountContent() {
         <section className="grid grid-cols-12 gap-6">
           {/* LEFT PROFILE CARD */}
           <aside className="col-span-12 lg:col-span-3 -mt-4 sm:mt-0">
-            <div className="flex flex-row items-start gap-4 lg:flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
+            <div className="flex flex-row items-start gap-4 lg:flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
               {/* Avatar */}
               <div className="relative w-24 h-24 lg:w-[240px] lg:h-[240px] flex-shrink-0">
                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
@@ -299,7 +299,7 @@ function Panel({
     <div
       className={[
         "relative rounded-3xl border-2 border-black bg-white",
-        "shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full",
+        "shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full",
         heightClass,
       ].join(" ")}
     >
@@ -1337,7 +1337,7 @@ function formatPriceLabel(price: number | null, currency?: string) {
 function AccountFallback() {
   return (
     <main className="min-h-screen bg-[#d3cbe0] flex items-center justify-center">
-      <div className="rounded-2xl border-2 border-black bg-white px-8 py-6 text-center shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+      <div className="rounded-2xl border-2 border-black bg-white px-8 py-6 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7C6DB1] mx-auto mb-4"></div>
         <p className="text-base font-semibold text-gray-800">Loading your account…</p>
       </div>

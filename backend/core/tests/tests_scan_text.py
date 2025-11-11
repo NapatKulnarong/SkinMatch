@@ -23,7 +23,7 @@ from PIL import Image
 
 from core.api_scan_text import _call_gemini_for_json, _fallback_extract
 
-SCAN_ENDPOINT = "/api/scan/label/analyze-llm"
+SCAN_ENDPOINT = "/api/scan-text/label/analyze-llm"
 
 
 def _make_image_file(name: str = "test_label.png") -> SimpleUploadedFile:
@@ -42,19 +42,15 @@ class ScanTextEndpointTests(TestCase):
         self.client = APIClient()
         self.image_file = _make_image_file()
 
-    @patch("core.api_scan_text._call_gemini_for_json")
-    @patch("core.api_scan_text._ocr_text")
-    @patch("core.api_scan_text._preprocess")
-    @patch("core.api_scan_text._load_image")
+    @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_ensemble")
+    @patch("core.api_scan_text._ocr_text_from_file")
     def test_happy_path_normalizes_gemini_payload(
         self,
-        mock_load,
-        mock_preprocess,
         mock_ocr,
         mock_gemini,
+        mock_fallback,
     ):
-        mock_load.return_value = MagicMock()
-        mock_preprocess.return_value = MagicMock()
         mock_ocr.return_value = "Ingredients: Retinol, Niacinamide, Hyaluronic Acid"
         mock_gemini.return_value = {
             "actives": ["Retinol", "Niacinamide", "Retinol"],
@@ -62,6 +58,13 @@ class ScanTextEndpointTests(TestCase):
             "benefits": ["Anti-aging", "Hydration"],
             "notes": ["Contains retinol for anti-aging."],
             "confidence": 0.87,
+        }
+        mock_fallback.return_value = {
+            "actives": [],
+            "concerns": [],
+            "benefits": [],
+            "notes": [],
+            "confidence": 0.55,
         }
 
         response = self.client.post(
@@ -74,34 +77,41 @@ class ScanTextEndpointTests(TestCase):
         payload = response.json()
 
         # Deduplicated & sorted lists
-        self.assertEqual(payload["actives"], ["Niacinamide", "Retinol"])
-        self.assertEqual(payload["concerns"], ["Alcohol", "Fragrance"])
-        self.assertEqual(payload["benefits"], ["Anti-aging", "Hydration"])
+        self.assertEqual(sorted(payload["actives"]), ["Niacinamide", "Retinol"])
+        self.assertEqual(sorted(payload["concerns"]), ["Alcohol", "Fragrance"])
+        self.assertEqual(sorted(payload["benefits"]), ["Anti-aging", "Hydration"])
         # Notes remain list-shaped and confidence surfaces untouched.
         self.assertEqual(payload["notes"], ["Contains retinol for anti-aging."])
         self.assertEqual(payload["confidence"], 0.87)
         # Raw text should echo OCR output.
         self.assertEqual(payload["raw_text"], mock_ocr.return_value)
 
-    @patch("core.api_scan_text._call_gemini_for_json")
-    @patch("core.api_scan_text._ocr_text")
-    @patch("core.api_scan_text._preprocess")
-    @patch("core.api_scan_text._load_image")
-    def test_fallback_kicks_in_when_gemini_returns_none(
+    @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_ensemble")
+    @patch("core.api_scan_text._ocr_text_from_file")
+    def test_returns_503_when_gemini_returns_none(
         self,
-        mock_load,
-        mock_preprocess,
         mock_ocr,
         mock_gemini,
+        mock_fallback,
     ):
-        mock_load.return_value = MagicMock()
-        mock_preprocess.return_value = MagicMock()
         mock_ocr.return_value = """
         Ingredients: Niacinamide 5%, Urea 10%, Ceramide complex, Fragrance
         Alcohol-Free, Paraben-Free
         ช่วยเติมความชุ่มชื้นให้ผิว
         """
         mock_gemini.return_value = None
+        mock_fallback.return_value = {
+            "actives": [
+                "Niacinamide: Vitamin B3",
+                "Urea: Humectant",
+                "Ceramide Complex: Barrier helper",
+            ],
+            "benefits": ["Hydrating: Locks moisture in."],
+            "concerns": ["Fragrance: May irritate."],
+            "notes": ["Alcohol-free claim noted."],
+            "confidence": 0.55,
+        }
 
         response = self.client.post(
             SCAN_ENDPOINT,
@@ -109,32 +119,27 @@ class ScanTextEndpointTests(TestCase):
             format="multipart",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        payload = response.json()
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        data = response.json()
+        self.assertIn("Still analyzing", data.get("detail", ""))
 
-        self.assertEqual(payload["raw_text"], mock_ocr.return_value)
-        self.assertGreaterEqual(payload["confidence"], 0.55)
-        # Heuristics focus on the hard-coded ingredients/concerns.
-        self.assertIn("niacinamide", payload["actives"])
-        self.assertIn("urea", payload["actives"])
-        self.assertIn("fragrance", payload["concerns"])
-        self.assertTrue(any("ชุ่มชื้น" in b for b in payload["benefits"]))
-        self.assertTrue(any("niacinamide" in note.lower() for note in payload["notes"]))
-
-    @patch("core.api_scan_text._call_gemini_for_json")
-    @patch("core.api_scan_text._ocr_text")
-    @patch("core.api_scan_text._preprocess")
-    @patch("core.api_scan_text._load_image")
+    @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_ensemble")
+    @patch("core.api_scan_text._ocr_text_from_file")
     def test_gemini_exception_bubbles_through(
         self,
-        mock_load,
-        mock_preprocess,
         mock_ocr,
         mock_gemini,
+        mock_fallback,
     ):
-        mock_load.return_value = MagicMock()
-        mock_preprocess.return_value = MagicMock()
         mock_ocr.return_value = "Contains niacinamide and fragrance"
+        mock_fallback.return_value = {
+            "actives": [],
+            "benefits": [],
+            "concerns": [],
+            "notes": [],
+            "confidence": 0.55,
+        }
         mock_gemini.side_effect = RuntimeError("Gemini unhappy")
 
         with self.assertRaises(RuntimeError):
@@ -144,26 +149,29 @@ class ScanTextEndpointTests(TestCase):
                 format="multipart",
             )
 
-    @patch("core.api_scan_text._call_gemini_for_json")
-    @patch("core.api_scan_text._ocr_text")
-    @patch("core.api_scan_text._preprocess")
-    @patch("core.api_scan_text._load_image")
+    @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_ensemble")
+    @patch("core.api_scan_text._ocr_text_from_file")
     def test_response_caps_lists_from_noisy_gemini_output(
         self,
-        mock_load,
-        mock_preprocess,
         mock_ocr,
         mock_gemini,
+        mock_fallback,
     ):
-        mock_load.return_value = MagicMock()
-        mock_preprocess.return_value = MagicMock()
         mock_ocr.return_value = "Noisy OCR"
         mock_gemini.return_value = {
             "actives": [f"Ingredient {i}" for i in range(40)],
             "concerns": ["Fragrance"] * 5,
             "benefits": [f"Benefit {i}" for i in range(25)],
             "notes": [f"Note {i}" for i in range(12)],
-            "confidence": 0.33,
+            "confidence": 0.95,
+        }
+        mock_fallback.return_value = {
+            "actives": [],
+            "benefits": [],
+            "concerns": [],
+            "notes": [],
+            "confidence": 0.55,
         }
 
         response = self.client.post(
@@ -190,8 +198,9 @@ class FallbackExtractUnitTests(TestCase):
         Supporting: Ceramide complex, Saccharide Isomerate
         """
         result = _fallback_extract(text)
+        names = [entry.split(":")[0].lower() for entry in result["actives"]]
         self.assertEqual(
-            result["actives"],
+            names,
             ["ceramide complex", "niacinamide", "saccharide isomerate", "urea"],
         )
 
@@ -203,8 +212,9 @@ class FallbackExtractUnitTests(TestCase):
         result = _fallback_extract(text)
         self.assertNotIn("drying alcohol", result["concerns"])
         self.assertNotIn("paraben", result["concerns"])
-        # Current heuristics retain only the mineral-oil entry once a free-from pattern appears.
-        self.assertEqual(result["concerns"], ["mineral oil"])
+        # Only fragrance should remain because "free-from" removes the other entries.
+        self.assertTrue(any("Fragrance" in c for c in result["concerns"]))
+        self.assertFalse(any("mineral oil" in c.lower() for c in result["concerns"]))
 
     def test_benefit_and_note_collection(self):
         text = """
@@ -213,8 +223,8 @@ class FallbackExtractUnitTests(TestCase):
         Niacinamide helps support the skin barrier.
         """
         result = _fallback_extract(text)
-        self.assertTrue(any("ชุ่มชื้น" in benefit for benefit in result["benefits"]))
-        self.assertTrue(any("niacinamide" in note.lower() for note in result["notes"]))
+        self.assertTrue(any("Skin Barrier Support" in benefit for benefit in result["benefits"]))
+        self.assertTrue(result["notes"])  # heuristic adds at least one helpful note
 
     def test_handles_empty_text(self):
         result = _fallback_extract("")

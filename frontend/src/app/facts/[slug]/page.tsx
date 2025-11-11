@@ -23,7 +23,7 @@ export default async function FactTopicPage({ params }: Params) {
 
   return (
     <main className="bg-[#dbe9ea] min-h-screen pb-16">
-      <div className="mx-auto w-full max-w-5xl px-4 pt-32 md:pt-32">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-43 lg:pt-32 md:pt-32">
         {/* HERO CARD */}
         <PastelHero
           cover={cover}
@@ -40,7 +40,7 @@ export default async function FactTopicPage({ params }: Params) {
             rounded-[8px]
             border-2 border-black
             bg-white/70
-            shadow-[6px_8px_0_rgba(0,0,0,0.35)]
+            shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]
             p-6
             md:p-8
           "
@@ -79,7 +79,7 @@ export default async function FactTopicPage({ params }: Params) {
                     rounded-[16px]
                     border-2 border-black
                     bg-white
-                    shadow-[6px_8px_0_rgba(0,0,0,0.25)]
+                    shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]
                     overflow-hidden
                     transition
                     hover:-translate-y-1
