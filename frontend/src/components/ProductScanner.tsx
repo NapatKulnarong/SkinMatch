@@ -138,7 +138,7 @@ export function ProductScanner() {
 
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-      <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
+      <div className="hidden sm:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
         <img
           src="/img/mascot/matchy_scan.png"
           alt="Matchy with camera"
@@ -153,16 +153,14 @@ export function ProductScanner() {
               <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8C1007]" />
               <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007]">
                 Instant Product Scanner
-              </h2>
-              
+              </h2>  
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border-2 border-[#a82b36] bg-[#ffcdc3] px-3 py-1">
                 <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#a82b36]" />
                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#a82b36]">
                   BETA
                 </span>
-              </div>
-            
+            </div>
             <p className="text-sm sm:text-base text-[#6b3e3e]/90 max-w-2xl mx-auto">
               Upload a clear photo of the ingredient list. We will read the label, extract the key
               actives, flag potential concerns, and share quick notes so you know what the product does.
@@ -226,7 +224,7 @@ export function ProductScanner() {
             </div>
           )}
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <button
+            <button
               type="button"
               onClick={handleReset}
               className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#ffbd95] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)]"
@@ -239,7 +237,7 @@ export function ProductScanner() {
               disabled={isUploading}
               className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#FFFCFB] px-6 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isUploading ? "Analyzing..." : "Scan Product"}
+              Scan Product
             </button>
             
           </div>

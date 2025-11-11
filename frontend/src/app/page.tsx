@@ -490,13 +490,23 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
       <Navbar />
-      <PageContainer className="relative flex flex-col gap-8 sm:gap-12 pt-38 sm:pt-32 pb-12 sm:pb-16">
+      <PageContainer className="relative flex flex-col gap-6 sm:gap-12 pt-43 sm:pt-32 pb-12 sm:pb-16">
         {/* Hero Section */}
-        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
-          <div className="grid items-center gap-6 sm:gap-8 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[1.05fr_0.95fr]">
-            <div className="order-1 space-y-4 sm:space-y-6 text-center md:order-2 md:text-left">
+        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+          <div className="grid items-center gap-5 sm:gap-8 px-5 py-5 sm:px-10 sm:py-10 md:grid-cols-[1.05fr_0.95fr]">
+          <div className="order-1 flex justify-center md:order-1">
+              <Image
+                src="/img/mascot/matchy_match.gif"
+                alt="Matchy the SkinMatch mascot giving a friendly wave"
+                width={360}
+                height={270}
+                priority
+                className="h-auto w-full max-w-[200px] sm:max-w-sm"
+              />
+            </div>
+            <div className="order-2 space-y-4 sm:space-y-6 text-center md:order-2 md:text-left">
               <div className="space-y-2 sm:space-y-3">
-                <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
+                <p className="hidden sm:block text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
                   Personalized skincare insights
                 </p>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold">
@@ -517,21 +527,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="order-2 flex justify-center md:order-1">
-              <Image
-                src="/img/mascot/matchy_match.gif"
-                alt="Matchy the SkinMatch mascot giving a friendly wave"
-                width={360}
-                height={270}
-                priority
-                className="h-auto w-full max-w-[200px] sm:max-w-sm"
-              />
-            </div>
+            
           </div>
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e4e5ba] to-[#8ec78d] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e4e5ba] to-[#8ec78d] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-3">
@@ -572,7 +573,7 @@ export default function HomePage() {
                 <div
                   id={SUGGESTION_LIST_ID}
                   role="listbox"
-                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_8px_0_rgba(0,0,0,0.2)]"
+                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:shadow-[0_8px_0_rgba(0,0,0,0.2)]"
                 >
                   {isSuggestionLoading && !hasSuggestions ? (
                     <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
@@ -662,7 +663,7 @@ export default function HomePage() {
               return (
               <article
                 key={key}
-                className="rounded-2xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)]"
+                className="rounded-2xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)]"
               >
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-start justify-between gap-2">
@@ -700,7 +701,7 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <div className="mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
             <div className="space-y-2">
               <h2 className="text-xl sm:text-2xl font-bold text-[#3C5B6F]">

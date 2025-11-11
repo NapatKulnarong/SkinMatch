@@ -124,7 +124,7 @@ export default function Navbar() {
   return (
     <header
       ref={headerRef}
-      className="absolute top-0 left-0 z-20 flex w-full flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4"
+      className="fixed inset-x-0 z-30 flex w-full flex-col gap-2 bg-[#F5F5F0] px-4 py-3 pb-5 backdrop-blur sm:absolute sm:left-0 sm:right-0 sm:top-0 sm:z-20 sm:w-full sm:flex-row sm:items-center sm:justify-between sm:rounded-none sm:bg-transparent sm:px-6 sm:py-4"
     >
       <div className="flex w-full items-center justify-between gap-3">
         <Link href="/" className="shrink-0">

@@ -40,15 +40,17 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
     };
   }, []);
 
-  const visibleTopics = useMemo(() => (showAll ? topics : topics.slice(0, 6)), [topics, showAll]);
+  const visibleTopics = useMemo(
+    () => (showAll ? topics : topics.slice(0, 6)),
+    [topics, showAll]
+  );
   const hasMore = topics.length > 6;
-
   const toggle = () => setShowAll((prev) => !prev);
 
   if (loading) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-12">
-        <div className="h-64 rounded-[26px] border-2 border-black bg-white/50 shadow-[6px_8px_0_rgba(0,0,0,0.2)] animate-pulse" />
+        <div className="h-64 rounded-[26px] border-2 border-black bg-white/50 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)] animate-pulse" />
       </PageContainer>
     );
   }
@@ -56,7 +58,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
   if (error) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-12">
-        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error}
         </div>
       </PageContainer>
@@ -72,37 +74,110 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-12">
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
       <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#102320]">Fact Check</h2>
-          <p className="mt-2 text-[#102320]/70 md:text-lg">
+          <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#102320]">
+            Fact Check
+          </h2>
+          <p className="hidden sm:block mt-2 text-[#102320]/70 md:text-lg">
             Bust the biggest skincare myths with science-backed breakdowns.
           </p>
         </div>
-        <p className="text-xs uppercase tracking-[0.3em] text-[#102320]/50">
-          Verified by our experts
-        </p>
+        <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+          <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+            Verified by our experts
+          </span>
+        </div>
       </div>
 
-      <div className="relative pl-6 sm:pl-10">
-        <div className="absolute left-2 sm:left-4 top-0 h-full w-0.5 bg-gradient-to-b from-[#102320]/30 via-[#102320]/15 to-transparent"/>
+      {/* Mobile: horizontal cards with wide-oval Read pill */}
+      <div className="sm:hidden -mx-4 px-4">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
+          {visibleTopics.map((topic) => {
+            const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+            const description =
+              topic.subtitle || topic.excerpt || "We break down the science.";
+            const verdict = topic.title.toLowerCase().includes("myth")
+              ? "Myth"
+              : "Verified";
+
+            return (
+              <Link
+                key={`mobile-${topic.slug}`}
+                href={`/facts/${topic.slug}`}
+                className="relative min-w-[250px] overflow-hidden rounded-[24px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]"
+              >
+                <div className="relative h-40 overflow-hidden">
+                  <Image
+                    src={image}
+                    alt={topic.heroImageAlt ?? topic.title}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <span
+                    className={`absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-dashed border-black/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${
+                      verdict === "Verified"
+                        ? "bg-[#d6f0d1]/80 text-[#134620]"
+                        : "bg-[#fde2e2]/80 text-[#8b1c1c]"
+                    }`}
+                  >
+                    {verdict}
+                  </span>
+                </div>
+
+                {/* extra bottom padding so the pill has space */}
+                <div className="space-y-3 p-4 pb-12">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#102320]/60">
+                    Myth vs Fact
+                  </p>
+                  <h3 className="text-base font-bold text-[#102320] leading-tight">
+                    {topic.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-[#102320]/75 line-clamp-3">
+                    {description}
+                  </p>
+                </div>
+
+                {/* mobile-only oval pill */}
+                <span
+                  className="sm:hidden absolute bottom-3 right-3 inline-flex items-center gap-1
+                             rounded-full border border-[#11224a] bg-white px-4 py-1.5
+                             text-[11px] font-semibold uppercase tracking-[0.25em] text-[#11224a]"
+                >
+                  Read
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop/Tablet: timeline layout with normal button */}
+      <div className="hidden sm:block relative pl-6 sm:pl-10">
+        <div className="absolute left-2 sm:left-4 top-0 h-full w-0.5 bg-gradient-to-b from-[#102320]/30 via-[#102320]/15 to-transparent" />
 
         <ul className="space-y-10 sm:space-y-12">
           {visibleTopics.map((topic, index) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
-            const description = topic.subtitle || topic.excerpt || "We break down the science.";
-            const verdict = topic.title.toLowerCase().includes("myth") ? "Myth busted" : "Verified";
-            const verdictColor = verdict === "Verified" ? "bg-[#d6f0d1] text-[#134620]" : "bg-[#fde2e2] text-[#8b1c1c]";
+            const description =
+              topic.subtitle || topic.excerpt || "We break down the science.";
+            const verdict = topic.title.toLowerCase().includes("myth")
+              ? "Myth busted"
+              : "Verified";
+            const verdictColor =
+              verdict === "Verified"
+                ? "bg-[#d6f0d1] text-[#134620]"
+                : "bg-[#fde2e2] text-[#8b1c1c]";
 
             return (
               <li key={topic.slug} className="relative ml-auto sm:pl-4">
-                <span className="absolute -left-6 sm:-left-11 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-black 
-                                bg-[#fef7e3] text-sm font-bold text-[#102320] shadow-[3px_4px_0_rgba(0,0,0,0.25)]">
+                <span className="absolute -left-6 sm:-left-11 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-[#fef7e3] text-sm font-bold text-[#102320] shadow-[3px_4px_0_rgba(0,0,0,0.25)]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
-                <div className="rounded-[26px] border-2 border-black bg-white shadow-[8px_10px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+                <div className="rounded-[26px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_10px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
                   <div className="grid gap-0 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)]">
                     <div className="relative h-48 sm:h-full overflow-hidden rounded-t-[24px] sm:rounded-l-[24px] sm:rounded-tr-none">
                       <Image
@@ -145,8 +220,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
                           href={`/facts/${topic.slug}`}
                           className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fdf7e6] px-5 py-2 text-sm font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
                         >
-                          Read the science
-                          <span aria-hidden>→</span>
+                          Read <span aria-hidden>↗</span>
                         </Link>
                       </div>
                     </div>
@@ -158,28 +232,30 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
         </ul>
       </div>
 
-        {topics.length > 4 && (
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              disabled={!hasMore}
-              onClick={() => hasMore && toggle()}
-              className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fdf0dc] px-6 py-2 font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
-                hasMore ? "hover:-translate-y-[1px]" : "cursor-not-allowed opacity-60"
-              }`}
-            >
-              {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
-              <span aria-hidden className="text-lg">{hasMore ? (showAll ? "▲" : "▼") : "•"}</span>
-            </button>
-          </div>
-        )}
+      {topics.length > 4 && (
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            disabled={!hasMore}
+            onClick={() => hasMore && toggle()}
+            className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fdf0dc] px-6 py-2 font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
+              hasMore ? "hover:-translate-y-[1px]" : "cursor-not-allowed opacity-60"
+            }`}
+          >
+            {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
+            <span aria-hidden className="text-lg">
+              {hasMore ? (showAll ? "▲" : "▼") : "•"}
+            </span>
+          </button>
+        </div>
+      )}
     </PageContainer>
   );
 }
 
 function EmptyTimelineState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-[26px] border-2 border-dashed border-black bg-white/70 p-10 text-center shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+    <div className="flex flex-col items-center justify-center gap-4 rounded-[26px] border-2 border-dashed border-black bg-white/70 p-10 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
       <p className="text-base font-semibold text-[#102320]">No Fact Check topics found yet.</p>
       <p className="text-sm text-[#102320]/70">
         We&apos;re lining up the most-requested myths. Tell us what to investigate next!

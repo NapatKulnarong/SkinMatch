@@ -40,9 +40,11 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
     };
   }, []);
 
-  const visible = useMemo(() => (showAll ? topics : topics.slice(0, 6)), [topics, showAll]);
+  const visible = useMemo(
+    () => (showAll ? topics : topics.slice(0, 6)),
+    [topics, showAll]
+  );
   const hasMore = topics.length > 6;
-
   const toggle = () => setShowAll((prev) => !prev);
 
   if (loading) {
@@ -52,7 +54,7 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
               key={idx}
-              className="h-48 rounded-[24px] border-2 border-black bg-white/50 shadow-[6px_8px_0_rgba(0,0,0,0.2)] animate-pulse"
+              className="h-48 rounded-[24px] border-2 border-black bg-white/50 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)] animate-pulse"
             />
           ))}
         </div>
@@ -63,7 +65,7 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   if (error) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-12">
-        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error}
         </div>
       </PageContainer>
@@ -73,7 +75,7 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   if (!topics.length) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-12">
-        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           No trending skincare topics found yet.
         </div>
       </PageContainer>
@@ -81,17 +83,76 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-12">
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
       <div className="mb-10">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-[#1a2130]">
+        <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#1a2130]">
           Trending Skincare
         </h2>
-        <p className="mt-2 text-[#1a2130]/70 md:text-lg">
-          Editor-reviewed favourites making waves across Thai beauty feeds.
-        </p>
+        
+        <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <p className="hidden sm:block text-[#1a2130]/70 md:text-lg">
+    Editor-reviewed favourites making waves across Thai beauty feeds.
+  </p>
+
+  <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+    <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+      Verified by our experts
+    </span>
+  </div>
+</div>
+        
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      {/* ===== Mobile layout (matches FactCheck mobile) ===== */}
+      <div className="sm:hidden -mx-4 px-4">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pe-6">
+          {visible.map((item) => {
+            const image = item.heroImageUrl ?? FALLBACK_IMAGE;
+            const description = item.subtitle || item.excerpt || "See why it's trending.";
+
+            return (
+              <Link
+                key={`mobile-${item.slug}`}
+                href={`/facts/${item.slug}`}
+                className="relative min-w-[250px] overflow-hidden rounded-[24px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]"
+              >
+                {/* image header */}
+                <div className="relative h-40 overflow-hidden">
+                  <Image
+                    src={image}
+                    alt={item.heroImageAlt ?? item.title}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+                </div>
+
+                {/* text body with extra space for pill */}
+                <div className="space-y-2 p-4 pb-12">
+                  <h3 className="text-base font-bold text-[#1a2130] leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-[#1a2130]/75 line-clamp-3">
+                    {description}
+                  </p>
+                </div>
+
+                {/* mobile-only wide oval pill (bottom-right) */}
+                <span
+                  className="sm:hidden absolute bottom-3 right-3 inline-flex items-center gap-1
+                             rounded-full border border-[#1a2130] bg-white px-4 py-1.5
+                             text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1a2130]"
+                >
+                  Read
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== Tablet/Desktop grid ===== */}
+      <div className="hidden sm:grid sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
         {visible.map((item, index) => {
           const image = item.heroImageUrl ?? FALLBACK_IMAGE;
           const description = item.subtitle || item.excerpt || "See why it's trending.";
@@ -101,11 +162,11 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
             <Link
               key={item.slug}
               href={`/facts/${item.slug}`}
-              className="relative flex flex-col gap-4 rounded-[28px] border-2 border-black bg-gradient-to-br from-white via-[#f6f1ff] to-white 
-                        shadow-[6px_8px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1.5"
               aria-label={`Read review for ${item.title}`}
+              className="relative flex flex-col gap-0 rounded-[28px] border-2 border-black bg-white 
+                         shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
             >
-              <div className="relative h-44 overflow-hidden rounded-t-[26px]">
+              <div className="relative h-52 md:h-60 lg:h-72 overflow-hidden rounded-t-[26px]">
                 <Image
                   src={image}
                   alt={item.heroImageAlt ?? item.title}
@@ -114,37 +175,31 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
                   sizes="(max-width: 768px) 100vw, 320px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-5 text-white">
-                  <div>
-                    <h3 className="text-lg font-bold leading-snug md:text-xl">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-white/85 md:text-base line-clamp-2">
-                      {description}
-                    </p>
-                  </div>
-                  <span className="inline-flex h-12 min-w-[48px] items-center justify-center rounded-full border border-white/40 bg-white/10 px-3 text-xs font-semibold uppercase tracking-[0.28em]">
-                    #{index + 1}
-                  </span>
+                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                  <h3 className="text-lg font-bold leading-snug md:text-xl">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-white/85 md:text-base line-clamp-2">
+                    {description}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 px-5 text-xs uppercase tracking-[0.3em] text-[#1a2130]/60">
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#1a2130]/15 bg-white px-4 py-1 font-semibold">
-                  {new Intl.NumberFormat().format(item.viewCount ?? 0)} reads
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#1a2130]/15 bg-white px-4 py-1 font-semibold">
-                  Hype score {new Intl.NumberFormat().format(hypeScore)}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#1a2130]/15 bg-white px-4 py-1 font-semibold">
-                  Social buzz ↑
-                </span>
-              </div>
+              {/* Footer: reads (left) and Read → (right) */}
+<div
+  className="flex items-center justify-between px-5 py-4 text-xs md:text-sm font-semibold text-[#1a2130]
+             uppercase tracking-[0.25em] border-t sm:border-black/10"
+>
+  {/* Left: read count */}
+  <span className="inline-flex items-center gap-1 rounded-full border border-[#1a2130]/15 bg-white px-4 py-1 font-semibold text-[11px] md:text-xs">
+    {new Intl.NumberFormat().format(item.viewCount ?? 0)} reads
+  </span>
 
-              <div className="flex items-center justify-between border-t border-black/10 px-5 py-4 text-sm font-semibold text-[#1a2130]">
-                <span>Why it&apos;s buzzing</span>
-                <span aria-hidden>→</span>
-              </div>
+  {/* Right: Read → */}
+  <span aria-hidden className="text-[#1a2130] md:text-sm">
+    Read →
+  </span>
+</div>
             </Link>
           );
         })}

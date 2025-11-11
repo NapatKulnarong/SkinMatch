@@ -66,7 +66,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
-          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
             <p className="text-lg font-semibold text-[#3B2F4A]">Loading sign-in…</p>
           </div>
         </main>
@@ -414,13 +414,13 @@ function LoginContent() {
           width={520}
           height={520}
           priority
-          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
+          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[6px_6px_0_rgba(0,0,0,0.18)] sm:drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>
       <div
         className={[
           "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
-          "shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
+          "shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
           cardBg,
         ].join(" ")}
       >
