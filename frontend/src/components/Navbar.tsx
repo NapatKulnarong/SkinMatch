@@ -121,10 +121,74 @@ export default function Navbar() {
   }, [avatarSrc]);
   const loginAriaLabel = profile ? "Open account" : "Log in or sign up";
 
+  const [showDesktopNav, setShowDesktopNav] = useState(true);
+  const [isPastTop, setIsPastTop] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let lastY = window.scrollY;
+    let raf: number | null = null;
+    let enableScrollHide = window.innerWidth >= 768;
+
+    const updateBgState = () => {
+      const shouldTint = window.innerWidth >= 640 && window.scrollY > 4;
+      setIsPastTop((prev) => (prev === shouldTint ? prev : shouldTint));
+    };
+
+    updateBgState();
+
+    const run = () => {
+      raf = null;
+      if (!enableScrollHide) return;
+
+      const currentY = window.scrollY;
+      const delta = currentY - lastY;
+
+      if (currentY <= 0 || delta < -10) {
+        setShowDesktopNav(true);
+      } else if (delta > 10) {
+        setShowDesktopNav(false);
+      }
+
+      lastY = currentY;
+    };
+
+    const handleScroll = () => {
+      updateBgState();
+      if (!enableScrollHide || raf) return;
+      raf = window.requestAnimationFrame(run);
+    };
+
+    const handleResize = () => {
+      enableScrollHide = window.innerWidth >= 768;
+      lastY = window.scrollY;
+      if (!enableScrollHide) {
+        setShowDesktopNav(true);
+      }
+      updateBgState();
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   return (
     <header
       ref={headerRef}
-      className="absolute top-0 left-0 z-20 flex w-full flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4"
+      className={`fixed inset-x-0 z-50 flex w-full translate-y-0 flex-col gap-2 bg-[#FAF7F3] px-4 py-3 pb-5 transition-transform duration-300 
+                sm:absolute sm:left-0 sm:right-0 sm:top-0 sm:z-50 sm:w-full sm:flex-row sm:items-center sm:justify-between sm:rounded-none ${
+                  isPastTop ? "sm:bg-[#FAF7F3] md:bg-[#FAF7F3]" : "sm:bg-transparent md:bg-transparent"
+                } sm:px-6 sm:py-4 
+                md:fixed md:inset-x-0 md:top-0 md:px-6 md:py-1 ${showDesktopNav ? "md:translate-y-0" : "md:-translate-y-full"}`}
     >
       <div className="flex w-full items-center justify-between gap-3">
         <Link href="/" className="shrink-0">

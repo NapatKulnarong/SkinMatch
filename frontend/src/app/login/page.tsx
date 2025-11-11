@@ -65,8 +65,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
-          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+        <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-start lg:justify-center gap-8 
+                        px-4 pb-10 sm:px-6 pt-[calc(72px+env(safe-area-inset-top))] sm:pt-12 lg:flex-row lg:gap-16">
+          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
             <p className="text-lg font-semibold text-[#3B2F4A]">Loading sign-in…</p>
           </div>
         </main>
@@ -414,37 +415,38 @@ function LoginContent() {
           width={520}
           height={520}
           priority
-          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
+          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[6px_6px_0_rgba(0,0,0,0.18)] sm:drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>
       <div
-        className={[
-          "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
-          "shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
-          cardBg,
-        ].join(" ")}
-      >
+  className={[
+    "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
+    "shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
+    "mt-32 sm:mt-20 lg:mt-0", 
+    cardBg,
+  ].join(" ")}
+>
         {mode === "intro" && (
           <>
           <div className="p-5 sm:p-7">
-              <h2 className="text-3xl font-extrabold text-[#3B2F4A]">
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-[#3B2F4A]">
                 Join <span className="text-[#3B2F4A]">MatchClub</span>
               </h2>
 
               <ul className="mt-4 text-gray-700 font-semibold text-sm sm:text-base">
-                <li className="py-3 flex gap-3 items-start border-b border-black/10">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Save your match result</span>
                 </li>
-                <li className="py-3 flex gap-3 items-start border-b border-black/10">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Save your skincare wish lists</span>
                 </li>
-                <li className="py-3 flex gap-3 items-start border-b border-black/10">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Read &amp; write reviews on your matches</span>
                 </li>
-                <li className="pt-3 pb-1 flex gap-3 items-start">
+                <li className="py-2.5 lg:pt-3 pb-1 flex gap-3 items-start">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Get the latest updates on the skincare industry.</span>
                 </li>
@@ -457,8 +459,8 @@ function LoginContent() {
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base 
-                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-2.5 lg:py-4 text-sm lg:text-base 
+                          font-bold lg:font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
                           hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
                           focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -482,8 +484,8 @@ function LoginContent() {
                 data-testid="signup-email"
                 type="button"
                 onClick={() => changeMode("signup")}
-                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base
-                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-2 lg:py-4 text-sm lg:text-base 
+                          font-bold lg:font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
                           hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
                           focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
@@ -491,7 +493,7 @@ function LoginContent() {
                 <span className="leading-none">Sign up with Email</span>
               </button>
 
-              <p className="mt-6 text-center text-sm text-gray-800">
+              <p className="mt-5 lg:mt-6 text-center text-sm text-gray-800">
                 Already have an account?{" "}
                 <button
                   data-testid="go-login"
@@ -508,19 +510,19 @@ function LoginContent() {
 
         {mode === "signup" && (
           <div className="p-6 sm:p-8" data-testid="signup-form">
-            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-[#2C2533] mb-2">
               Create your account
             </h2>
 
             <form onSubmit={handleSignup} className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-4">
                 <Field label="Name">
                   <input
                     name="name"
                     value={signup.name}
                     onChange={onSignupChange}
                     max={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Your name"
                   />
                 </Field>
@@ -530,7 +532,7 @@ function LoginContent() {
                     name="surname"
                     value={signup.surname}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Your surname"
                   />
                 </Field>
@@ -543,7 +545,7 @@ function LoginContent() {
                     onChange={onSignupChange}
                     min={minDate}
                     max={maxDate}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                   />
                 </Field>
 
@@ -552,7 +554,7 @@ function LoginContent() {
                     name="gender"
                     value={signup.gender}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none text-gray-800"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-xs lg:text-base focus:outline-none text-gray-800"
                   >
                     <option value="" disabled>
                       Click to select
@@ -568,7 +570,7 @@ function LoginContent() {
                     name="username"
                     value={signup.username}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Pick a username"
                   />
                 </Field>
@@ -579,7 +581,7 @@ function LoginContent() {
                     name="email"
                     value={signup.email}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="you@example.com"
                   />
                 </Field>
@@ -590,7 +592,7 @@ function LoginContent() {
                     name="password"
                     value={signup.password}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none"
                     placeholder="••••••••"
                   />
                   <PasswordRequirements
@@ -605,7 +607,7 @@ function LoginContent() {
                     name="confirmPassword"
                     value={signup.confirmPassword}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none"
                     placeholder="Re-enter password"
                   />
                 </Field>
@@ -627,7 +629,7 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={signupLoading}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-4 lg:px-7 py-1 lg:py-3 text-sm lg:text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {signupLoading ? "Creating account..." : "Confirm"}
                 </button>
