@@ -118,7 +118,8 @@ export async function fetchPopularTopics(
 export async function fetchTopicsBySection(
   section: SkinFactSection,
   limit = 6,
-  offset = 0
+  offset = 0,
+  sessionId?: string | null
 ): Promise<FactTopicSummary[]> {
   if (shouldUseMock) {
     const { sectionTopicsMock } = await import("@/mocks/facts.mock");
@@ -127,14 +128,19 @@ export async function fetchTopicsBySection(
   }
 
   const base = getApiBase();
+  const token = getAuthToken();
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
+  if (sessionId) {
+    params.append("session_id", sessionId);
+  }
   const res = await fetch(
     `${base}/facts/topics/section/${section}?${params.toString()}`,
     {
       cache: "no-store",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
   if (!res.ok) {
@@ -172,7 +178,8 @@ export async function fetchFactTopicDetail(
 }
 
 export async function fetchRecommendedTopics(
-  limit = 4
+  limit = 4,
+  sessionId?: string | null
 ): Promise<FactTopicSummary[]> {
   if (shouldUseMock) {
     // fall back to a blend of knowledge + popular when mocking
@@ -197,7 +204,18 @@ export async function fetchRecommendedTopics(
 
   const base = getApiBase();
   const token = getAuthToken();
-  const res = await fetch(`${base}/facts/topics/recommended?limit=${limit}`, {
+  // Add timestamp to prevent caching and ensure fresh recommendations after quiz updates
+  const timestamp = Date.now();
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    _t: timestamp.toString(),
+  });
+  if (sessionId) {
+    params.append("session_id", sessionId);
+  }
+  const url = `${base}/facts/topics/recommended?${params.toString()}`;
+  console.log("[fetchRecommendedTopics] Requesting:", url, { sessionId, hasToken: !!token });
+  const res = await fetch(url, {
     cache: "no-store",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
