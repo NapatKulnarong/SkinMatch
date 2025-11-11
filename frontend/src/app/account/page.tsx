@@ -660,7 +660,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                         void handleDelete(item, key);
                       }}
                       disabled={isDeleting}
-                      className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                      className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                         isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                       }`}
                       aria-label="Delete match"
@@ -713,7 +713,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       void handleDelete(item, key);
                     }}
                     disabled={isDeleting}
-                    className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                    className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                       isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                     }`}
                     aria-label="Delete match"

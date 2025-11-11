@@ -147,23 +147,17 @@ export function ProductScanner() {
       </div>
 
       <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-6 sm:pt-10">
-        <div className="mx-auto w-full max-w-7xl text-center space-y-4">
+        <div className="mx-auto w-full max-w-7xl lg:text-center space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center lg:justify-center gap-3">
               <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8C1007]" />
               <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007]">
                 Instant Product Scanner
               </h2>  
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border-2 border-[#a82b36] bg-[#ffcdc3] px-3 py-1">
-                <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#a82b36]" />
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#a82b36]">
-                  BETA
-                </span>
-            </div>
             <p className="text-sm sm:text-base text-[#6b3e3e]/90 max-w-2xl mx-auto">
-              Upload a clear photo of the ingredient list. We will read the label, extract the key
-              actives, flag potential concerns, and share quick notes so you know what the product does.
+            Please upload a clear photo of the ingredient list. We will read the label, identify key active ingredients, 
+            flag concerns, and provide a brief overview of the product’s use.
             </p>
           </div>
 
@@ -172,7 +166,7 @@ export function ProductScanner() {
               htmlFor="scan-upload"
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
-              className="flex min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-[24px] border-2 border-black bg-white/80 px-6 py-6 text-center shadow-[0_6px_0_rgba(0,0,0,0.2)] cursor-pointer"
+              className="flex lg:min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-[5px] lg:rounded-[24px] border-2 border-black bg-white/80 px-6 py-6 text-center shadow-[0_6px_0_rgba(0,0,0,0.2)] cursor-pointer"
             >
               <input
                 ref={inputRef}
@@ -197,7 +191,7 @@ export function ProductScanner() {
               )}
             </label>
 
-            <div className="rounded-[24px] border-2 border-black bg-white/90 p-4 text-left shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col">
+            <div className="rounded-[5px] lg:rounded-[24px] border-2 border-black bg-white/90 p-4 text-left shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col">
               <label htmlFor="manual-ingredients" className="block text-sm font-bold text-[#6b3e3e] mb-2">
                 Or paste the ingredient list directly
               </label>
@@ -207,7 +201,7 @@ export function ProductScanner() {
                 onChange={(event) => setManualText(event.target.value)}
                 placeholder="Deionized Water, Garcinia Mangostana Peel Extract, Glyceryl Glucoside, ..."
                 rows={6}
-                className="h-full min-h-[240px] w-full rounded-2xl border-2 border-black/50 bg-white px-3 py-2 text-sm text-[#5a4230] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f2c9b5]/60"
+                className="h-full min-h-[180px] lg:min-h-[240px] w-full lg:rounded-2xl border-2 border-black/50 bg-white px-3 py-2 text-sm text-[#5a4230] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f2c9b5]/60"
               />
             </div>
           </div>
@@ -227,7 +221,7 @@ export function ProductScanner() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#ffbd95] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#ffbd95] px-5 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1"
             >
               Reset
             </button>
@@ -235,7 +229,7 @@ export function ProductScanner() {
               type="button"
               onClick={handleScan}
               disabled={isUploading}
-              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#FFFCFB] px-6 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#FFFCFB] px-6 py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70 flex-1"
             >
               Scan Product
             </button>
