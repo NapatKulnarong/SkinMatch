@@ -88,6 +88,6 @@ export default function FactRichText({ text }: { text: string }) {
       >
         {text}
       </ReactMarkdown>
-    </div>
+</div>
   );
 }
