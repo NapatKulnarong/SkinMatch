@@ -116,6 +116,11 @@ def generate_strategy_notes(
             if _ModelNotFound and isinstance(exc, _ModelNotFound):
                 logger.warning(f"Gemini model '{model_name}' not found; trying next candidate.")
                 continue
+            # Handle quota/rate limit errors gracefully
+            exc_str = str(exc)
+            if "429" in exc_str or "quota" in exc_str.lower() or "rate limit" in exc_str.lower():
+                logger.warning(f"Gemini model '{model_name}' quota exceeded; trying next candidate.")
+                continue
             logger.exception(f"Gemini model '{model_name}' failed with error: {exc}")
             # Don't break, try next model
             continue
@@ -245,6 +250,11 @@ def _fallback_strategy_notes(traits: dict, summary: dict, recommendations: Seque
             seen.add(note)
         if len(deduped) >= 8:
             break
+    
+    # Ensure we always return at least one note
+    if not deduped:
+        deduped.append("Keep routines gentle and consistent—your skin will reward the steady care.")
+    
     return deduped
 
 
