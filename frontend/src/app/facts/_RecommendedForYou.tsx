@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { SparklesIcon } from "@heroicons/react/24/solid";
+import { usePathname } from "next/navigation";
 
 import PageContainer from "@/components/PageContainer";
 import { fetchPopularTopics, fetchTopicsBySection, fetchRecommendedTopics } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
+import { PROFILE_EVENT, getAuthToken } from "@/lib/auth-storage";
+import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
 
 type RecommendedForYouProps = {
   sectionId?: string;
@@ -16,60 +19,136 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
+  const loadRecommendations = useCallback((providedSessionId?: string | null) => {
+    activeRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    // Determine session_id to use:
+    // 1. If provided (from event), use that
+    // 2. For anonymous users, get from localStorage
+    // 3. For logged-in users, don't pass session_id (backend will get latest automatically)
+    const token = getAuthToken();
+    const isLoggedIn = Boolean(token);
+    
+    let sessionId: string | null | undefined = providedSessionId;
+    
+    // If not provided and user is anonymous, try to get from localStorage
+    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
+      try {
+        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to read quiz session from localStorage", err);
+      }
+    }
+    
+    // For logged-in users, don't pass session_id so backend gets their latest session
+    // For anonymous users, pass session_id if available
+    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
+    
+    console.log("[RecommendedForYou] Loading recommendations:", {
+      isLoggedIn,
+      sessionId,
+      sessionIdToUse,
+      providedSessionId,
+    });
+    
     // Try personalized endpoint first; fall back to blended list on failure
-    fetchRecommendedTopics(4)
+    fetchRecommendedTopics(4, sessionIdToUse)
       .then((personalised) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         if (personalised.length) {
           setTopics(personalised);
           setError(null);
+          setLoading(false);
           return;
         }
         return Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
           ([knowledge, popular]) => {
-            if (!active) return;
+            if (!activeRef.current) return;
             const combined = [...knowledge, ...popular].filter(
               (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
             );
             combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
             setTopics(combined.slice(0, 4));
             setError(null);
+            setLoading(false);
           }
         );
       })
       .catch(() => {
-        if (!active) return;
+        if (!activeRef.current) return;
         Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)])
           .then(([knowledge, popular]) => {
-            if (!active) return;
+            if (!activeRef.current) return;
             const combined = [...knowledge, ...popular].filter(
               (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
             );
             combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
             setTopics(combined.slice(0, 4));
             setError(null);
+            setLoading(false);
           })
           .catch((err) => {
-            if (!active) return;
+            if (!activeRef.current) return;
             console.error("Failed to load recommended topics", err);
             setError("We couldn't load recommended topics right now. Please try again later.");
             setTopics([]);
-          })
-          .finally(() => {
-            if (active) setLoading(false);
+            setLoading(false);
           });
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
+  }, []);
+
+  // Load recommendations on mount and when pathname changes (user navigates back from quiz)
+  useEffect(() => {
+    loadRecommendations();
+    
+    return () => {
+      activeRef.current = false;
+    };
+  }, [loadRecommendations, pathname]);
+
+  // Listen for profile updates and quiz completion to refresh recommendations
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      // Refresh recommendations when profile is updated (e.g., after quiz completion for logged-in users)
+      loadRecommendations();
+    };
+
+    const handleQuizCompleted = (event: Event) => {
+      // Refresh recommendations when quiz is completed (works for both logged-in and anonymous users)
+      // Extract session_id from event detail if available (for anonymous users)
+      let sessionId: string | null | undefined = undefined;
+      if ("detail" in event) {
+        const customEvent = event as CustomEvent<{ sessionId?: string }>;
+        sessionId = customEvent.detail?.sessionId;
+        console.log("[RecommendedForYou] Quiz completed event received, sessionId:", sessionId);
+      } else {
+        console.log("[RecommendedForYou] Quiz completed event received without detail");
+      }
+      loadRecommendations(sessionId);
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      // Refresh when profile or token changes in localStorage
+      if (event.key === "sm_profile" || event.key === "sm_token") {
+        loadRecommendations();
+      }
+    };
+
+    window.addEventListener(PROFILE_EVENT, handleProfileUpdate);
+    window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    window.addEventListener("storage", handleStorageUpdate);
 
     return () => {
-      active = false;
+      window.removeEventListener(PROFILE_EVENT, handleProfileUpdate);
+      window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+      window.removeEventListener("storage", handleStorageUpdate);
     };
-  }, []);
+  }, [loadRecommendations]);
 
   const recommendations = useMemo(() => topics, [topics]);
 
