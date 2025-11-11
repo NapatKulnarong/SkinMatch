@@ -27,7 +27,7 @@ export default function QuizStepPage({ params }: { params: { id: string } }) {
   const meta = getStepMeta(step);
 
   return (
-    <main className="min-h-screen bg-[#f8cc8c] pb-10 pt-38 sm:pt-32 sm:flex sm:items-center sm:justify-center sm:py-10">
+    <main className="min-h-screen bg-[#f8cc8c] pb-10 pt-44 sm:pt-32 sm:flex sm:items-center sm:justify-center sm:py-10">
       <PageContainer className="w-full max-w-3xl">
         {meta ? <QuestionCard meta={meta} current={step} /> : <PlaceholderCard current={step} />}
       </PageContainer>
