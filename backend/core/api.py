@@ -30,6 +30,7 @@ from ninja.files import UploadedFile
 
 from .models import (
     UserProfile,
+    SkinProfile,
     SkinFactContentBlock,
     SkinFactTopic,
     SkinFactView,
@@ -51,7 +52,7 @@ else:
 
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
-from quiz.views import router as quiz_router
+from quiz.views import router as quiz_router, _resolve_request_user
 from quiz.models import QuizSession, Product
 from .models import WishlistItem
 
@@ -955,19 +956,217 @@ def popular_facts(request, limit: int = 5):
 
 
 @api.get("/facts/topics/section/{section}", response=List[FactTopicSummary])
-def facts_by_section(request, section: str, limit: int = 12, offset: int = 0):
+def facts_by_section(request, section: str, limit: int = 12, offset: int = 0, session_id: Optional[str] = None):
+    """Get topics for a specific section, optionally personalized based on quiz results."""
     valid_sections = {choice.value for choice in SkinFactTopic.Section}
     section_key = section.lower()
     if section_key not in valid_sections:
         raise HttpError(404, "Unknown section")
 
     limit = max(1, min(limit, 50))
-    qs = (
-        SkinFactTopic.objects.filter(section=section_key, is_published=True)
-        .order_by("-updated_at", "-created_at")
+    user = _resolve_request_user(request)
+    
+    # Get profile data for personalization if session_id or user is provided
+    profile_data: dict | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+        except (ValueError, TypeError):
+            pass
+    
+    # For logged-in users, try SkinProfile first, then fall back to latest session
+    if not profile_data and user:
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+        else:
+            latest_session = (
+                QuizSession.objects.filter(user=user, completed_at__isnull=False)
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+    
+    # Base query for the section
+    qs = SkinFactTopic.objects.filter(section=section_key, is_published=True)
+    
+    # If we have profile data, personalize the results
+    if profile_data:
+        keywords = _concern_keywords_from_profile(profile_data)
+        if keywords:
+            # Build keyword filter
+            keyword_q = Q()
+            for kw in keywords:
+                keyword_q |= (
+                    Q(title__icontains=kw)
+                    | Q(subtitle__icontains=kw)
+                    | Q(excerpt__icontains=kw)
+                )
+            # Get topics matching keywords first, then others
+            matching = list(qs.filter(keyword_q).order_by("-updated_at", "-created_at"))
+            non_matching = list(
+                qs.exclude(id__in=[t.id for t in matching])
+                .order_by("-updated_at", "-created_at")
+            )
+            topics = matching + non_matching
+        else:
+            topics = list(qs.order_by("-updated_at", "-created_at"))
+    else:
+        # No personalization, just order by recency
+        topics = list(qs.order_by("-updated_at", "-created_at"))
+    
+    # Apply pagination
+    paginated = topics[offset : offset + limit]
+    return [_serialize_fact_topic_summary(topic, request) for topic in paginated]
+
+
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary])
+def recommended_facts(request, limit: int = 4, session_id: Optional[str] = None):
+    """Personalized Skin Facts based on latest quiz profile and reading history.
+    
+    Works for both authenticated and anonymous users.
+    For anonymous users, pass session_id to get recommendations based on their latest quiz.
+    """
+    user = _resolve_request_user(request)
+    limit = max(1, min(limit, 8))
+    
+    logger.debug(f"[recommended_facts] user={user}, session_id={session_id}, limit={limit}")
+
+    latest_session: QuizSession | None = None
+    profile_data: dict | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+        except (ValueError, TypeError):
+            # Invalid session_id, ignore and continue
+            pass
+    
+    # For logged-in users, try SkinProfile first (more reliable), then fall back to latest session
+    if not profile_data and user:
+        # Try to get from SkinProfile (persisted profile with is_latest=True)
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            # Convert SkinProfile to dict format expected by _concern_keywords_from_profile
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+        else:
+            # Fall back to latest completed session's profile_snapshot
+            latest_session = (
+                QuizSession.objects.filter(user=user, completed_at__isnull=False)
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+
+    keywords: list[str] = []
+    if profile_data:
+        keywords = _concern_keywords_from_profile(profile_data)
+        logger.debug(f"[recommended_facts] Extracted keywords: {keywords[:10]}")  # Log first 10
+    else:
+        logger.debug("[recommended_facts] No profile_data found, using default keywords")
+
+    qs = SkinFactTopic.objects.filter(is_published=True)
+
+    # Score topics by keyword occurrence in title/subtitle/excerpt
+    # Build a Q OR chain across keywords
+    keyword_q = Q()
+    for kw in keywords:
+        keyword_q |= (
+            Q(title__icontains=kw)
+            | Q(subtitle__icontains=kw)
+            | Q(excerpt__icontains=kw)
+        )
+
+    filtered = qs.filter(keyword_q) if keywords else qs
+
+    # If we have reading history, boost previously viewed topics and dedupe later
+    viewed_ids = []
+    if user:
+        viewed_ids = list(
+            SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+        )
+
+    # Prefer ingredient spotlight and knowledge, then others, then by recency/views
+    ordered = (
+        filtered.annotate()
+        .order_by(
+            Case(
+                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
+                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
+                default=2,
+                output_field=IntegerField(),
+            ),
+            "-updated_at",
+            "-view_count",
+        )
     )
-    topics = qs[offset : offset + limit]
-    return [_serialize_fact_topic_summary(topic, request) for topic in topics]
+
+    topics = list(ordered[: limit * 3])  # overfetch a bit before re-ranking
+
+    # Light re-ranking: push already-viewed slightly down
+    def score(t: SkinFactTopic) -> tuple[int, int, int]:
+        section_rank = 0 if t.section == SkinFactTopic.Section.INGREDIENT_SPOTLIGHT else (1 if t.section == SkinFactTopic.Section.KNOWLEDGE else 2)
+        viewed_penalty = 1 if t.id in viewed_ids else 0
+        return (viewed_penalty, section_rank, -t.view_count)
+
+    topics.sort(key=score)
+    picked = []
+    seen = set()
+    for t in topics:
+        if t.id in seen:
+            continue
+        seen.add(t.id)
+        picked.append(t)
+        if len(picked) >= limit:
+            break
+
+    # Fallback to popular/knowledge if not enough
+    if len(picked) < limit:
+        extra = (
+            SkinFactTopic.objects.filter(is_published=True)
+            .exclude(id__in=[t.id for t in picked])
+            .order_by("-view_count", "-updated_at")[: limit - len(picked)]
+        )
+        picked.extend(list(extra))
+
+    return [_serialize_fact_topic_summary(topic, request) for topic in picked]
 
 
 @api.get("/facts/topics/{slug}", response=FactTopicDetailOut)
@@ -1162,86 +1361,4 @@ def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
         keywords = ["hyaluronic", "niacinamide", "vitamin c", "ceramide"]
     # dedupe, keep order
     return list(dict.fromkeys([kw.lower() for kw in keywords]))
-
-
-@api.get("/facts/topics/recommended", response=List[FactTopicSummary], auth=JWTAuth())
-def recommended_facts(request, limit: int = 4):
-    """Personalized Skin Facts based on latest quiz profile and reading history."""
-    user: User = request.auth
-    limit = max(1, min(limit, 8))
-
-    # Try to find the latest completed quiz session with a result profile
-    latest_session: QuizSession | None = (
-        QuizSession.objects.filter(user=user).order_by("-completed_at", "-started_at").first()
-    )
-
-    keywords: list[str] = []
-    if latest_session and isinstance(latest_session.result_summary, dict):
-        # Prefer the profile snapshot/result summary which mirrors SkinProfile fields
-        profile_like = latest_session.result_summary or latest_session.profile_snapshot or {}
-        keywords = _concern_keywords_from_profile(profile_like)
-
-    qs = SkinFactTopic.objects.filter(is_published=True)
-
-    # Score topics by keyword occurrence in title/subtitle/excerpt
-    # Build a Q OR chain across keywords
-    keyword_q = Q()
-    for kw in keywords:
-        keyword_q |= (
-            Q(title__icontains=kw)
-            | Q(subtitle__icontains=kw)
-            | Q(excerpt__icontains=kw)
-        )
-
-    filtered = qs.filter(keyword_q) if keywords else qs
-
-    # If we have reading history, boost previously viewed topics and dedupe later
-    viewed_ids = list(
-        SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
-    )
-
-    # Prefer ingredient spotlight and knowledge, then others, then by recency/views
-    ordered = (
-        filtered.annotate()
-        .order_by(
-            Case(
-                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
-                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
-                default=2,
-                output_field=IntegerField(),
-            ),
-            "-updated_at",
-            "-view_count",
-        )
-    )
-
-    topics = list(ordered[: limit * 3])  # overfetch a bit before re-ranking
-
-    # Light re-ranking: push already-viewed slightly down
-    def score(t: SkinFactTopic) -> tuple[int, int, int]:
-        section_rank = 0 if t.section == SkinFactTopic.Section.INGREDIENT_SPOTLIGHT else (1 if t.section == SkinFactTopic.Section.KNOWLEDGE else 2)
-        viewed_penalty = 1 if t.id in viewed_ids else 0
-        return (viewed_penalty, section_rank, -t.view_count)
-
-    topics.sort(key=score)
-    picked = []
-    seen = set()
-    for t in topics:
-        if t.id in seen:
-            continue
-        seen.add(t.id)
-        picked.append(t)
-        if len(picked) >= limit:
-            break
-
-    # Fallback to popular/knowledge if not enough
-    if len(picked) < limit:
-        extra = (
-            SkinFactTopic.objects.filter(is_published=True)
-            .exclude(id__in=[t.id for t in picked])
-            .order_by("-view_count", "-updated_at")[: limit - len(picked)]
-        )
-        picked.extend(list(extra))
-
-    return [_serialize_fact_topic_summary(t, request) for t in picked]
 
