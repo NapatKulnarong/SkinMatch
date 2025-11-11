@@ -148,19 +148,7 @@ export default function AboutPage() {
     <>
       <main className="min-h-screen bg-[#bcdcf6]">
         {/* Intro Letter */}
-        <PageContainer as="section" className="pt-32 sm:pt-44 pb-10 px-4">
-          {/* Mascot outside the card on mobile */}
-          <div className="flex justify-center mb-[-83px] sm:hidden relative z-10">
-            <Image
-              src="/img/mascot/matchy_3.png"
-              alt="Matchy mascot smiling"
-              width={180}
-              height={135}
-              className="w-[180px]"
-              priority
-            />
-          </div>
-          
+        <PageContainer as="section" className="pt-45 sm:pt-44 pb-10 px-4">
           <div
             className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-black shadow-[4px_6px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]"
             style={{

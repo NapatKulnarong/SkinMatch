@@ -68,9 +68,9 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
   const recommendations = useMemo(() => topics, [topics]);
 
   return (
-    <PageContainer as="section" id={sectionId} className="lg:pt-10">
+    <PageContainer as="section" id={sectionId} className="lg:pt-3">
       <div className="rounded-[22px] lg:rounded-[32px] border-2 border-black bg-gradient-to-br from-[#FFF1CA] via-[#F9D689] to-[#FFF1CA] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[10px_12px_0_rgba(0,0,0,0.18)]">
-        <div className="relative flex flex-col gap-4 border-b border-black/10 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-8">
+        <div className="relative flex flex-col gap-4 border-b border-black/10 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-8 sm:pb-5">
           <div>
             <p className="hidden sm:block text-xs font-semibold uppercase tracking-[0.32em] text-[#11224a]/60">
               Tailored insights
@@ -85,14 +85,14 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           </div>
           <Link
             href="/quiz"
-            className="order-last mt-2 inline-flex w-fit items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 sm:order-none sm:absolute sm:right-6 sm:top-8 sm:w-auto sm:justify-start sm:px-6"
+            className="order-last inline-flex w-fit items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#2d4a2b] shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 sm:order-none sm:absolute sm:right-6 sm:top-8 sm:w-auto sm:justify-start sm:px-6"
           >
             Update preferences
             <span aria-hidden>→</span>
           </Link>
         </div>
 
-        <div className="px-3 lg:px-2 pb-1 lg:pb-4 pt-4 sm:px-6">
+        <div className="px-3 lg:px-3 pb-1 lg:pb-5 pt-4 sm:px-6">
           <div className="flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 sm:grid sm:auto-rows-[1fr] sm:grid-cols-2 sm:gap-4 sm:overflow-visible xl:grid-cols-4">
           {loading && !recommendations.length
             ? Array.from({ length: 4 }).map((_, idx) => (
@@ -105,7 +105,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                 <Link
                   key={topic.slug}
                   href={`/facts/${topic.slug}`}
-                  className="group flex h-full min-h-[190px] lg:min-h-[255px] min-w-[250px] flex-col gap-3 rounded-[5px] lg:rounded-[24px] border-2 border-black bg-white px-3 lg:px-4 py-2 lg:py-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[5px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 sm:min-w-0"
+                  className="group flex h-full min-h-[190px] lg:min-h-[245px] min-w-[250px] flex-col gap-3 rounded-[5px] border-2 border-black bg-white px-3 lg:px-4 py-2 lg:py-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[5px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 sm:min-w-0"
                 >
                   <span className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#11224a]/60">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#11224a] bg-[#FFF1CA] text-sm font-bold">

@@ -165,11 +165,11 @@ function AccountContent() {
   return (
     <>
       <main className="min-h-screen bg-[#d3cbe0]">
-      <PageContainer className="pt-38 sm:pt-28 pb-16 lg:px-8">
+      <PageContainer className="pt-48 sm:pt-30 pb-16 lg:px-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="hidden sm:block mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Account</h1>
-          <p className="hidden sm:block text-base text-gray-700">Manage your profile and view your skincare journey</p>
+          <p className="text-base text-gray-700">Manage your profile and view your skincare journey</p>
         </div>
 
         {error && (

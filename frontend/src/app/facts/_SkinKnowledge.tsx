@@ -21,7 +21,6 @@ type SkinKnowledgeProps = {
 
 export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
-  const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,13 +44,8 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
     };
   }, []);
 
-  const visibleTopics = useMemo(
-    () => (showAll ? topics : topics.slice(0, 6)),
-    [topics, showAll]
-  );
-
-  const hasMore = topics.length > 6;
-  const handleToggle = () => setShowAll((prev) => !prev);
+  const visibleTopics = useMemo(() => topics.slice(0, 6), [topics]);
+  const showViewAll = topics.length > 6;
 
   // Loading skeleton — matches Spotlight sizing
   if (loading) {
@@ -90,7 +84,8 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
+      <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
       <div className="relative">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -113,7 +108,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
         </div>
 
         {/* Cards — same style as Ingredient Spotlight */}
-        <div className="lg:pt-1 flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
+        <div className="lg:pt-1 flex snap-x snap-mandatory sm:snap-none gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
           {visibleTopics.map((topic, index) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
             const description =
@@ -182,27 +177,26 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
               </Link>
             );
           })}
+          {showViewAll && (
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+              <div className="space-y-2 text-[#122016]">
+                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">Need more?</p>
+                <h3 className="text-xl font-bold">See every Skin Knowledge guide</h3>
+                <p className="text-sm text-[#1f2d26]/70">
+                  Explore the full archive for ingredient explainers, pairings, and science-backed routines.
+                </p>
+              </div>
+              <Link
+                href="/facts/skin-knowledge"
+                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-5 py-2 font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+              >
+                Read more topics <span aria-hidden>↗</span>
+              </Link>
+            </div>
+          )}
         </div>
 
-        {topics.length > 6 && (
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              disabled={!hasMore}
-              onClick={() => hasMore && handleToggle()}
-              className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-6 py-2 font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
-                hasMore
-                  ? "hover:-translate-y-[1px] hover:bg-white"
-                  : "cursor-not-allowed opacity-60"
-              }`}
-            >
-              {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
-              <span aria-hidden className="text-lg">
-                {hasMore ? (showAll ? "▲" : "▼") : "•"}
-              </span>
-            </button>
-          </div>
-        )}
+      </div>
       </div>
     </PageContainer>
   );

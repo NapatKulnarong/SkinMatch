@@ -80,10 +80,6 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
   return (
     <PageContainer as="section" id={sectionId} className="pt-12 sm:pt-16 lg:pt-20">
       <div className="mb-5 flex flex-col gap-2 lg:mb-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="hidden sm:block text-3xl font-extrabold text-gray-900 sm:text-4xl">Skin Facts</div>
-        <p className="hidden sm:block text-sm text-gray-700/80 lg:text-base">
-          Swipe today&apos;s editor picks or tap a chip to jump between stories.
-        </p>
       </div>
       <div className="relative">
         <div className="relative overflow-hidden rounded-[22px] lg:rounded-[32px] border-2 border-black 

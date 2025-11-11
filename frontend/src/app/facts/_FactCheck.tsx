@@ -15,13 +15,12 @@ type FactCheckProps = {
 
 export default function FactCheck({ sectionId }: FactCheckProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
-  const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetchTopicsBySection("fact_check", 9)
+    fetchTopicsBySection("fact_check", 12)
       .then((data) => {
         if (!active) return;
         setTopics(data);
@@ -40,12 +39,8 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
     };
   }, []);
 
-  const visibleTopics = useMemo(
-    () => (showAll ? topics : topics.slice(0, 6)),
-    [topics, showAll]
-  );
-  const hasMore = topics.length > 6;
-  const toggle = () => setShowAll((prev) => !prev);
+  const visibleTopics = useMemo(() => topics.slice(0, 6), [topics]);
+  const showViewAll = topics.length > 6;
 
   if (loading) {
     return (
@@ -74,26 +69,25 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
-      <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#102320]">
-            Fact Check
-          </h2>
-          <p className="hidden sm:block mt-2 text-[#102320]/70 md:text-lg">
-            Bust the biggest skincare myths with science-backed breakdowns.
-          </p>
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
+      <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
+        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#102320]">
+              Fact Check
+            </h2>
+            <p className="hidden sm:block mt-2 text-[#102320]/70 md:text-lg">
+              Bust the biggest skincare myths with science-backed breakdowns.
+            </p>
+          </div>
+          <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Verified by our experts
+            </span>
+          </div>
         </div>
-        <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
-          <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
-            Verified by our experts
-          </span>
-        </div>
-      </div>
 
-      {/* Mobile: horizontal cards with wide-oval Read pill */}
-      <div className="sm:hidden -mx-4 px-4">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
+        <div className="lg:pt-1 flex snap-x snap-mandatory sm:snap-none gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
           {visibleTopics.map((topic) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
             const description =
@@ -101,154 +95,77 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
             const verdict = topic.title.toLowerCase().includes("myth")
               ? "Myth"
               : "Verified";
-
-            return (
-              <Link
-                key={`mobile-${topic.slug}`}
-                href={`/facts/${topic.slug}`}
-                className="relative min-w-[250px] overflow-hidden rounded-[24px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]"
-              >
-                <div className="relative h-40 overflow-hidden">
-                  <Image
-                    src={image}
-                    alt={topic.heroImageAlt ?? topic.title}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <span
-                    className={`absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-dashed border-black/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${
-                      verdict === "Verified"
-                        ? "bg-[#d6f0d1]/80 text-[#134620]"
-                        : "bg-[#fde2e2]/80 text-[#8b1c1c]"
-                    }`}
-                  >
-                    {verdict}
-                  </span>
-                </div>
-
-                {/* extra bottom padding so the pill has space */}
-                <div className="space-y-3 p-4 pb-12">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#102320]/60">
-                    Myth vs Fact
-                  </p>
-                  <h3 className="text-base font-bold text-[#102320] leading-tight">
-                    {topic.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-[#102320]/75 line-clamp-3">
-                    {description}
-                  </p>
-                </div>
-
-                {/* mobile-only oval pill */}
-                <span
-                  className="sm:hidden absolute bottom-3 right-3 inline-flex items-center gap-1
-                             rounded-full border border-[#11224a] bg-white px-4 py-1.5
-                             text-[11px] font-semibold uppercase tracking-[0.25em] text-[#11224a]"
-                >
-                  Read
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Desktop/Tablet: timeline layout with normal button */}
-      <div className="hidden sm:block relative pl-6 sm:pl-10">
-        <div className="absolute left-2 sm:left-4 top-0 h-full w-0.5 bg-gradient-to-b from-[#102320]/30 via-[#102320]/15 to-transparent" />
-
-        <ul className="space-y-10 sm:space-y-12">
-          {visibleTopics.map((topic, index) => {
-            const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
-            const description =
-              topic.subtitle || topic.excerpt || "We break down the science.";
-            const verdict = topic.title.toLowerCase().includes("myth")
-              ? "Myth busted"
-              : "Verified";
             const verdictColor =
               verdict === "Verified"
                 ? "bg-[#d6f0d1] text-[#134620]"
                 : "bg-[#fde2e2] text-[#8b1c1c]";
 
             return (
-              <li key={topic.slug} className="relative ml-auto sm:pl-4">
-                <span className="absolute -left-6 sm:-left-11 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-[#fef7e3] text-sm font-bold text-[#102320] shadow-[3px_4px_0_rgba(0,0,0,0.25)]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-
-                <div className="rounded-[26px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_10px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
-                  <div className="grid gap-0 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)]">
-                    <div className="relative h-48 sm:h-full overflow-hidden rounded-t-[24px] sm:rounded-l-[24px] sm:rounded-tr-none">
-                      <Image
-                        src={image}
-                        alt={topic.heroImageAlt ?? topic.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 320px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <span className={`absolute left-4 top-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] ${verdictColor}`}>
-                        {verdict}
+              <article
+                key={topic.slug}
+                className="flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
+              >
+                <Link href={`/facts/${topic.slug}`} className="flex h-full flex-col">
+                  <div className="relative h-40 overflow-hidden sm:h-48">
+                    <Image
+                      src={image}
+                      alt={topic.heroImageAlt ?? topic.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 320px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+                    <span
+                      className={`absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] ${verdictColor}`}
+                    >
+                      {verdict}
+                    </span>
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between gap-4 p-5 text-[#102320]">
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#102320]/60">
+                        Myth vs Fact
+                      </p>
+                      <h3 className="text-lg font-bold leading-tight">{topic.title}</h3>
+                      <p className="text-sm leading-relaxed text-[#102320]/75 line-clamp-3">
+                        {description}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#102320]/60">
+                      <span>
+                        {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
+                      </span>
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#102320]">
+                        Read <span aria-hidden>↗</span>
                       </span>
                     </div>
-
-                    <div className="flex flex-col gap-4 p-6 sm:p-8">
-                      <div className="space-y-3">
-                        <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#102320]/60">
-                          Myth vs Fact
-                        </p>
-                        <h3 className="text-xl font-extrabold text-[#102320] md:text-2xl">
-                          {topic.title}
-                        </h3>
-                        <p className="text-sm leading-relaxed text-[#102320]/75 md:text-base">
-                          {description}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.28em] text-[#102320]/60">
-                        <span className="inline-flex items-center gap-1 rounded-full border border-[#102320]/15 bg-[#f3f6f4] px-3 py-1 font-semibold">
-                          {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-[#102320]/15 bg-[#f3f6f4] px-3 py-1 font-semibold">
-                          Science backed
-                        </span>
-                      </div>
-
-                      <div>
-                        <Link
-                          href={`/facts/${topic.slug}`}
-                          className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fdf7e6] px-5 py-2 text-sm font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
-                        >
-                          Read <span aria-hidden>↗</span>
-                        </Link>
-                      </div>
-                    </div>
                   </div>
-                </div>
-              </li>
+                </Link>
+              </article>
             );
           })}
-        </ul>
-      </div>
 
-      {topics.length > 4 && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            disabled={!hasMore}
-            onClick={() => hasMore && toggle()}
-            className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#fdf0dc] px-6 py-2 font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
-              hasMore ? "hover:-translate-y-[1px]" : "cursor-not-allowed opacity-60"
-            }`}
-          >
-            {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
-            <span aria-hidden className="text-lg">
-              {hasMore ? (showAll ? "▲" : "▼") : "•"}
-            </span>
-          </button>
+          {showViewAll && (
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+              <div className="space-y-2 text-[#102320]">
+                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">
+                  Need more?
+                </p>
+                <h3 className="text-xl font-bold">See every Fact Check breakdown</h3>
+                <p className="text-sm text-[#102320]/70">
+                  Explore the full archive of myths we&apos;ve debunked with science-backed receipts.
+                </p>
+              </div>
+              <Link
+                href="/facts/fact-check"
+                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#fdf0dc] px-5 py-2 font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+              >
+                Browse Fact Checks <span aria-hidden>↗</span>
+              </Link>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </PageContainer>
   );
 }
