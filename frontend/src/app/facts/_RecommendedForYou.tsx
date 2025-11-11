@@ -15,6 +15,7 @@ type RecommendedForYouProps = {
 export default function RecommendedForYou({ sectionId }: RecommendedForYouProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -24,6 +25,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
         if (!active) return;
         if (personalised.length) {
           setTopics(personalised);
+          setError(null);
           return;
         }
         return Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
@@ -34,6 +36,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
             );
             combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
             setTopics(combined.slice(0, 4));
+            setError(null);
           }
         );
       })
@@ -47,10 +50,13 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
             );
             combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
             setTopics(combined.slice(0, 4));
+            setError(null);
           })
           .catch((err) => {
             if (!active) return;
             console.error("Failed to load recommended topics", err);
+            setError("We couldn't load recommended topics right now. Please try again later.");
+            setTopics([]);
           })
           .finally(() => {
             if (active) setLoading(false);
@@ -130,7 +136,13 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
 
         {!loading && !recommendations.length ? (
           <div className="border-t border-dashed border-[#11224a]/20 px-6 py-6 text-sm text-[#11224a]/70">
-            We&apos;ll personalise this space once you explore a few more topics.
+            {error ? (
+              <div className="rounded-[16px] border-2 border-[#B6771D]/30 bg-[#FFF1CA]/60 p-4 text-center">
+                <p className="font-semibold text-[#11224a]">{error}</p>
+              </div>
+            ) : (
+              "We'll personalise this space once you explore a few more topics."
+            )}
           </div>
         ) : null}
       </div>
