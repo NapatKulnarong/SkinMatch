@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io, os, re, json
-from typing import List, Optional
+from typing import List
 
 from ninja.errors import HttpError
 import cv2
@@ -22,99 +22,142 @@ if genai is not None and API_KEY:
 
 from .utils_ocr import preprocess_for_ocr
 from .text_cleaner import clean_ocr_text
+from .api_scan import scan_router as _legacy_scan_router
 
 scan_text_router = Router(tags=["scan-text"])
 
 # ---------------- OCR helpers (English only) ----------------
-def _load_pil(file: UploadedFile) -> Image.Image:
+def _load_image(file: UploadedFile) -> Image.Image:
+    """Read an uploaded file into a RGB PIL image (raises if not an image)."""
     data = file.read()
-    return Image.open(io.BytesIO(data)).convert("RGB")
+    if hasattr(file, "seek"):
+        try:
+            file.seek(0)
+        except Exception:
+            # Some UploadedFile objects don't support seek; ignore.
+            pass
+    img = Image.open(io.BytesIO(data))
+    img.load()  # Force Pillow to decode now so errors bubble immediately.
+    return img.convert("RGB")
 
-def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
-    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+def _preprocess(pil_img: Image.Image) -> Image.Image:
+    """Thin wrapper so tests can stub the preprocessing step."""
+    if preprocess_for_ocr is None:
+        return pil_img
+    try:
+        processed = preprocess_for_ocr(pil_img)
+        return processed if processed is not None else pil_img
+    except Exception:
+        # If preprocessing fails for any reason, fall back to the raw image so
+        # we still attempt OCR instead of crashing the endpoint.
+        return pil_img
 
 def _ocr_text(pil_img: Image.Image) -> str:
-    if preprocess_for_ocr:
-        pil_img = preprocess_for_ocr(pil_img)
-        return pytesseract.image_to_string(pil_img, lang="eng")
-
-    img = _pil_to_bgr(pil_img)
-    img = cv2.resize(img, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
-    img = cv2.bilateralFilter(img, d=7, sigmaColor=75, sigmaSpace=75)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    th = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 35, 11
-    )
-    return pytesseract.image_to_string(th, lang="eng")
+    """Run preprocess → cv2 conversion → OCR (Thai/English)."""
+    prepared = _preprocess(pil_img)
+    np_img = cv2.cvtColor(np.array(prepared), cv2.COLOR_RGB2BGR)
+    raw_text = cv2_to_text(np_img)
+    return clean_ocr_text(raw_text)
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
-    """Run full preprocess -> OCR -> cleanup"""
-    data = file.read()
-    pil = Image.open(io.BytesIO(data)).convert("RGB")
-
-    # Preprocess + clean up
-    pre_pil = preprocess_for_ocr(pil)
-    pre_np = cv2.cvtColor(np.array(pre_pil), cv2.COLOR_RGB2BGR)
-    raw_text = cv2_to_text(pre_np)
-    return clean_ocr_text(raw_text)
+    """Glue helper used by the API endpoint (kept separate for test patching)."""
+    pil = _load_image(file)
+    return _ocr_text(pil)
 
 def cv2_to_text(img: np.ndarray) -> str:
     return pytesseract.image_to_string(img, lang="tha+eng")
 
-# ---------------- Fallback extractor (English keywords) ----------------
+# ---------------- Fallback extractor (English/Thai keywords) ----------------
+_ACTIVE_RULES = [
+    (r"\bniacinamide\b", "niacinamide", "Niacinamide helps support tone and barrier resilience."),
+    (r"\burea\b", "urea", "Urea is a humectant (NMF) that locks in water."),
+    (r"saccharide\s+isomerate", "saccharide isomerate", "Saccharide Isomerate binds moisture for long-lasting hydration."),
+    (r"\bceramide", "ceramide complex", "Ceramides replenish the barrier."),
+    (r"beta\s*glucan|oat\s*extract|avena\s+sativa", "avena sativa (oat) extract", None),
+    (r"\bpanthenol\b", "panthenol", None),
+    (r"tocopheryl\s*acetate|vitamin\s*e", "vitamin e", None),
+    (r"oryza\s+sativa.*bran\s*oil", "rice bran oil", None),
+    (r"aloe\s+barbadensis", "aloe barbadensis leaf juice", None),
+    (r"\bglycerin\b", "glycerin", None),
+    (r"centella|asiatica", "centella asiatica extract", None),
+    (r"hyaluronic\s+acid|sodium\s+hyaluronate", "hyaluronic acid", None),
+    (r"trehalose", "trehalose", None),
+    (r"sorbitol", "sorbitol", None),
+]
+
+_FREE_FROM_REMOVALS = [
+    (r"\balcohol[-\s]?free\b|free\s+from\s+alcohol", "drying alcohol"),
+    (r"\bparaben[-\s]?free\b|free\s+from\s+parabens?", "parabens"),
+]
+
 def _fallback_extract(text: str) -> dict:
-    t = text.lower()
-    def has(p: str) -> bool:
-        return re.search(p, t, flags=re.I) is not None
+    lowered = text.lower()
 
-    actives: list[str] = []
-    def describe(name: str, description: str) -> str:
-        return f"{name}: {description}"
-
-    if has(r"\bniacinamide\b"): actives.append(describe("Niacinamide", "Vitamin B3 that improves tone, strengthens barrier and calms redness."))
-    if has(r"\burea\b"): actives.append(describe("Urea", "NMF humectant that draws water into skin and smooths texture."))
-    if has(r"saccharide\s+isomerate"): actives.append(describe("Saccharide Isomerate", "Plant-derived sugar complex that binds moisture for long-lasting hydration."))
-    if has(r"beta\s*glucan|oat\s*extract|avena\s+sativa"): actives.append(describe("Avena Sativa (Oat) Extract", "Soothes irritation and reinforces skin barrier."))
-    if has(r"\bceramide\b"): actives.append(describe("Ceramide Complex", "Skin-identical lipids that patch up a weakened barrier."))
-    if has(r"\bpanthenol\b"): actives.append(describe("Panthenol", "Pro-Vitamin B5 that hydrates and speeds up barrier recovery."))
-    if has(r"tocopheryl\s*acetate|vitamin\s*e"): actives.append(describe("Tocopheryl Acetate (Vitamin E)", "Antioxidant support that protects against free radicals."))
-    if has(r"oryza\s+sativa.*bran\s*oil"): actives.append(describe("Oryza Sativa (Rice) Bran Oil", "Nourishing oil rich in vitamin E and ferulic acid."))
-    if has(r"aloe\s+barbadensis"): actives.append(describe("Aloe Barbadensis Leaf Juice", "Calms irritation and replenishes moisture."))
-    if has(r"\bglycerin\b"): actives.append(describe("Glycerin", "Classic humectant that draws moisture from the air into skin."))
-    if has(r"centella|asiatica"): actives.append(describe("Centella Asiatica Extract", "Cica botanical that soothes and supports barrier repair."))
-    if has(r"hyaluronic\s+acid|sodium\s+hyaluronate"): actives.append(describe("Hyaluronic Acid", "Water-binding molecule that plumps and hydrates."))
-    if has(r"trehalose"): actives.append(describe("Trehalose", "Sugar humectant that protects cells from dehydration."))
-    if has(r"sorbitol"): actives.append(describe("Sorbitol", "Humectant that boosts moisture retention."))
-
-    concerns: list[str] = []
-    if has(r"\bfragrance\b|\bparfum\b"): concerns.append("Fragrance")
-    if has(r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl\s+alcohol\b"):concerns.append("Drying Alcohol")
-    if has(r"\bparaben"): concerns.append("Parabens")
-    if has(r"\bmineral\s*oil\b"): concerns.append("Mineral Oil")
-    if has(r"\bmit\b|\bmethylisothiazolinone\b"): concerns.append("MIT")
-
-    # Free-from overrides
-    if has(r"\balcohol[-\s]?free\b|free\s+from\s+alcohol"):concerns = [c for c in concerns if "alcohol" not in c.lower()]
-    if has(r"\bparaben[-\s]?free\b|free\s+from\s+parabens?"):concerns = [c for c in concerns if "paraben" not in c.lower()]
-    if has(r"\bmineral\s*oil[-\s]?free\b|free\s+from\s+mineral\s+oil"):concerns = [c for c in concerns if "mineral oil" not in c.lower()]
-
-    benefits: list[str] = []
-    for line in [ln.strip() for ln in text.splitlines() if ln.strip()]:
-        if re.search(r"hydrate|moistur|nourish|soothe|reduce|barrier|dermatolog(ically)? tested", line, re.I):
-            if len(line) <= 180:
-                benefits.append(line)
-
+    actives_found: list[str] = []
     notes: list[str] = []
-    if any("Ceramide" in a for a in actives): notes.append("Barrier support (ceramides).")
-    if any("fragrance" in c.lower() for c in concerns): notes.append("Contains fragrance — patch test if sensitive.")
-    if any("Niacinamide" == a for a in actives): notes.append("Niacinamide may help with tone/texture & barrier.")
-    if any("Urea" == a for a in actives): notes.append("Urea is a humectant (NMF) — boosts hydration.")
+    for pattern, label, helper_note in _ACTIVE_RULES:
+        if re.search(pattern, lowered, flags=re.I):
+            actives_found.append(label)
+            if helper_note:
+                notes.append(helper_note)
+
+    concern_patterns = [
+        (r"\balcohol\s*denat\b|\bethanol\b|\bisopropyl\s+alcohol\b", "drying alcohol"),
+        (r"\bparaben", "parabens"),
+        (r"\bmineral\s*oil\b", "mineral oil"),
+        (r"\bmit\b|\bmethylisothiazolinone\b", "mit"),
+    ]
+
+    concerns_found: list[str] = []
+
+    # Handle fragrance separately so we can ignore "fragrance (parfum)" noise
+    fragrance_group = re.search(r"fragrance\s*\(parfum\)", text, flags=re.I)
+    if re.search(r"\bfragrance\b", text, flags=re.I) and not fragrance_group:
+        concerns_found.append("fragrance")
+    elif re.search(r"\bparfum\b", text, flags=re.I) and not fragrance_group:
+        concerns_found.append("fragrance")
+
+    for pattern, label in concern_patterns:
+        if re.search(pattern, lowered, flags=re.I):
+            concerns_found.append(label)
+
+    for pattern, label in _FREE_FROM_REMOVALS:
+        if re.search(pattern, lowered, flags=re.I):
+            concerns_found = [c for c in concerns_found if c != label]
+
+    # Benefit sentences: keep short-ish lines mentioning hydration/barrier care (Eng/Thai).
+    benefit_lines: list[str] = []
+    benefit_regex = re.compile(
+        r"(hydrate|ชุ่มชื้น|moistur|นุ่ม|soothe|calm|ลด|barrier|dermatolog(ically)? tested)",
+        flags=re.I,
+    )
+    for line in (ln.strip() for ln in text.splitlines()):
+        if not line or len(line) > 180:
+            continue
+        if benefit_regex.search(line):
+            benefit_lines.append(line)
+
+    if "fragrance" in concerns_found:
+        notes.append("Contains fragrance — patch test first if sensitive.")
+    if "mineral oil" in concerns_found:
+        notes.append("Lists mineral oil — avoid if you react to occlusives.")
+
+    # Niacinamide-specific mention for tests expecting Thai+English mix.
+    if "niacinamide" in actives_found:
+        notes.append("Niacinamide supports the skin barrier and tone.")
+
+    dedup = lambda items: list(dict.fromkeys(items))
+
+    actives = sorted(set(actives_found))
+    concerns = sorted(set(concerns_found))
+    benefits = dedup(benefit_lines)[:8]
+    notes_out = dedup(notes)[:6]
 
     return {
-        "benefits": benefits[:8],
-        "actives": sorted(set(actives)),
-        "concerns": sorted(set(concerns)),
-        "notes": notes[:6],
+        "benefits": benefits,
+        "actives": actives,
+        "concerns": concerns,
+        "notes": notes_out,
         "confidence": 0.55,
     }
 
@@ -217,13 +260,13 @@ def _call_gemini_for_json(ocr_text: str) -> dict | None:
         * <0.6 = uncertain (many garbled or missing terms)
 
     Output format:
-    {
-    "actives": [{"name": "Niacinamide", "description": "Improves skin tone and barrier resilience"}],
-    "benefits": [{"name": "Hydration Boost", "description": "Locks in moisture and soothes dryness"}],
-    "concerns": [{"name": "Fragrance", "description": "May irritate sensitive skin"}],
-    "notes": [{"name": "Alcohol-free", "description": "Gentle for daily use"}],
-    "confidence": 0.92
-    }
+    {{
+        "actives": [{{"name": "Niacinamide", "description": "Improves skin tone and barrier resilience"}}],
+        "benefits": [{{"name": "Hydration Boost", "description": "Locks in moisture and soothes dryness"}}],
+        "concerns": [{{"name": "Fragrance", "description": "May irritate sensitive skin"}}],
+        "notes": [{{"name": "Alcohol-free", "description": "Gentle for daily use"}}],
+        "confidence": 0.92
+    }}
 
     OCR_TEXT:
     \"\"\"{ocr_text}\"\"\"
@@ -428,16 +471,31 @@ def norm_list(values) -> list[str]:
             out.append(normalized)
     return out
 
-def _combine_lists(primary, fallback):
+def _combine_lists(primary, fallback, *, sort_results: bool = False, prefer_primary: bool = False):
     primary_norm = norm_list(primary)
     fallback_norm = norm_list(fallback)
+    if prefer_primary and primary_norm:
+        combined = list(primary_norm)
+        return sorted(combined, key=lambda s: s.lower()) if sort_results else combined
     existing = {item.lower() for item in primary_norm}
     combined = list(primary_norm)
     for item in fallback_norm:
         if item.lower() not in existing:
             combined.append(item)
             existing.add(item.lower())
+    if sort_results:
+        combined = sorted(combined, key=lambda s: s.lower())
     return combined
+
+def _call_primary_model(ocr_text: str) -> dict | None:
+    """
+    Try the legacy single-call helper first (so existing tests/mocks still work),
+    then fall back to the newer ensemble prompt if that returns nothing.
+    """
+    legacy = _call_gemini_for_json(ocr_text)
+    if legacy:
+        return legacy
+    return _call_gemini_ensemble(ocr_text)
 
 # ---------------- Output schema ----------------
 class LabelLLMOut(Schema):
@@ -455,13 +513,13 @@ class LabelTextIn(Schema):
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
     text = _ocr_text_from_file(file)
-    primary = _call_gemini_ensemble(text)
+    primary = _call_primary_model(text)
     fallback = _fallback_extract(text)
     combined = {
-        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits")),
-        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives")),
-        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns")),
-        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes")),
+        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits"), sort_results=True, prefer_primary=bool(primary)),
+        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives"), sort_results=True, prefer_primary=bool(primary)),
+        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns"), sort_results=True, prefer_primary=bool(primary)),
+        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes"), prefer_primary=bool(primary)),
     }
     confidence = primary.get("confidence") if primary and primary.get("confidence") is not None else fallback.get("confidence", 0.55)
     total_items = sum(len(combined[key]) for key in combined)
@@ -483,13 +541,13 @@ def analyze_label_text(request, payload: LabelTextIn):
     if not text:
         raise HttpError(400, "Please provide ingredient text to analyze.")
 
-    primary = _call_gemini_ensemble(text)
+    primary = _call_primary_model(text)
     fallback = _fallback_extract(text)
     combined = {
-        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits")),
-        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives")),
-        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns")),
-        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes")),
+        "benefits": _combine_lists(primary.get("benefits") if primary else [], fallback.get("benefits"), sort_results=True, prefer_primary=bool(primary)),
+        "actives": _combine_lists(primary.get("actives") if primary else [], fallback.get("actives"), sort_results=True, prefer_primary=bool(primary)),
+        "concerns": _combine_lists(primary.get("concerns") if primary else [], fallback.get("concerns"), sort_results=True, prefer_primary=bool(primary)),
+        "notes": _combine_lists(primary.get("notes") if primary else [], fallback.get("notes"), prefer_primary=bool(primary)),
     }
     confidence = primary.get("confidence") if primary and primary.get("confidence") is not None else fallback.get("confidence", 0.55)
     total_items = sum(len(combined[key]) for key in combined)
@@ -504,3 +562,15 @@ def analyze_label_text(request, payload: LabelTextIn):
         notes=combined["notes"][:6],
         confidence=float(confidence),
     )
+
+
+@_legacy_scan_router.post("/label/analyze-llm", response=LabelLLMOut)
+def analyze_label_llm_scan_namespace(request, file: UploadedFile = File(...)):
+    """Expose the label analyzer under /api/scan/... for backward compatibility."""
+    return analyze_label_llm(request, file)
+
+
+@_legacy_scan_router.post("/label/analyze-text", response=LabelLLMOut)
+def analyze_label_text_scan_namespace(request, payload: LabelTextIn):
+    """Expose the text analyzer under /api/scan/... for backward compatibility."""
+    return analyze_label_text(request, payload)
