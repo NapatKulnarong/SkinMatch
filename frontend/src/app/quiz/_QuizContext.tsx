@@ -99,6 +99,7 @@ export function QuizProvider({ children }: PropsWithChildren) {
   const finalizePromiseRef = useRef<Promise<QuizFinalize | null> | null>(null);
   const finalizedSessionRef = useRef<string | null>(null);
   const previousSessionRef = useRef<string | null>(null);
+  const isStartingFreshRef = useRef<boolean>(false);
 
   const ensureActiveSession = useCallback(async (): Promise<string> => {
     if (sessionId) {
@@ -107,6 +108,19 @@ export function QuizProvider({ children }: PropsWithChildren) {
     if (sessionPromiseRef.current) {
       return sessionPromiseRef.current;
     }
+    // Mark that we're starting fresh to prevent loading old answers from localStorage
+    isStartingFreshRef.current = true;
+    // Clear localStorage and answers when starting a fresh session to prevent loading old answers
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(ANSWERS_STORAGE_KEY);
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to clear stored quiz data before new session", err);
+      }
+    }
+    // Clear answers state when starting a new session
+    setAnswers(createEmptyAnswers());
     const promise = startQuizSession()
       .then((fresh) => {
         setSessionId(fresh.id);
@@ -127,28 +141,28 @@ export function QuizProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(ANSWERS_STORAGE_KEY);
-      if (raw) {
-        const parsed = parseStoredAnswers(JSON.parse(raw));
-        setAnswers(parsed);
-      }
-    } catch (err) {
-      console.warn("Failed to parse stored quiz answers", err);
+    // Don't restore from localStorage if we're intentionally starting fresh
+    if (isStartingFreshRef.current) {
+      return;
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
       if (storedSession) {
-        setSessionId(storedSession);
+        // Only restore session if we don't already have one
+        if (!sessionId) {
+          setSessionId(storedSession);
+          // Load answers only if we have a matching session
+          const raw = window.localStorage.getItem(ANSWERS_STORAGE_KEY);
+          if (raw) {
+            const parsed = parseStoredAnswers(JSON.parse(raw));
+            setAnswers(parsed);
+          }
+        }
       }
     } catch (err) {
       console.warn("Failed to read stored quiz session", err);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -261,6 +275,8 @@ export function QuizProvider({ children }: PropsWithChildren) {
   );
 
   const resetQuiz = useCallback(async () => {
+    // Mark that we're starting fresh
+    isStartingFreshRef.current = true;
     setAnswers(createEmptyAnswers());
     setResult(null);
     finalizedSessionRef.current = null;
