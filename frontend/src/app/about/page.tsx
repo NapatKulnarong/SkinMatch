@@ -256,28 +256,26 @@ export default function AboutPage() {
                       backgroundRepeat: "repeat",
                     }}
                   >
-                    {/* Header with step number and date */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="text-5xl font-extrabold text-gray-800/30">
-                        {idx + 1}
-                      </div>
-                      <div className="inline-block text-xs font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
+                  {/* Header with step number, date, and title/emoji */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="text-6xl lg:text-5xl font-extrabold text-gray-800/30">
+                      {idx + 1}
+                    </div>
+                    <div className="pt-1 sm:pt-0 flex flex-col items-end gap-1 text-right">
+                      <div className="inline-block text-[11px] font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
                         {event.date}
                       </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-2xl">{event.icon}</span>
+                        <h3 className="text-lg font-bold text-gray-800">{event.title}</h3>
+                      </div>
                     </div>
-                    
-                    {/* Title with emoji in front */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-3xl relative z-10">{event.icon}</span>
-                      <h3 className="text-xl font-extrabold text-gray-800">
-                        {event.title}
-                      </h3>
-                    </div>
-                    
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {event.description}
-                    </p>
                   </div>
+                  
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {event.description}
+                  </p>
+                </div>
                 </div>
               ))}
             </div>
