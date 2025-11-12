@@ -32,7 +32,7 @@ const buildBlock = (overrides: Partial<FactContentBlock> = {}): FactContentBlock
   blockType: "image",
   heading: null,
   text: null,
-  imageUrl: "http://backend:8000/media/blocks/sample.jpg",
+  imageUrl: "/media/blocks/sample.jpg",
   imageAlt: "Sample block image",
   ...overrides,
 });
@@ -45,7 +45,7 @@ const buildSummary = (overrides: Partial<FactTopicSummary> = {}): FactTopicSumma
   subtitle: "Sample subtitle",
   excerpt: "Sample excerpt",
   section: "knowledge",
-  heroImageUrl: "http://backend:8000/media/topics/sample.jpg",
+  heroImageUrl: "/media/topics/sample.jpg",
   heroImageAlt: "Sample hero alt",
   viewCount: 5,
   ...overrides,
@@ -60,7 +60,7 @@ describe("Fact topic imagery", () => {
   it("renders hero image with provided alt text and falls back when missing", () => {
     render(
       <PastelHero
-        cover="http://backend:8000/media/topics/retinol.jpg"
+        cover="/media/topics/retinol.jpg"
         title="Retinol Guide"
         subtitle="Everything about retinol"
         alt="Retinol hero"
@@ -68,11 +68,11 @@ describe("Fact topic imagery", () => {
     );
 
     const heroImage = screen.getByRole("img", { name: "Retinol hero" });
-    expect(heroImage).toHaveAttribute("src", "http://backend:8000/media/topics/retinol.jpg");
+    expect(heroImage).toHaveAttribute("src", "/media/topics/retinol.jpg");
 
     render(
       <PastelHero
-        cover="http://backend:8000/media/topics/vitamin-c.jpg"
+        cover="/media/topics/vitamin-c.jpg"
         title="Vitamin C"
         subtitle="Brightening powerhouse"
         alt={null}
@@ -81,18 +81,18 @@ describe("Fact topic imagery", () => {
 
     expect(screen.getByRole("img", { name: "Brightening powerhouse" })).toHaveAttribute(
       "src",
-      "http://backend:8000/media/topics/vitamin-c.jpg"
+      "/media/topics/vitamin-c.jpg"
     );
   });
 
   it("renders article block imagery with explicit and fallback alt text", () => {
     const explicit = buildBlock({
-      imageUrl: "http://backend:8000/media/blocks/retinol-benefits.jpg",
+      imageUrl: "/media/blocks/retinol-benefits.jpg",
       imageAlt: "Retinol benefits diagram",
     });
     const fallback = buildBlock({
       order: 2,
-      imageUrl: "http://backend:8000/media/blocks/application.jpg",
+      imageUrl: "/media/blocks/application.jpg",
       imageAlt: null,
     });
 
@@ -116,7 +116,7 @@ describe("Fact topic imagery", () => {
         slug: "vitamin-c",
         title: "Vitamin C Serum",
         heroImageAlt: "Vitamin C serum bottles",
-        heroImageUrl: "http://backend:8000/media/topics/vitamin-c-hero.jpg",
+        heroImageUrl: "/media/topics/vitamin-c-hero.jpg",
       }),
       updatedAt: "2025-01-01T00:00:00Z",
       contentBlocks: [
@@ -130,13 +130,13 @@ describe("Fact topic imagery", () => {
         buildBlock({
           order: 2,
           blockType: "image",
-          imageUrl: "http://backend:8000/media/blocks/vit-c-benefits.jpg",
+          imageUrl: "/media/blocks/vit-c-benefits.jpg",
           imageAlt: "Benefits of vitamin C",
         }),
         buildBlock({
           order: 3,
           blockType: "image",
-          imageUrl: "http://backend:8000/media/blocks/vit-c-routine.jpg",
+          imageUrl: "/media/blocks/vit-c-routine.jpg",
           imageAlt: "Morning routine with vitamin C",
         }),
       ],
@@ -148,7 +148,7 @@ describe("Fact topic imagery", () => {
         slug: "niacinamide",
         title: "Niacinamide",
         heroImageAlt: "Niacinamide hero",
-        heroImageUrl: "http://backend:8000/media/topics/niacinamide.jpg",
+        heroImageUrl: "/media/topics/niacinamide.jpg",
       }),
       buildSummary({
         id: "rel-2",
@@ -169,20 +169,20 @@ describe("Fact topic imagery", () => {
 
     expect(screen.getByRole("img", { name: "Vitamin C serum bottles" })).toHaveAttribute(
       "src",
-      "http://backend:8000/media/topics/vitamin-c-hero.jpg"
+      "/media/topics/vitamin-c-hero.jpg"
     );
     expect(screen.getByRole("img", { name: "Benefits of vitamin C" })).toHaveAttribute(
       "src",
-      "http://backend:8000/media/blocks/vit-c-benefits.jpg"
+      "/media/blocks/vit-c-benefits.jpg"
     );
     expect(screen.getByRole("img", { name: "Morning routine with vitamin C" })).toHaveAttribute(
       "src",
-      "http://backend:8000/media/blocks/vit-c-routine.jpg"
+      "/media/blocks/vit-c-routine.jpg"
     );
 
     expect(screen.getByRole("img", { name: "Niacinamide hero" })).toHaveAttribute(
       "src",
-      "http://backend:8000/media/topics/niacinamide.jpg"
+      "/media/topics/niacinamide.jpg"
     );
 
     // related card fallback alt should use the title when hero alt missing

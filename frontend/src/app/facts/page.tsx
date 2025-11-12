@@ -22,7 +22,7 @@ export default function FactsPage() {
   return (
     <>
       <main className="min-h-screen bg-[#d2eec8] to-[#f6f8ef] lg:pb-16">
-        <div className="pt-27 lg:pt-20" />
+        <div className="pt-27 lg:pt-12" />
 
         <PageContainer className="lg:hidden fixed inset-x-0 bottom-5 z-30">
           <div className="flex gap-3 overflow-x-auto rounded-full border-2 border-black bg-white/90 px-4 py-3 shadow-[2px_3px_0_rgba(0,0,0,0.35)] backdrop-blur">

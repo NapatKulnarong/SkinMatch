@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
+import { getAuthToken } from "@/lib/auth-storage";
+import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
 
 const FALLBACK_IMAGE = "/img/facts_img/green_tea.jpg";
 const PALETTE = [
@@ -21,37 +24,71 @@ type SkinKnowledgeProps = {
 
 export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
-  const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
-    fetchTopicsBySection("knowledge", 9)
+  const loadTopics = useCallback((providedSessionId?: string | null) => {
+    activeRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    // Get session_id for anonymous users
+    const token = getAuthToken();
+    const isLoggedIn = Boolean(token);
+    let sessionId: string | null | undefined = providedSessionId;
+    
+    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
+      try {
+        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to read quiz session from localStorage", err);
+      }
+    }
+    
+    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
+    
+    fetchTopicsBySection("knowledge", 9, 0, sessionIdToUse)
       .then((data) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         setTopics(data);
+        setError(null);
+        setLoading(false);
       })
       .catch((err) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         console.error("Failed to load Skin Knowledge topics", err);
         setError("We couldn't load Skin Knowledge topics right now.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      active = false;
-    };
   }, []);
 
-  const visibleTopics = useMemo(
-    () => (showAll ? topics : topics.slice(0, 6)),
-    [topics, showAll]
-  );
+  useEffect(() => {
+    loadTopics();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [loadTopics, pathname]);
 
-  const hasMore = topics.length > 6;
-  const handleToggle = () => setShowAll((prev) => !prev);
+  useEffect(() => {
+    const handleQuizCompleted = (event: Event) => {
+      let sessionId: string | null | undefined = undefined;
+      if ("detail" in event) {
+        const customEvent = event as CustomEvent<{ sessionId?: string }>;
+        sessionId = customEvent.detail?.sessionId;
+      }
+      loadTopics(sessionId);
+    };
+
+    window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    return () => {
+      window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    };
+  }, [loadTopics]);
+
+  const visibleTopics = useMemo(() => topics.slice(0, 6), [topics]);
+  const showViewAll = topics.length > 6;
 
   // Loading skeleton — matches Spotlight sizing
   if (loading) {
@@ -90,7 +127,8 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
+      <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
       <div className="relative">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -113,7 +151,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
         </div>
 
         {/* Cards — same style as Ingredient Spotlight */}
-        <div className="lg:pt-1 flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
+        <div className="lg:pt-1 flex snap-x snap-mandatory sm:snap-none gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
           {visibleTopics.map((topic, index) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
             const description =
@@ -182,27 +220,26 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
               </Link>
             );
           })}
+          {showViewAll && (
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+              <div className="space-y-2 text-[#122016]">
+                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">Need more?</p>
+                <h3 className="text-xl font-bold">See every Skin Knowledge guide</h3>
+                <p className="text-sm text-[#1f2d26]/70">
+                  Explore the full archive for ingredient explainers, pairings, and science-backed routines.
+                </p>
+              </div>
+              <Link
+                href="/facts/skin-knowledge"
+                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-5 py-2 font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+              >
+                Read more topics <span aria-hidden>↗</span>
+              </Link>
+            </div>
+          )}
         </div>
 
-        {topics.length > 6 && (
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              disabled={!hasMore}
-              onClick={() => hasMore && handleToggle()}
-              className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-6 py-2 font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
-                hasMore
-                  ? "hover:-translate-y-[1px] hover:bg-white"
-                  : "cursor-not-allowed opacity-60"
-              }`}
-            >
-              {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
-              <span aria-hidden className="text-lg">
-                {hasMore ? (showAll ? "▲" : "▼") : "•"}
-              </span>
-            </button>
-          </div>
-        )}
+      </div>
       </div>
     </PageContainer>
   );

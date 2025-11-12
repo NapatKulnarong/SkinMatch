@@ -32,13 +32,13 @@ export function PasswordRequirements({
     ];
   }, [password]);
 
-  // Don't show requirements if password is empty
-  if (!password) {
-    return null;
-  }
+  // Hide when password is empty
+  if (!password) return null;
 
   return (
-    <div className={`text-xs space-y-1.5 ${className}`}>
+    <div
+      className={`rounded-xl border-2 border-dashed border-black/80 bg-white/90 p-3 mt-2 text-xs space-y-1.5 ${className}`}
+    >
       {requirements.map((req, index) => (
         <div
           key={index}
@@ -85,4 +85,3 @@ export function PasswordRequirements({
     </div>
   );
 }
-

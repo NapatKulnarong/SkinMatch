@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
+import { getAuthToken } from "@/lib/auth-storage";
+import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
 
 const FALLBACK_IMAGE = "/img/facts_img/centella_ampoule.jpg";
 
@@ -15,37 +18,70 @@ type TrendingSkincareProps = {
 
 export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
-  const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
-    fetchTopicsBySection("trending", 9)
+  const loadTopics = useCallback((providedSessionId?: string | null) => {
+    activeRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    const token = getAuthToken();
+    const isLoggedIn = Boolean(token);
+    let sessionId: string | null | undefined = providedSessionId;
+    
+    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
+      try {
+        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to read quiz session from localStorage", err);
+      }
+    }
+    
+    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
+    
+    fetchTopicsBySection("trending", 12, 0, sessionIdToUse)
       .then((data) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         setTopics(data);
+        setError(null);
+        setLoading(false);
       })
       .catch((err) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         console.error("Failed to load trending skincare topics", err);
         setError("We couldn't load trending skincare stories right now.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      active = false;
-    };
   }, []);
 
-  const visible = useMemo(
-    () => (showAll ? topics : topics.slice(0, 6)),
-    [topics, showAll]
-  );
-  const hasMore = topics.length > 6;
-  const toggle = () => setShowAll((prev) => !prev);
+  useEffect(() => {
+    loadTopics();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [loadTopics, pathname]);
+
+  useEffect(() => {
+    const handleQuizCompleted = (event: Event) => {
+      let sessionId: string | null | undefined = undefined;
+      if ("detail" in event) {
+        const customEvent = event as CustomEvent<{ sessionId?: string }>;
+        sessionId = customEvent.detail?.sessionId;
+      }
+      loadTopics(sessionId);
+    };
+
+    window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    return () => {
+      window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    };
+  }, [loadTopics]);
+
+  const visible = useMemo(() => topics.slice(0, 6), [topics]);
+  const showViewAll = topics.length > 6;
 
   if (loading) {
     return (
@@ -83,143 +119,93 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   }
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
-      <div className="mb-10">
-        <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#1a2130]">
-          Trending Skincare
-        </h2>
-        
-        <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-  <p className="hidden sm:block text-[#1a2130]/70 md:text-lg">
-    Editor-reviewed favourites making waves across Thai beauty feeds.
-  </p>
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
+      <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
+        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#1a2130]">
+              Trending Skincare
+            </h2>
+            <p className="hidden sm:block mt-2 text-[#1a2130]/70 md:text-lg">
+              Editor-reviewed favourites making waves across Thai beauty feeds.
+            </p>
+          </div>
+          <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Social buzz ↑
+            </span>
+          </div>
+        </div>
 
-  <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
-    <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
-      Verified by our experts
-    </span>
-  </div>
-</div>
-        
-      </div>
-
-      {/* ===== Mobile layout (matches FactCheck mobile) ===== */}
-      <div className="sm:hidden -mx-4 px-4">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pe-6">
-          {visible.map((item) => {
+        <div className="lg:pt-1 flex snap-x snap-mandatory sm:snap-none gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
+          {visible.map((item, index) => {
             const image = item.heroImageUrl ?? FALLBACK_IMAGE;
             const description = item.subtitle || item.excerpt || "See why it's trending.";
+            const hypeScore = (item.viewCount ?? 0) + (index + 1) * 128;
 
             return (
-              <Link
-                key={`mobile-${item.slug}`}
-                href={`/facts/${item.slug}`}
-                className="relative min-w-[250px] overflow-hidden rounded-[24px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]"
+              <article
+                key={item.slug}
+                className="flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
               >
-                {/* image header */}
-                <div className="relative h-40 overflow-hidden">
-                  <Image
-                    src={image}
-                    alt={item.heroImageAlt ?? item.title}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-                </div>
-
-                {/* text body with extra space for pill */}
-                <div className="space-y-2 p-4 pb-12">
-                  <h3 className="text-base font-bold text-[#1a2130] leading-tight">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-[#1a2130]/75 line-clamp-3">
-                    {description}
-                  </p>
-                </div>
-
-                {/* mobile-only wide oval pill (bottom-right) */}
-                <span
-                  className="sm:hidden absolute bottom-3 right-3 inline-flex items-center gap-1
-                             rounded-full border border-[#1a2130] bg-white px-4 py-1.5
-                             text-[11px] font-semibold uppercase tracking-[0.25em] text-[#1a2130]"
-                >
-                  Read
-                </span>
-              </Link>
+                <Link href={`/facts/${item.slug}`} className="flex h-full flex-col">
+                  <div className="relative h-40 overflow-hidden sm:h-48">
+                    <Image
+                      src={image}
+                      alt={item.heroImageAlt ?? item.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 320px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                      <h3 className="text-lg font-bold leading-snug">{item.title}</h3>
+                      <p className="mt-1 text-sm text-white/85 line-clamp-2">{description}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between gap-4 p-5 text-[#1a2130]">
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1a2130]/60">
+                        Trending metrics
+                      </p>
+                      <div className="space-y-2 text-xs uppercase tracking-[0.3em] text-[#1a2130]/60">
+                        <span>{new Intl.NumberFormat().format(item.viewCount ?? 0)} reads</span>
+                        <span>Hype score {new Intl.NumberFormat().format(hypeScore)}</span>
+                        <span>Social buzz ↑</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#1a2130]/60">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#1a2130]">
+                        Read <span aria-hidden>↗</span>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </article>
             );
           })}
-        </div>
-      </div>
 
-      {/* ===== Tablet/Desktop grid ===== */}
-      <div className="hidden sm:grid sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
-        {visible.map((item, index) => {
-          const image = item.heroImageUrl ?? FALLBACK_IMAGE;
-          const description = item.subtitle || item.excerpt || "See why it's trending.";
-          const hypeScore = (item.viewCount ?? 0) + (index + 1) * 128;
-
-          return (
-            <Link
-              key={item.slug}
-              href={`/facts/${item.slug}`}
-              aria-label={`Read review for ${item.title}`}
-              className="relative flex flex-col gap-0 rounded-[28px] border-2 border-black bg-white 
-                         shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
-            >
-              <div className="relative h-52 md:h-60 lg:h-72 overflow-hidden rounded-t-[26px]">
-                <Image
-                  src={image}
-                  alt={item.heroImageAlt ?? item.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 320px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                  <h3 className="text-lg font-bold leading-snug md:text-xl">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-white/85 md:text-base line-clamp-2">
-                    {description}
-                  </p>
-                </div>
+          {showViewAll && (
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+              <div className="space-y-2 text-[#1a2130]">
+                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">
+                  Want more?
+                </p>
+                <h3 className="text-xl font-bold">See all Trending stories</h3>
+                <p className="text-sm text-[#1a2130]/70">
+                  Dive into every editor-picked launch and viral routine shaking up Thai beauty feeds.
+                </p>
               </div>
-
-              {/* Footer: reads (left) and Read → (right) */}
-<div
-  className="flex items-center justify-between px-5 py-4 text-xs md:text-sm font-semibold text-[#1a2130]
-             uppercase tracking-[0.25em] border-t sm:border-black/10"
->
-  {/* Left: read count */}
-  <span className="inline-flex items-center gap-1 rounded-full border border-[#1a2130]/15 bg-white px-4 py-1 font-semibold text-[11px] md:text-xs">
-    {new Intl.NumberFormat().format(item.viewCount ?? 0)} reads
-  </span>
-
-  {/* Right: Read → */}
-  <span aria-hidden className="text-[#1a2130] md:text-sm">
-    Read →
-  </span>
-</div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {topics.length > 6 && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            disabled={!hasMore}
-            onClick={() => hasMore && toggle()}
-            className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#ece5ff] px-6 py-2 font-semibold text-[#1a2130] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
-              hasMore ? "hover:-translate-y-[1px]" : "cursor-not-allowed opacity-60"
-            }`}
-          >
-            {hasMore ? (showAll ? "Show fewer trends" : "See more trends") : "More trends soon"}
-            <span aria-hidden className="text-lg">{hasMore ? (showAll ? "▲" : "▼") : "•"}</span>
-          </button>
+              <Link
+                href="/facts/trending"
+                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#ece5ff] px-5 py-2 font-semibold text-[#1a2130] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+              >
+                Browse Trending <span aria-hidden>↗</span>
+              </Link>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </PageContainer>
   );
 }

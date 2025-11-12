@@ -165,11 +165,11 @@ function AccountContent() {
   return (
     <>
       <main className="min-h-screen bg-[#d3cbe0]">
-      <PageContainer className="pt-38 sm:pt-28 pb-16 lg:px-8">
+      <PageContainer className="pt-48 sm:pt-30 pb-16 lg:px-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="hidden sm:block mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">My Account</h1>
-          <p className="hidden sm:block text-base text-gray-700">Manage your profile and view your skincare journey</p>
+          <p className="text-base text-gray-700">Manage your profile and view your skincare journey</p>
         </div>
 
         {error && (
@@ -659,7 +659,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                         void handleDelete(item, key);
                       }}
                       disabled={isDeleting}
-                      className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                      className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                         isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                       }`}
                       aria-label="Delete match"
@@ -712,7 +712,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
                       void handleDelete(item, key);
                     }}
                     disabled={isDeleting}
-                    className={`absolute top-2 right-2 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                    className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
                       isDeleting ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
                     }`}
                     aria-label="Delete match"
@@ -971,9 +971,9 @@ function WishlistPanel({ token }: { token: string | null }) {
                   >
                     Details
                   </button>
-                  {p.product_url && (
+                  {p.productUrl && (
                     <a
-                      href={p.product_url}
+                      href={p.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
@@ -1086,7 +1086,7 @@ function WishlistProductDetailModal({
   const skinTypes = display?.skinTypes ?? [];
   const restrictions = display?.restrictions ?? [];
   const affiliateUrl =
-    display?.affiliateUrl ?? display?.productUrl ?? product.product_url ?? null;
+    display?.affiliateUrl ?? display?.productUrl ?? product.productUrl ?? null;
 
   const ingredientPreview = ingredientDetails.slice(0, 8);
 

@@ -65,7 +65,7 @@ export default async function FactTopicPage({ params }: Params) {
 
         {/* RELATED */}
         {related.length ? (
-          <section className="mx-auto max-w-4xl mt-12">
+          <section className="mx-auto max-w-4xl mt-6 lg:mt-12">
             <h2 className="text-xl font-extrabold text-gray-900 mb-4">
               Keep exploring
             </h2>

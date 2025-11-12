@@ -32,7 +32,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
   };
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-6 pb-12 lg:pt-14 lg:pb-16">
+    <PageContainer as="section" id={sectionId} className="pt-6 pb-12 lg:pt-3 lg:pb-0">
       <div className="flex w-full flex-col gap-6">
         <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#84AE92] to-[#D6F4ED] p-4 py-6 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
           <div className="space-y-3 lg:text-center">
@@ -118,7 +118,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
           )}
         </div>
 
-          <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#B9E5E8] to-[#DFF2EB] p-4 py-6 lg:p-8 lg:text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
+          <div className="lg:mt-3 rounded-3xl border-2 border-black bg-gradient-to-tl from-[#B9E5E8] to-[#DFF2EB] p-4 py-6 lg:p-8 lg:text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
           <h3 className="mt-1 text-2xl lg:text-3xl font-extrabold text-[#1f3a29]">
             Get weekly skincare tips
           </h3>
