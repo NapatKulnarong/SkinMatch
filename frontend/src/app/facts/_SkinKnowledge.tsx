@@ -165,7 +165,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
                 href={`/facts/${topic.slug}`}
                 aria-label={`Read about ${topic.title}`}
                 className={`group relative flex flex-none w-[255px] lg:w-[360px] flex-col overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette}
-                            shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:min-w-0 sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
+                            shadow-none sm:min-w-0 sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
               >
                 {/* Image header with fade */}
                 <div className="relative h-36 w-full overflow-hidden sm:h-56">
@@ -221,7 +221,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
             );
           })}
           {showViewAll && (
-            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-none sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
               <div className="space-y-2 text-[#122016]">
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">Need more?</p>
                 <h3 className="text-xl font-bold">See every Skin Knowledge guide</h3>

@@ -122,6 +122,7 @@ export default function Navbar() {
   const loginAriaLabel = profile ? "Open account" : "Log in or sign up";
 
   const [showDesktopNav, setShowDesktopNav] = useState(true);
+  const [showMobileNav, setShowMobileNav] = useState(true);
   const [isPastTop, setIsPastTop] = useState(false);
 
   useEffect(() => {
@@ -131,10 +132,9 @@ export default function Navbar() {
 
     let lastY = window.scrollY;
     let raf: number | null = null;
-    let enableScrollHide = window.innerWidth >= 768;
 
     const updateBgState = () => {
-      const shouldTint = window.innerWidth >= 640 && window.scrollY > 4;
+      const shouldTint = window.scrollY > 4;
       setIsPastTop((prev) => (prev === shouldTint ? prev : shouldTint));
     };
 
@@ -142,15 +142,23 @@ export default function Navbar() {
 
     const run = () => {
       raf = null;
-      if (!enableScrollHide) return;
-
       const currentY = window.scrollY;
       const delta = currentY - lastY;
+      const isDesktop = window.innerWidth >= 768;
+      const threshold = isDesktop ? 10 : 4;
 
-      if (currentY <= 0 || delta < -10) {
-        setShowDesktopNav(true);
-      } else if (delta > 10) {
-        setShowDesktopNav(false);
+      if (currentY <= 0 || delta < -threshold) {
+        if (isDesktop) {
+          setShowDesktopNav(true);
+        } else {
+          setShowMobileNav(true);
+        }
+      } else if (delta > threshold) {
+        if (isDesktop) {
+          setShowDesktopNav(false);
+        } else {
+          setShowMobileNav(false);
+        }
       }
 
       lastY = currentY;
@@ -158,17 +166,15 @@ export default function Navbar() {
 
     const handleScroll = () => {
       updateBgState();
-      if (!enableScrollHide || raf) return;
+      if (raf) return;
       raf = window.requestAnimationFrame(run);
     };
 
     const handleResize = () => {
-      enableScrollHide = window.innerWidth >= 768;
       lastY = window.scrollY;
-      if (!enableScrollHide) {
-        setShowDesktopNav(true);
-      }
       updateBgState();
+      setShowDesktopNav(true);
+      setShowMobileNav(true);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -184,11 +190,15 @@ export default function Navbar() {
   return (
     <header
       ref={headerRef}
-      className={`fixed inset-x-0 z-50 flex w-full translate-y-0 flex-col gap-2 bg-[#FAF7F3] px-4 py-3 pb-5 transition-transform duration-300 
+      className={`fixed inset-x-0 z-50 flex w-full flex-col gap-2 px-4 py-3 pb-5 transition-transform duration-300 ${
+        showMobileNav ? "translate-y-0" : "-translate-y-full"
+      } ${isPastTop ? "bg-[#FAF7F3]" : "bg-transparent"}
                 sm:absolute sm:left-0 sm:right-0 sm:top-0 sm:z-50 sm:w-full sm:flex-row sm:items-center sm:justify-between sm:rounded-none ${
-                  isPastTop ? "sm:bg-[#FAF7F3] md:bg-[#FAF7F3]" : "sm:bg-transparent md:bg-transparent"
+                  isPastTop ? "sm:bg-[#FAF7F3]" : "sm:bg-transparent"
                 } sm:px-6 sm:py-4 
-                md:fixed md:inset-x-0 md:top-0 md:px-6 md:py-1 ${showDesktopNav ? "md:translate-y-0" : "md:-translate-y-full"}`}
+                md:fixed md:inset-x-0 md:top-0 md:px-6 md:py-1 ${
+                  showDesktopNav ? "md:translate-y-0" : "md:-translate-y-full"
+                } ${isPastTop ? "md:bg-[#FAF7F3]" : "md:bg-transparent"}`}
     >
       <div className="flex w-full items-center justify-between gap-3">
         <Link href="/" className="shrink-0">
