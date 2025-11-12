@@ -118,24 +118,15 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
           )}
         </div>
 
-          <div className="lg:mt-3 rounded-3xl border-2 border-black bg-gradient-to-tl from-[#B9E5E8] to-[#DFF2EB] p-4 py-6 lg:p-8 lg:text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
-          <h3 className="mt-1 text-2xl lg:text-3xl font-extrabold text-[#1f3a29]">
-            Get weekly skincare tips
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-black/70 md:text-lg">
-            Join 1,000+ readers for ingredient insights, routine blueprints, and myth-busting science.
-          </p>
-
-          <div className="mt-6 [&_form]:flex [&_form]:flex-row [&_form]:gap-3 [&_input]:flex-1">
-            <NewsletterSignup
-              title=""
-              subtitle=""
-              buttonLabel="Subscribe"
-              variant="compact"
-              source="facts-newsletter"
-              inputProps={{ "aria-label": "Email for skincare newsletter updates" }}
-            />
-          </div>
+        <div className="lg:mt-3 rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+          <NewsletterSignup
+            title="Get Weekly Skincare Tips"
+            subtitle="Join 1,000+ readers for ingredient insights, routine blueprints, and myth-busting science."
+            buttonLabel="Subscribe"
+            variant="full"
+            source="facts-newsletter"
+            inputProps={{ "aria-label": "Email for skincare newsletter updates" }}
+          />
         </div>
       </div>
     </PageContainer>

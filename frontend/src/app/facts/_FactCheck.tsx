@@ -103,7 +103,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
             return (
               <article
                 key={topic.slug}
-                className="flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
+                className="flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-none sm:shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
               >
                 <Link href={`/facts/${topic.slug}`} className="flex h-full flex-col">
                   <div className="relative h-40 overflow-hidden sm:h-48">
@@ -146,7 +146,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
           })}
 
           {showViewAll && (
-            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
+            <div className="flex-none w-[255px] lg:w-[360px] snap-start rounded-[26px] border-2 border-dashed border-black bg-white/80 p-5 text-center shadow-none sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col justify-between gap-4">
               <div className="space-y-2 text-[#102320]">
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">
                   Need more?

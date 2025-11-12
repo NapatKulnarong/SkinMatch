@@ -13,10 +13,10 @@ import { StarIcon } from "@heroicons/react/24/solid";
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
+import NewsletterSignup from "@/components/NewsletterSignup";
 import { ProductScanner } from "@/components/ProductScanner";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
-import { subscribeToNewsletter } from "@/lib/api.newsletter";
 import {
   getAuthToken,
   getStoredProfile,
@@ -404,10 +404,6 @@ export default function HomePage() {
       ? `${SUGGESTION_LIST_ID}-${activeSuggestionIndex}`
       : undefined;
   const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [newsletterMessage, setNewsletterMessage] = useState<string | null>(null);
-  const newsletterFeedbackId = newsletterMessage ? "newsletter-feedback" : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -453,38 +449,6 @@ export default function HomePage() {
       router.push(`/ingredients?q=${encodeURIComponent(trimmed)}`);
     },
     [closeSuggestions, router]
-  );
-
-  const handleNewsletterSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const trimmed = newsletterEmail.trim();
-      if (!trimmed) {
-        setNewsletterStatus("error");
-        setNewsletterMessage("Please enter your email address.");
-        return;
-      }
-
-      setNewsletterStatus("loading");
-      setNewsletterMessage(null);
-
-      try {
-        const response = await subscribeToNewsletter(trimmed, "homepage");
-        setNewsletterStatus("success");
-        setNewsletterMessage(response.message);
-        if (!response.alreadySubscribed) {
-          setNewsletterEmail("");
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "We couldn't add you just now. Please try again in a moment.";
-        setNewsletterStatus("error");
-        setNewsletterMessage(message);
-      }
-    },
-    [newsletterEmail]
   );
 
   return (
@@ -747,62 +711,10 @@ export default function HomePage() {
 
         {/* Newsletter Signup */}
         <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-          <div className="mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#3C5B6F]">
-                Get Weekly Skincare Tips
-              </h2>
-              <p className="text-xs sm:text-sm text-[#4a3a5a]/70">
-                Join 1,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
-              </p>
-            </div>
-
-            <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSubmit} noValidate>
-              <input
-                type="email"
-                value={newsletterEmail}
-                onChange={(event) => {
-                  setNewsletterEmail(event.target.value);
-                  if (newsletterStatus !== "idle") {
-                    setNewsletterStatus("idle");
-                    setNewsletterMessage(null);
-                  }
-                }}
-                placeholder="your.email@example.com"
-                aria-label="Email address"
-                aria-describedby={newsletterFeedbackId}
-                aria-invalid={newsletterStatus === "error"}
-                className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] 
-                          focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
-              />
-              <button
-                type="submit"
-                disabled={newsletterStatus === "loading"}
-                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white 
-                          shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] 
-                          active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
-              </button>
-            </form>
-
-            <div className="space-y-1" aria-live="polite" aria-atomic="true">
-              {newsletterMessage && (
-                <p
-                  id="newsletter-feedback"
-                  className={`text-[11px] sm:text-xs font-semibold ${
-                    newsletterStatus === "error" ? "text-[#B9375D]" : "text-[#4a3a5a]"
-                  }`}
-                  role="status"
-                >
-                  {newsletterMessage}
-                </p>
-              )}
-              <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
-                No spam, unsubscribe anytime. We respect your privacy.
-              </p>
-            </div>
-          </div>
+          <NewsletterSignup
+            source="homepage"
+            variant="full"
+          />
         </section>
       </PageContainer>
 

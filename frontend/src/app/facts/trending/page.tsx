@@ -23,7 +23,7 @@ export default async function TrendingArchivePage() {
 
   return (
     <main className="min-h-screen bg-[#ece5ff]">
-      <PageContainer className="pb-16 pt-28">
+      <PageContainer className="pb-16 pt-37">
         <header className="flex flex-col gap-4 rounded-[32px] border-2 border-dashed border-black bg-white/80 p-6 shadow-[4px_6px_0_rgba(0,0,0,0.2)] sm:p-10 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">
