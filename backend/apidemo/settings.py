@@ -40,6 +40,12 @@ if VERCEL_PROD_DOMAIN:
     append_unique(ALLOWED_HOSTS, VERCEL_PROD_DOMAIN)
     append_unique(ALLOWED_HOSTS, f".{VERCEL_PROD_DOMAIN}")  # support subdomains
 
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if RENDER_EXTERNAL_HOSTNAME:
+    append_unique(ALLOWED_HOSTS, RENDER_EXTERNAL_HOSTNAME)
+    if RENDER_EXTERNAL_HOSTNAME.endswith(".onrender.com"):
+        append_unique(ALLOWED_HOSTS, ".onrender.com")
+
 # CSRF / CORS
 default_frontend_origins = [
     os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
