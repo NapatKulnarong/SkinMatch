@@ -1,0 +1,27 @@
+name: Deploy to Vercel (Staging)
+
+on:
+  push:
+    branches: ['feature/quiz-recommendations'] 
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/**'
+  workflow_dispatch:                            
+
+concurrency:
+  group: vercel-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel Deploy Hook (staging)
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_STAGING }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Missing VERCEL_DEPLOY_HOOK_STAGING secret"; exit 1;
+          fi
+          curl -sS -X POST "$HOOK"
+          echo "Deploy triggered ✅"
