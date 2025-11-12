@@ -9,11 +9,31 @@ export type ScanLabelResult = {
   confidence: number;
 };
 
-export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
-  if (!base) {
-    throw new Error("API base URL is not configured.");
+const getApiBase = () => {
+  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
+  const isServer = typeof window === "undefined";
+
+  if (isServer) {
+    let fromEnv =
+      process.env.INTERNAL_API_BASE ||
+      process.env.API_BASE ||
+      baseFromClient.replace(
+        /^https?:\/\/localhost(:\d+)?/,
+        (_match, port = ":8000") => `http://backend${port}`
+      );
+
+    if (fromEnv.startsWith("/")) {
+      fromEnv = `http://backend:8000${fromEnv}`;
+    }
+
+    return fromEnv.replace(/\/+$/, "");
   }
+
+  return baseFromClient.replace(/\/+$/, "");
+};
+
+export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
+  const base = getApiBase();
 
   const formData = new FormData();
   formData.append("file", file);
@@ -32,10 +52,7 @@ export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
 }
 
 export async function scanIngredientsText(text: string): Promise<ScanLabelResult> {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
-  if (!base) {
-    throw new Error("API base URL is not configured.");
-  }
+  const base = getApiBase();
 
   const response = await fetch(`${base}/scan-text/label/analyze-text`, {
     method: "POST",
