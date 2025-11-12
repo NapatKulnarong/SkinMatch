@@ -5,9 +5,10 @@ type PastelHeroProps = {
   cover: string; // heroImageUrl or fallback
   title: string;
   subtitle?: string | null;
+  alt?: string | null;
 };
 
-export default function PastelHero({ cover, title, subtitle }: PastelHeroProps) {
+export default function PastelHero({ cover, title, subtitle, alt }: PastelHeroProps) {
   return (
     <section
       className="
@@ -26,7 +27,7 @@ export default function PastelHero({ cover, title, subtitle }: PastelHeroProps) 
         {/* hero image */}
         <Image
           src={cover}
-          alt={subtitle || title}
+          alt={alt || subtitle || title}
           fill
           className="object-cover object-center opacity-80"
           sizes="(max-width: 768px) 100vw, 800px"

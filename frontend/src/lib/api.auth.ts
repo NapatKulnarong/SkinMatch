@@ -27,17 +27,36 @@ const API_BASE = "/api";
 async function handleJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   let json: T;
+  
+  if (!res.ok) {
+    // Try to parse error response
+    try {
+      json = text ? JSON.parse(text) : ({} as T);
+    } catch {
+      // If not JSON, use the text or status text
+      throw new Error(text || res.statusText || "Request failed");
+    }
+    
+    // Django Ninja HttpError returns {detail: "message"}, but some endpoints return {message: "..."}
+    let message = res.statusText || "Request failed";
+    if (typeof json === "object" && json !== null) {
+      if ("detail" in json) {
+        message = String((json as { detail?: unknown }).detail || message);
+      } else if ("message" in json) {
+        message = String((json as { message?: unknown }).message || message);
+      } else if (text && text.length < 200) {
+        // If it's a simple text response, use it
+        message = text;
+      }
+    }
+    throw new Error(message);
+  }
+  
+  // Parse successful response
   try {
     json = text ? JSON.parse(text) : ({} as T);
   } catch {
-    throw new Error("Unexpected server response");
-  }
-  if (!res.ok) {
-    const message =
-      typeof json === "object" && json !== null && "message" in json
-        ? String((json as { message?: unknown }).message ?? res.statusText)
-        : res.statusText;
-    throw new Error(message);
+    throw new Error("Invalid server response");
   }
   return json;
 }
@@ -154,4 +173,37 @@ export async function uploadAvatar(token: string, file: File): Promise<StoredPro
     body: formData,
   });
   return handleJson<StoredProfile>(res);
+}
+
+export async function requestPasswordReset(email: string) {
+  const res = await fetch(`${API_BASE}/auth/password/forgot`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
+
+export async function resetPassword(payload: { uid: string; token: string; new_password: string }) {
+  const res = await fetch(`${API_BASE}/auth/password/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean }>(res);
+}
+
+export async function changePassword(
+  token: string,
+  payload: { current_password: string; new_password: string }
+) {
+  const res = await fetch(`${API_BASE}/auth/password/change`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleJson<{ ok: boolean }>(res);
 }

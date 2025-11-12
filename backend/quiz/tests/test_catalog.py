@@ -167,8 +167,8 @@ def test_budget_preference_respects_currency_conversion():
         ProductConcern.objects.create(product=product, concern=concern, weight=90)
         return product
 
-    create_product("Budget Serum", "450.00")  # ~USD 12.6 -> affordable
-    premium_product = create_product("Luxury Serum", "2200.00")  # ~USD 61.6 -> premium
+    create_product("Budget Serum", "450.00")  # 450 THB -> affordable (< 800 THB)
+    premium_product = create_product("Luxury Serum", "2200.00")  # 2200 THB -> premium (1500+ THB)
 
     session = QuizSession.objects.create()
     session.profile_snapshot = {
@@ -224,7 +224,6 @@ def test_recommendation_prefers_uploaded_product_image(tmp_path, settings):
         price=Decimal("650.00"),
         currency=Product.Currency.THB,
         product_url="https://store.example.com/products/123",
-        image_url="https://example.com/fallback.jpg",
         is_active=True,
     )
 

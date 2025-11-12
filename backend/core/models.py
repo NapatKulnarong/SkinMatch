@@ -1,10 +1,10 @@
 import uuid
 
 from datetime import date
-from typing import Optional
+from typing import Optional, Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, validate_email
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
@@ -148,6 +148,7 @@ class SkinFactTopic(models.Model):
         KNOWLEDGE = "knowledge", "Skin Knowledge"
         TRENDING = "trending", "Trending Skincare"
         FACT_CHECK = "fact_check", "Fact Check"
+        INGREDIENT_SPOTLIGHT = "ingredient_spotlight", "Ingredient Spotlight"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=140, unique=True)
@@ -157,8 +158,9 @@ class SkinFactTopic(models.Model):
     section = models.CharField(max_length=20, choices=Section.choices)
     hero_image = models.ImageField(
         upload_to="facts/hero/",
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
         blank=True,
+        help_text="Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
     hero_image_alt = models.CharField(max_length=160, blank=True)
     is_published = models.BooleanField(default=True, db_index=True)
@@ -188,19 +190,13 @@ class SkinFactTopic(models.Model):
 
 class SkinFactContentBlock(models.Model):
     """
-    Ordered content blocks that make up the body of a SkinFactTopic.
-    Each block can be:
-    - a section heading like "What Is Hyaluronic Acid?"
-    - a normal text paragraph
-    - a text section with an accompanying image
-    do NOT force it to be only-image or only-text. The editor can mix.
+    Simplified content blocks for SkinFactTopic.
+    Each block is EITHER:
+    - A markdown text block (content field)
+    - OR an image block (image + image_alt fields)
+    
+    Blocks are ordered to create the article structure.
     """
-
-    class BlockType(models.TextChoices):
-        HEADING = "heading", "Heading / Section Title"
-        TEXT = "text", "Text Section"
-        PARAGRAPH = "paragraph", "Paragraph"
-        IMAGE = "image", "Image + Text"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -216,69 +212,55 @@ class SkinFactContentBlock(models.Model):
         help_text="Display order, starting from 0. Lower = appears earlier."
     )
 
-    # heading vs text
-    block_type = models.CharField(
-        max_length=20,
-        choices=BlockType.choices,
-        help_text="Use 'heading' for section headers, 'text' for normal explanatory content."
-    )
-
-    # Shown as block title in UI
-    heading = models.CharField(
-        max_length=180,
+    # Content field: markdown text (use this OR image, not both)
+    content = models.TextField(
         blank=True,
-        help_text="Small heading/title for this block, e.g. 'How to Use Hyaluronic Acid Effectively'."
+        help_text="Markdown content for text blocks. Supports headings (# ## ###), lists, links, bold (**text**), italic (*text*). Leave empty if this is an image block."
     )
 
-    # The actual paragraph(s)
-    text = models.TextField(
-        blank=True,
-        help_text="Main body text (3–6 sentences)."
-    )
-
-    # Optional supporting image
+    # Image field: use this OR content, not both
     image = models.ImageField(
         upload_to="facts/blocks/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
-        help_text="Optional. Example: serum texture, hydrated skin close-up."
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        help_text="Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block."
     )
 
     image_alt = models.CharField(
         max_length=160,
         blank=True,
-        help_text="Describe the image for accessibility. Example: 'Transparent serum drop with bubbles'."
+        help_text="Required if image is provided. Describe the image for accessibility."
     )
 
     class Meta:
         ordering = ("order",)
 
     def __str__(self) -> str:
-        # Helpful in admin list/dropdowns
-        if self.heading:
-            return f"[{self.order}] {self.heading}"
-        return f"[{self.order}] {self.get_block_type_display()} block"
+        if self.content:
+            preview = self.content[:50]
+            if len(self.content) > 50:
+                preview += "..."
+            return f"[{self.order}] Text: {preview}"
+        elif self.image:
+            return f"[{self.order}] Image: {self.image_alt or '(no alt text)'}"
+        return f"[{self.order}] (empty)"
 
     def clean(self):
-        """
-        Custom validation that actually matches what you're doing in admin:
-        - 'heading' blocks MUST have heading, can have optional text/image
-        - 'text' blocks MUST have text; heading/image are optional
-        """
+        """Validate that block has either content OR image, but not both"""
         super().clean()
+        
+        has_content = bool((self.content or "").strip())
+        has_image = bool(self.image)
+        
+        if not has_content and not has_image:
+            raise ValidationError("Block must have either content (text) or an image. Choose one.")
+        
+        if has_content and has_image:
+            raise ValidationError("Block cannot have both content and image. Choose either text OR image.")
 
-        block_type = self.block_type
-        if self.block_type == self.BlockType.HEADING:
-            if not (self.heading or "").strip():
-                raise ValidationError("Heading blocks must have a heading title.")
-
-        if self.block_type == self.BlockType.TEXT:
-            if not (self.text or "").strip():
-                raise ValidationError("Text blocks must include body text.")
-         # image validation (only check file type, not dimensions)
-        if self.image and not (self.image_alt or "").strip():
-            raise ValidationError("Please provide image alt text for accessibility.")
+        if has_image and not (self.image_alt or "").strip():
+            raise ValidationError("Please provide image alt text for accessibility when using an image block.")
 
 
 class SkinFactView(models.Model):
@@ -313,3 +295,67 @@ class SkinFactView(models.Model):
             SkinFactTopic.objects.filter(id=self.topic_id).update(
                 view_count=F("view_count") + 1
             )
+
+
+class NewsletterSubscriber(models.Model):
+    """Stores marketing email opt-ins."""
+
+    email = models.EmailField(unique=True)
+    source = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Where the opt-in originated, e.g. 'homepage', 'quiz_result'.",
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-subscribed_at",)
+        indexes = [
+            models.Index(fields=["subscribed_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.email} ({self.subscribed_at:%Y-%m-%d})"
+
+    def clean(self) -> None:
+        if self.email:
+            normalised = self.email.strip().lower()
+            validate_email(normalised)
+            self.email = normalised
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.clean()
+        super().save(*args, **kwargs)
+
+
+class WishlistItem(models.Model):
+    """User wishlist entry for a quiz.Product."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wishlist_items",
+        db_index=True,
+    )
+    product = models.ForeignKey(
+        "quiz.Product",
+        on_delete=models.CASCADE,
+        related_name="wishlisted_by",
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="uniq_user_product_wishlist")
+        ]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["product", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} - {getattr(self.product, 'name', 'product')}"

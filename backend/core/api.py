@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import date, datetime
 from pathlib import Path
@@ -11,14 +12,19 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
     genai = None
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db import IntegrityError, transaction
+from django.core.mail import send_mail
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Case, Count, IntegerField, Max, Q, When
 from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 from ninja import File, ModelSchema, NinjaAPI, Schema
-from ninja.errors import HttpError
-from ninja.files import UploadedFile
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 
@@ -27,6 +33,7 @@ from .models import (
     SkinFactContentBlock,
     SkinFactTopic,
     SkinFactView,
+    NewsletterSubscriber,
 )
 from pydantic import ConfigDict, field_validator, model_validator
 
@@ -45,17 +52,26 @@ else:
 from .auth import create_access_token, JWTAuth
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
+from quiz.models import QuizSession, Product
+from .models import WishlistItem
 
-import google.generativeai as genai
 
+logger = logging.getLogger(__name__)
 
-api = NinjaAPI()
-api.add_router("/quiz", quiz_router)
-User = get_user_model()
+from .api_scan import scan_router
+from .api_scan_text import scan_text_router
 
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+api = NinjaAPI()
+api.add_router("/quiz", quiz_router)
+api.add_router("/scan", scan_router)
+api.add_router("/scan-text", scan_text_router)
+User = get_user_model()
+
+if genai:
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 # --------------- Schemas ---------------
 
 class SignUpIn(Schema):
@@ -67,13 +83,6 @@ class SignUpIn(Schema):
     confirm_password: str
     date_of_birth: str | None = None # 'YYYY-MM-DD'
     gender: str | None = None #'male'|'female'|'prefer_not'
-
-    @field_validator("password")
-    @classmethod
-    def strong(cls, v):
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
 
 class SignUpOut(Schema):
     ok: bool
@@ -181,20 +190,379 @@ class FactTopicSummary(Schema):
     view_count: int
 
 class FactContentBlockOut(Schema):
+    """Content block - either text (content) OR image"""
     order: int
-    block_type: str
-    heading: Optional[str] = None
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-    image_alt: Optional[str] = None
+    content: Optional[str] = None  # Markdown content (if text block)
+    image_url: Optional[str] = None  # Image URL (if image block)
+    image_alt: Optional[str] = None  # Image alt text (if image block)
 
 
 class FactTopicDetailOut(FactTopicSummary):
     content_blocks: List[FactContentBlockOut]
     updated_at: datetime
 
+
+class NewsletterSubscribeIn(Schema):
+    email: EmailStr
+    source: Optional[str] = None
+
+
+class NewsletterSubscribeOut(Schema):
+    ok: bool
+    message: str
+    already_subscribed: bool = False
+
+
+class SendTermsEmailIn(Schema):
+    email: EmailStr
+    terms_body: str
+
+    @field_validator("terms_body")
+    @classmethod
+    def body_not_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Terms body is required.")
+        return cleaned
+
+
+class SendTermsEmailOut(Schema):
+    ok: bool
+
+# --------------- Newsletter ---------------
+
+
+def _get_newsletter_welcome_email_html(email: str = "") -> str:
+    """Generate HTML email template for newsletter welcome email."""
+    from urllib.parse import quote
+    
+    # Use FRONTEND_ORIGIN for development, or SITE_URL for production
+    site_url = (
+        getattr(settings, "SITE_URL", None) 
+        or os.environ.get("SITE_URL") 
+        or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+        or "http://localhost:3000"
+    ).rstrip("/")
+    unsubscribe_url = f"{site_url}/newsletter/unsubscribe"
+    if email:
+        unsubscribe_url += f"?email={quote(email)}"
+    
+    return f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinMatch Weekly Tips</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f4f0; line-height: 1.6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #f0f4f0; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container - matches rounded-[32px] and shadow-[10px_12px_0_rgba(0,0,0,0.22)] -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background: linear-gradient(to bottom right, #fff1d6, #ffe9c8, #f4f1df); border-radius: 32px; border: 2px solid #000000; box-shadow: 10px 12px 0 rgba(0,0,0,0.22); overflow: hidden;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; color: #3c4c3f; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">Personalized Skincare Insights</p>
+                            <h1 style="margin: 0 0 8px 0; color: #101b27; font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.1;">SkinMatch</h1>
+                            <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.4; font-style: italic;">"Your skin, Your match, Your best care!"</p>
+                        </td>
+                    </tr>
+
+                    <!-- Welcome Card - matches rounded-3xl and shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] -->
+                    <tr>
+                        <td style="padding: 30px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #FFFFFF; border: 2px solid #000000; border-radius: 24px; box-shadow: 8px 8px 0 0 rgba(0,0,0,0.25);">
+                                <tr>
+                                    <td style="padding: 30px;">
+                                        <h2 style="margin: 0 0 16px 0; color: #101b27; font-size: 24px; font-weight: 800; line-height: 1.2;">Welcome to SkinMatch weekly skincare tips!</h2>
+                                        <p style="margin: 0; color: #2d3a2f; font-size: 16px; line-height: 1.7;">Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, product routines, and community wins tailored for healthy, happy skin.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- What You'll Get Section -->
+                    <tr>
+                        <td style="padding: 0 40px 30px 40px;">
+                            <h3 style="margin: 0 0 18px 0; color: #101b27; font-size: 20px; font-weight: 800;">What you'll get every week:</h3>
+                            
+                            <!-- Feature 1 - matches design patterns -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 12px; background: #E7EFC7; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">🔬</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Ingredient Deep Dives</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Discover what's really inside your favorite products and how ingredients work with your unique skin type.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Feature 2 -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 12px; background: #FFFAEC; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">✨</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Personalized Product Routines</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Build your perfect skincare routine with recommendations tailored to your goals and sensitivities.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Feature 3 -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #D6F4ED; border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="45" valign="top">
+                                                    <div style="width: 38px; height: 38px; background: #FFFFFF; border: 2px solid #000000; border-radius: 50%; text-align: center; line-height: 38px; font-size: 20px;">💬</div>
+                                                </td>
+                                                <td valign="top" style="padding-left: 12px;">
+                                                    <h4 style="margin: 0 0 6px 0; color: #101b27; font-size: 16px; font-weight: 700;">Community Success Stories</h4>
+                                                    <p style="margin: 0; color: #2d3a2f; font-size: 14px; line-height: 1.6;">Get inspired by real results from the SkinMatch community and share your own glow-up journey.</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button - matches shadow-[0_6px_0_rgba(0,0,0,0.35)] -->
+                    <tr>
+                        <td style="padding: 0 40px 35px 40px;" align="center">
+                            <a href="{site_url}" style="display: inline-block; background: #fef9ef; color: #2d4a2b; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; border: 2px solid #000000; box-shadow: 0 6px 0 rgba(0,0,0,0.35);">
+                                Explore Your Dashboard →
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Closing Message -->
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: rgba(255, 255, 255, 0.7); border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 25px; text-align: center;">
+                                        <p style="margin: 0 0 8px 0; color: #101b27; font-size: 16px; line-height: 1.6;">We're excited to share the glow with you!</p>
+                                        <p style="margin: 0; color: #2d3a2f; font-size: 14px; font-weight: 600;">- The SkinMatch Team</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background: #fef9ef; border-top: 2px solid #000000;">
+                            <p style="margin: 0 0 10px 0; color: #3c4c3f; font-size: 12px; line-height: 1.6; text-align: center;">
+                                You're receiving this email because you subscribed to SkinMatch weekly skincare tips.
+                            </p>
+                            <p style="margin: 0 0 16px 0; text-align: center; font-size: 12px;">
+                                <a href="{site_url}/newsletter/preferences" style="color: #2d4a2b; text-decoration: underline; margin: 0 8px;">Update preferences</a>
+                                <span style="color: #3c4c3f;">|</span>
+                                <a href="{unsubscribe_url}" style="color: #2d4a2b; text-decoration: underline; margin: 0 8px;">Unsubscribe</a>
+                            </p>
+                            <p style="margin: 0; color: #3c4c3f; font-size: 11px; text-align: center;">
+                                © 2025 SkinMatch. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    """.strip()
+
+
+@api.post("/newsletter/subscribe", response=NewsletterSubscribeOut)
+def subscribe_newsletter(request, payload: NewsletterSubscribeIn):
+    email_value = str(payload.email or "").strip().lower()
+    if not email_value:
+        raise HttpError(400, "Email address is required.")
+
+    source_value = (payload.source or "").strip()[:80]
+    metadata = {
+        "user_agent": (request.headers.get("User-Agent") or "")[:200],
+        "referer": (request.headers.get("Referer") or "")[:200],
+        "ip": request.META.get("REMOTE_ADDR"),
+    }
+
+    try:
+        subscriber, created = NewsletterSubscriber.objects.get_or_create(
+            email=email_value,
+            defaults={
+                "source": source_value,
+                "metadata": metadata,
+            },
+        )
+    except IntegrityError:
+        created = False
+        subscriber = NewsletterSubscriber.objects.filter(email=email_value).first()
+    except DatabaseError as exc:
+        logger.exception("Newsletter table unavailable during subscribe: %s", exc)
+        raise HttpError(503, "Newsletter sign-ups are temporarily unavailable. Please try again soon.")
+
+    if subscriber is None:
+        logger.error("Newsletter subscription failed to persist for %s", email_value)
+        raise HttpError(500, "We couldn't save your subscription. Please try again soon.")
+
+    if created:
+        try:
+            sender = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@skinmatch.local"
+            plain_message = (
+                "Thanks for subscribing to SkinMatch. Each week you'll receive ingredient insights, "
+                "product routines, and community wins tailored for healthy, happy skin.\n\n"
+                "We're excited to share the glow with you!\n"
+                "- The SkinMatch Team"
+            )
+            send_mail(
+                subject="Welcome to SkinMatch weekly skincare tips!",
+                message=plain_message,
+                html_message=_get_newsletter_welcome_email_html(email_value),
+                from_email=sender,
+                recipient_list=[email_value],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.warning("Unable to send newsletter confirmation email: %s", exc)
+
+        return {
+            "ok": True,
+            "message": "Thanks! You're now subscribed to weekly skincare tips.",
+            "already_subscribed": False,
+        }
+
+    updated = False
+    if source_value and subscriber and subscriber.source != source_value:
+        subscriber.source = source_value
+        updated = True
+    if subscriber and metadata and metadata != subscriber.metadata:
+        merged_metadata = dict(subscriber.metadata or {})
+        merged_metadata.update({k: v for k, v in metadata.items() if v})
+        if merged_metadata != subscriber.metadata:
+            subscriber.metadata = merged_metadata
+            updated = True
+    if subscriber and updated:
+        subscriber.save(update_fields=["source", "metadata"])
+
+    return {
+        "ok": True,
+        "message": "You're already subscribed. Thanks for staying with us!",
+        "already_subscribed": True,
+    }
+
+
+class NewsletterUnsubscribeIn(Schema):
+    email: EmailStr
+
+
+class NewsletterUnsubscribeOut(Schema):
+    ok: bool
+    message: str
+
+
+@api.post("/newsletter/unsubscribe", response=NewsletterUnsubscribeOut)
+def unsubscribe_newsletter(request, payload: NewsletterUnsubscribeIn):
+    """Unsubscribe an email from the newsletter."""
+    email_value = str(payload.email or "").strip().lower()
+    if not email_value:
+        raise HttpError(400, "Email address is required.")
+
+    try:
+        subscriber = NewsletterSubscriber.objects.filter(email=email_value).first()
+        if subscriber:
+            subscriber.delete()
+            logger.info("Unsubscribed email: %s", email_value)
+            return {
+                "ok": True,
+                "message": "You have been successfully unsubscribed from SkinMatch weekly skincare tips.",
+            }
+        else:
+            # Return success even if not found (don't reveal if email exists)
+            return {
+                "ok": True,
+                "message": "You have been successfully unsubscribed from SkinMatch weekly skincare tips.",
+            }
+    except Exception as exc:
+        logger.exception("Error unsubscribing email %s: %s", email_value, exc)
+        raise HttpError(500, "We couldn't process your unsubscribe request. Please try again soon.")
+
+
+class SendTermsEmailIn(Schema):
+    email: EmailStr
+    terms_body: str
+
+    @field_validator("terms_body")
+    @classmethod
+    def body_not_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Terms body is required.")
+        return cleaned
+
+class SendTermsEmailOut(Schema):
+    ok: bool
+
+
+class PasswordResetRequestIn(Schema):
+    email: EmailStr
+
+
+class PasswordResetRequestOut(Schema):
+    ok: bool
+
+
+class PasswordResetConfirmIn(Schema):
+    uid: str
+    token: str
+    new_password: str
+
+
+class PasswordResetConfirmOut(Schema):
+    ok: bool
+
+class PasswordChangeIn(Schema):
+    current_password: str
+    new_password: str
+
+
+class PasswordChangeOut(Schema):
+    ok: bool
+
+
+def _stamp_last_login(user: User) -> None:
+    user.last_login = timezone.localtime(timezone.now())
+    user.save(update_fields=["last_login"])
+
 # --------------- Auth endpoints ---------------
 
+@api.get("/healthz")
+def healthz(request):
+    return {"status": "ok"}
 
 @api.post("/ai/gemini/generate", response=GenOut, auth=JWTAuth())
 def genai_generate(request, payload: GenIn):
@@ -202,6 +570,100 @@ def genai_generate(request, payload: GenIn):
         raise HttpError(503, "AI generation service is not available.")
     response_text = generate_text(payload.prompt)
     return {"response": response_text}
+
+@api.post("/legal/send-terms", response=SendTermsEmailOut)
+def send_terms_email(request, payload: SendTermsEmailIn):
+    subject = "SkinMatch Terms of Service"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
+
+    try:
+        send_mail(subject, payload.terms_body, from_email, [payload.email])
+    except Exception:
+        logger.exception("Failed to send terms email to %s", payload.email)
+        raise HttpError(500, "We couldn't send the terms right now. Please try again later.")
+
+    return {"ok": True}
+
+@api.post("/auth/password/forgot", response=PasswordResetRequestOut)
+def password_reset_request(request, payload: PasswordResetRequestIn):
+    try:
+        user = User.objects.get(email__iexact=str(payload.email))
+    except User.DoesNotExist:
+        # Always return ok to avoid revealing which emails exist
+        return {"ok": True}
+
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    frontend_origin = getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
+    reset_url = f"{frontend_origin}/reset-password?uid={uid}&token={token}"
+
+    subject = "SkinMatch Password Reset"
+    message = "\n".join(
+        [
+            "We received a request to reset your SkinMatch password.",
+            "If you made this request, click the link below (or copy and paste it into your browser) to set a new password:",
+            "",
+            reset_url,
+            "",
+            "If you didn't request a password reset, you can safely ignore this email.",
+            "",
+            "— The SkinMatch Team",
+        ]
+    )
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")
+
+    try:
+        send_mail(subject, message, from_email, [str(payload.email)])
+    except Exception:
+        logger.exception("Failed to send password reset email to %s", payload.email)
+        raise HttpError(500, "We couldn't send the reset link. Please try again later.")
+
+    return {"ok": True}
+
+
+@api.post("/auth/password/reset", response=PasswordResetConfirmOut)
+def password_reset_confirm(request, payload: PasswordResetConfirmIn):
+    try:
+        uid = force_str(urlsafe_base64_decode(payload.uid))
+        user = User.objects.get(pk=uid)
+    except (ValueError, User.DoesNotExist, TypeError, OverflowError):
+        raise HttpError(400, "Invalid or expired reset link.")
+
+    if not default_token_generator.check_token(user, payload.token):
+        raise HttpError(400, "Invalid or expired reset link.")
+
+    try:
+        validate_password(payload.new_password, user=user)
+    except ValidationError as exc:
+        raise HttpError(400, " ".join(exc.messages))
+
+    user.set_password(payload.new_password)
+    user.save(update_fields=["password"])
+
+    return {"ok": True}
+
+
+@api.post("/auth/password/change", response=PasswordChangeOut, auth=JWTAuth())
+def password_change(request, payload: PasswordChangeIn):
+    user = request.auth
+    if user is None:
+        raise HttpError(401, "Authentication required.")
+
+    if not user.check_password(payload.current_password):
+        raise HttpError(400, "Current password is incorrect.")
+
+    if payload.current_password == payload.new_password:
+        raise HttpError(400, "New password must be different from the current password.")
+
+    try:
+        validate_password(payload.new_password, user=user)
+    except ValidationError as exc:
+        raise HttpError(400, " ".join(exc.messages))
+
+    user.set_password(payload.new_password)
+    user.save(update_fields=["password"])
+
+    return {"ok": True}
 
 @api.post("/auth/token", response=tokenOut)
 def token_login(request, payload: LoginIn):
@@ -212,12 +674,13 @@ def token_login(request, payload: LoginIn):
         .first()
     )
     if not user_obj:
-        return {"ok": False, "message": "Invalid credentials"}
+        return {"ok": False, "message": "We couldn't find an account with that email or username."}
 
     user = authenticate(request, username=user_obj.get_username(), password=payload.password)
     if not user:
-        return {"ok": False, "message": "Invalid credentials"}
+        return {"ok": False, "message": "The password you entered is incorrect."}
     
+    _stamp_last_login(user)
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": "Login successful"}
 
@@ -228,6 +691,7 @@ def google_login(request, payload: GoogleLoginIn):
     except ValueError as exc:
         return {"ok": False, "message": str(exc)}
 
+    _stamp_last_login(user)
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": message}
 
@@ -244,6 +708,21 @@ def signup(request, payload: SignUpIn):
     
     if User.objects.filter(email__iexact=str(payload.email)).exists():
         return {"ok": False, "message": "Email already in use"}
+    
+    # Validate password using Django's password validators
+    # Create a temporary user object for validation (username/email similarity checks)
+    temp_user = User(
+        username=payload.username,
+        email=str(payload.email),
+        first_name=payload.first_name.strip(),
+        last_name=payload.last_name.strip(),
+    )
+    try:
+        validate_password(payload.password, user=temp_user)
+    except ValidationError as exc:
+        # Join all validation error messages
+        error_message = " ".join(exc.messages)
+        return {"ok": False, "message": error_message}
     
     # create user
     try:
@@ -538,19 +1017,11 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
 
 
 def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBlockOut:
-    print(f"Block {block.order}: has image? {bool(block.image)}")
-    if block.image:
-        print(f"  Image name: {block.image.name}")
-        try:
-            print(f"  Image URL: {block.image.url}")
-        except Exception as e:
-            print(f"  Error getting URL: {e}")
+    """Serialize a content block - either text or image"""
     return FactContentBlockOut(
         order=block.order,
-        block_type=block.block_type,
-        heading=block.heading or None,
-        text=block.text or None,
-        image_url=_resolve_media_url(request, block.image),
+        content=block.content or None,
+        image_url=_resolve_media_url(request, block.image) if block.image else None,
         image_alt=block.image_alt or None,
     )
 
@@ -573,3 +1044,204 @@ def _resolve_media_url(request, image_field) -> Optional[str]:
 
 
 # ------------------------------------------------------------------------------------
+
+# ----------------------------- Wishlist ---------------------------------------------
+
+class WishlistAddIn(Schema):
+    product_id: uuid.UUID
+
+
+class WishlistMutationOut(Schema):
+    ok: bool
+    status: str
+
+
+class WishlistProductOut(Schema):
+    id: uuid.UUID
+    slug: str
+    name: str
+    brand: str
+    category: str
+    price: float
+    currency: str
+    image: str | None = None
+    product_url: str | None = None
+    saved_at: datetime
+
+
+def _serialize_wishlist_item(item: WishlistItem) -> dict:
+    p: Product = item.product
+    return {
+        "id": p.id,
+        "slug": p.slug,
+        "name": p.name,
+        "brand": p.brand,
+        "category": p.category,
+        "price": float(p.price or 0),
+        "currency": p.currency,
+        "image": p.image or None,
+        "product_url": p.product_url or None,
+        "saved_at": item.created_at,
+    }
+
+
+@api.get("/wishlist", response=List[WishlistProductOut], auth=JWTAuth())
+def list_wishlist(request, limit: int = 100, offset: int = 0):
+    user: User = request.auth
+    limit = max(1, min(limit, 200))
+    qs = (
+        WishlistItem.objects
+        .select_related("product")
+        .filter(user=user, product__is_active=True)
+        .order_by("-created_at")
+    )
+    items = list(qs[offset: offset + limit])
+    return [_serialize_wishlist_item(it) for it in items]
+
+
+@api.post("/wishlist/add", response=WishlistMutationOut, auth=JWTAuth())
+def add_to_wishlist(request, payload: WishlistAddIn):
+    user: User = request.auth
+    try:
+        product = Product.objects.get(id=payload.product_id, is_active=True)
+    except Product.DoesNotExist:
+        raise HttpError(404, "Product not found")
+
+    obj, created = WishlistItem.objects.get_or_create(user=user, product=product)
+    return {"ok": True, "status": "added" if created else "already_saved"}
+
+
+@api.delete("/wishlist/{product_id}", response=WishlistMutationOut, auth=JWTAuth())
+def remove_from_wishlist(request, product_id: uuid.UUID):
+    user: User = request.auth
+    try:
+        item = WishlistItem.objects.select_related("product").get(user=user, product_id=product_id)
+    except WishlistItem.DoesNotExist:
+        return {"ok": True, "status": "not_present"}
+
+    item.delete()
+    return {"ok": True, "status": "removed"}
+
+def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
+    """Very small heuristic mapping of concerns to ingredient/keyword hints."""
+    concerns: list[str] = []
+    if not isinstance(profile_data, dict):
+        return concerns
+    for key in ("primary_concerns", "secondary_concerns", "eye_area_concerns"):
+        values = profile_data.get(key) or []
+        if isinstance(values, list):
+            concerns.extend([str(v).strip().lower() for v in values if v])
+
+    unique = list(dict.fromkeys(concerns))  # preserve order, drop dups
+
+    # Map concerns to ingredient keywords we may find in topic titles/subtitles
+    mapping: dict[str, list[str]] = {
+        "acne": ["salicylic", "bha", "azelaic", "niacinamide", "benzoyl"],
+        "blemishes": ["azelaic", "niacinamide", "bha", "salicylic"],
+        "oil": ["niacinamide", "salicylic", "bha", "clay"],
+        "oily": ["niacinamide", "salicylic", "bha"],
+        "dry": ["hyaluronic", "ceramide", "squalane", "glycerin"],
+        "dehydrated": ["hyaluronic", "glycerin", "panthenol"],
+        "pigmentation": ["vitamin c", "tranexamic", "azelaic", "niacinamide"],
+        "dark spots": ["vitamin c", "tranexamic", "azelaic"],
+        "melasma": ["tranexamic", "azelaic", "vitamin c"],
+        "redness": ["centella", "azelaic", "allantoin", "green tea"],
+        "sensitive": ["ceramide", "allantoin", "panthenol", "centella"],
+        "aging": ["retinol", "peptide", "bakuchiol", "vitamin c"],
+        "wrinkles": ["retinol", "peptide", "bakuchiol"],
+        "barrier": ["ceramide", "squalane", "panthenol"],
+    }
+
+    keywords: list[str] = []
+    for c in unique:
+        for k, vals in mapping.items():
+            if k in c:
+                keywords.extend(vals)
+    # if nothing matched, provide broad helpful defaults
+    if not keywords:
+        keywords = ["hyaluronic", "niacinamide", "vitamin c", "ceramide"]
+    # dedupe, keep order
+    return list(dict.fromkeys([kw.lower() for kw in keywords]))
+
+
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary], auth=JWTAuth())
+def recommended_facts(request, limit: int = 4):
+    """Personalized Skin Facts based on latest quiz profile and reading history."""
+    user: User = request.auth
+    limit = max(1, min(limit, 8))
+
+    # Try to find the latest completed quiz session with a result profile
+    latest_session: QuizSession | None = (
+        QuizSession.objects.filter(user=user).order_by("-completed_at", "-started_at").first()
+    )
+
+    keywords: list[str] = []
+    if latest_session and isinstance(latest_session.result_summary, dict):
+        # Prefer the profile snapshot/result summary which mirrors SkinProfile fields
+        profile_like = latest_session.result_summary or latest_session.profile_snapshot or {}
+        keywords = _concern_keywords_from_profile(profile_like)
+
+    qs = SkinFactTopic.objects.filter(is_published=True)
+
+    # Score topics by keyword occurrence in title/subtitle/excerpt
+    # Build a Q OR chain across keywords
+    keyword_q = Q()
+    for kw in keywords:
+        keyword_q |= (
+            Q(title__icontains=kw)
+            | Q(subtitle__icontains=kw)
+            | Q(excerpt__icontains=kw)
+        )
+
+    filtered = qs.filter(keyword_q) if keywords else qs
+
+    # If we have reading history, boost previously viewed topics and dedupe later
+    viewed_ids = list(
+        SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+    )
+
+    # Prefer ingredient spotlight and knowledge, then others, then by recency/views
+    ordered = (
+        filtered.annotate()
+        .order_by(
+            Case(
+                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
+                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
+                default=2,
+                output_field=IntegerField(),
+            ),
+            "-updated_at",
+            "-view_count",
+        )
+    )
+
+    topics = list(ordered[: limit * 3])  # overfetch a bit before re-ranking
+
+    # Light re-ranking: push already-viewed slightly down
+    def score(t: SkinFactTopic) -> tuple[int, int, int]:
+        section_rank = 0 if t.section == SkinFactTopic.Section.INGREDIENT_SPOTLIGHT else (1 if t.section == SkinFactTopic.Section.KNOWLEDGE else 2)
+        viewed_penalty = 1 if t.id in viewed_ids else 0
+        return (viewed_penalty, section_rank, -t.view_count)
+
+    topics.sort(key=score)
+    picked = []
+    seen = set()
+    for t in topics:
+        if t.id in seen:
+            continue
+        seen.add(t.id)
+        picked.append(t)
+        if len(picked) >= limit:
+            break
+
+    # Fallback to popular/knowledge if not enough
+    if len(picked) < limit:
+        extra = (
+            SkinFactTopic.objects.filter(is_published=True)
+            .exclude(id__in=[t.id for t in picked])
+            .order_by("-view_count", "-updated_at")[: limit - len(picked)]
+        )
+        picked.extend(list(extra))
+
+    return [_serialize_fact_topic_summary(t, request) for t in picked]
+

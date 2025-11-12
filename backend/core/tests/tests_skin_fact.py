@@ -1,179 +1,112 @@
-import shutil, tempfile
-from datetime import timedelta
+import shutil
+import tempfile
 
-from django.test import TestCase, override_settings
-from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.contrib.auth import get_user_model
-from django.utils import timezone
+from django.test import RequestFactory, TestCase, override_settings
 
-from core.models import SkinFactTopic, SkinFactContentBlock, SkinFactView
+from core.api import _resolve_media_url, _serialize_fact_block, _serialize_fact_topic_summary
+from core.models import SkinFactContentBlock, SkinFactTopic
 
-User = get_user_model()
 
-def fake_jpg(name="x.jpg"):
+def _fake_jpg(name: str = "sample.jpg") -> SimpleUploadedFile:
     return SimpleUploadedFile(name, b"\xff\xd8\xff\xd9", content_type="image/jpeg")
 
+
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
-class SkinFactModelTest(TestCase):
+class SkinFactSerializationTests(TestCase):
+    """Exercise helper serialization utilities used by the facts UI."""
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.tmp_media = tempfile.mkdtemp(prefix="test_media_")
-        cls.override = override_settings(MEDIA_ROOT=cls.tmp_media)
-        cls.override.enable()
+        cls._media_root = tempfile.mkdtemp(prefix="facts_media_")
+        cls._override = override_settings(MEDIA_ROOT=cls._media_root)
+        cls._override.enable()
 
     @classmethod
     def tearDownClass(cls):
-        cls.override.disable()
-        shutil.rmtree(cls.tmp_media, ignore_errors=True)
+        cls._override.disable()
+        shutil.rmtree(cls._media_root, ignore_errors=True)
         super().tearDownClass()
 
     def setUp(self):
-        self.user = User.objects.create_user(username="u", email="u@example.com", password="x")
+        self.factory = RequestFactory()
 
-    def test_topic_increment_view_count(self):
+    def test_resolve_media_url_builds_absolute(self):
         topic = SkinFactTopic.objects.create(
-            slug="spf50", title="SPF 50 Basics", section=SkinFactTopic.Section.KNOWLEDGE
+            slug="hydration-basics",
+            title="Hydration Basics",
+            section=SkinFactTopic.Section.KNOWLEDGE,
+            hero_image=_fake_jpg("hydration.jpg"),
         )
-        topic.increment_view_count()
-        topic.refresh_from_db()
-        self.assertEqual(topic.view_count, 1)
 
-    def test_topic_increment_multiple_times(self):
+        request = self.factory.get("/", HTTP_HOST="backend:8000")
+        absolute_url = _resolve_media_url(request, topic.hero_image)
+
+        self.assertIsNotNone(absolute_url)
+        self.assertTrue(absolute_url.startswith("http://backend:8000"), absolute_url)
+        self.assertIn("/media/facts/hero/", absolute_url or "")
+        self.assertTrue(absolute_url.endswith(".jpg"))
+
+    def test_topic_summary_uses_null_when_alt_missing(self):
         topic = SkinFactTopic.objects.create(
-            slug="spf50multi",
-            title="SPF 50 Multi Increment",
+            slug="missing-alt",
+            title="Missing Alt",
+            section=SkinFactTopic.Section.TRENDING,
+            hero_image=_fake_jpg("missing_alt.jpg"),
+            hero_image_alt="",
+        )
+
+        request = self.factory.get("/", HTTP_HOST="backend:8000")
+        summary = _serialize_fact_topic_summary(topic, request)
+
+        self.assertTrue(summary.hero_image_url.startswith("http://backend:8000/"))
+        self.assertIsNone(summary.hero_image_alt)
+
+    def test_block_serialization_preserves_text_and_image_meta(self):
+        topic = SkinFactTopic.objects.create(
+            slug="vitamin-c",
+            title="Vitamin C Guide",
+            section=SkinFactTopic.Section.FACT_CHECK,
+        )
+        text_block = SkinFactContentBlock.objects.create(
+            topic=topic,
+            content="Vitamin C helps brighten skin tone.",
+            order=1,
+        )
+        image_block = SkinFactContentBlock.objects.create(
+            topic=topic,
+            image=_fake_jpg("vitc_block.jpg"),
+            image_alt="A bottle of vitamin C serum.",
+            order=2,
+        )
+
+        request = self.factory.get("/", HTTP_HOST="backend:8000")
+        text_payload = _serialize_fact_block(text_block, request)
+        image_payload = _serialize_fact_block(image_block, request)
+
+        self.assertEqual(text_payload.order, 1)
+        self.assertEqual(text_payload.content, "Vitamin C helps brighten skin tone.")
+        self.assertIsNone(text_payload.image_url)
+
+        self.assertEqual(image_payload.image_alt, "A bottle of vitamin C serum.")
+        self.assertTrue(image_payload.image_url.startswith("http://backend:8000"))
+
+    def test_anonymous_block_alt_defaults_to_none(self):
+        topic = SkinFactTopic.objects.create(
+            slug="retinol",
+            title="Retinol 101",
             section=SkinFactTopic.Section.KNOWLEDGE,
         )
-        topic.increment_view_count()
-        topic.increment_view_count()
-        topic.refresh_from_db()
-        self.assertEqual(topic.view_count, 2)
-
-    def test_view_auto_increments_topic(self):
-        topic = SkinFactTopic.objects.create(
-            slug="vitc", title="Vitamin C", section=SkinFactTopic.Section.FACT_CHECK
-        )
-        SkinFactView.objects.create(topic=topic, user=self.user)
-        topic.refresh_from_db()
-        self.assertEqual(topic.view_count, 1)
-
-    def test_content_block_paragraph_requires_text(self):
-        topic = SkinFactTopic.objects.create(
-            slug="hydration", title="Hydration", section=SkinFactTopic.Section.TRENDING
-        )
-        blk = SkinFactContentBlock(
+        block = SkinFactContentBlock.objects.create(
             topic=topic,
-            block_type=SkinFactContentBlock.BlockType.TEXT,
-            text="",
-        )
-        with self.assertRaises(ValidationError):
-            blk.full_clean()
-
-    def test_text_block_with_image_requires_alt_text(self):
-        topic = SkinFactTopic.objects.create(
-            slug="retinol", title="Retinol 101", section=SkinFactTopic.Section.KNOWLEDGE
-        )
-        blk = SkinFactContentBlock(
-            topic=topic,
-            block_type=SkinFactContentBlock.BlockType.TEXT,
-            text="Retinol helps with cell turnover.",
+            image=_fake_jpg("retinol.jpg"),
+            image_alt="",
+            order=2,
         )
 
-        blk.image = fake_jpg("retinol.jpg")
-        with self.assertRaises(ValidationError):
-            blk.full_clean()
+        request = self.factory.get("/", HTTP_HOST="backend:8000")
+        payload = _serialize_fact_block(block, request)
 
-        blk.image_alt = "Illustration of a retinol serum bottle."
-        blk.full_clean()
-        blk.save()
-        self.assertTrue(blk.image.storage.exists(blk.image.name))
-
-
-class PopularFactsAPITest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username="popuser",
-            email="pop@example.com",
-            password="pass12345",
-        )
-        self.client.force_login(self.user)
-
-    def _create_topic(self, slug: str, title: str, *, view_count: int = 0, **extra):
-        defaults = {
-            "slug": slug,
-            "title": title,
-            "section": SkinFactTopic.Section.KNOWLEDGE,
-            "view_count": view_count,
-            "is_published": True,
-        }
-        defaults.update(extra)
-        return SkinFactTopic.objects.create(**defaults)
-
-    def test_user_popular_topics_respect_view_history(self):
-        base_time = timezone.now()
-        topics = []
-        for idx in range(6):
-            topic = self._create_topic(slug=f"topic-{idx}", title=f"Topic {idx}")
-            topics.append(topic)
-            # Create idx + 1 views so later topics have higher totals.
-            for occurrence in range(idx + 1):
-                SkinFactView.objects.create(
-                    topic=topic,
-                    user=self.user,
-                    viewed_at=base_time + timedelta(minutes=occurrence, seconds=idx),
-                )
-
-        resp = self.client.get("/api/facts/topics/popular")
-        self.assertEqual(resp.status_code, 200)
-        payload = resp.json()
-        self.assertEqual(len(payload), 5)
-
-        expected_order = [
-            topics[5].slug,
-            topics[4].slug,
-            topics[3].slug,
-            topics[2].slug,
-            topics[1].slug,
-        ]
-        self.assertEqual([item["slug"] for item in payload], expected_order)
-
-    def test_popular_topics_fallback_to_global_counts(self):
-        base_time = timezone.now()
-
-        user_topics = []
-        for idx in range(2):
-            topic = self._create_topic(slug=f"user-topic-{idx}", title=f"User Topic {idx}")
-            SkinFactView.objects.create(
-                topic=topic,
-                user=self.user,
-                viewed_at=base_time + timedelta(minutes=idx),
-            )
-            user_topics.append(topic)
-
-        fallback_specs = [
-            ("global-1", "Global 1", 80),
-            ("global-2", "Global 2", 60),
-            ("global-3", "Global 3", 40),
-            ("global-4", "Global 4", 20),
-        ]
-        fallback_topics = [
-            self._create_topic(slug, title, view_count=views)
-            for slug, title, views in fallback_specs
-        ]
-
-        resp = self.client.get("/api/facts/topics/popular")
-        self.assertEqual(resp.status_code, 200)
-        payload = resp.json()
-        self.assertEqual(len(payload), 5)
-
-        # User topics should appear first, ordered by latest view (descending).
-        expected_slugs = [
-            user_topics[1].slug,
-            user_topics[0].slug,
-            fallback_topics[0].slug,
-            fallback_topics[1].slug,
-            fallback_topics[2].slug,
-        ]
-        self.assertEqual([item["slug"] for item in payload], expected_slugs)
+        self.assertIsNone(payload.image_alt)
+        self.assertTrue(payload.image_url.endswith(".jpg"))

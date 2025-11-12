@@ -26,9 +26,9 @@ class QuizSessionAdmin(admin.ModelAdmin):
 
 @admin.register(QuizFeedback)
 class QuizFeedbackAdmin(admin.ModelAdmin):
-    list_display = ("contact_email", "session", "created_at")
-    search_fields = ("contact_email", "message")
-    list_filter = ("created_at",)
+    list_display = ("session", "rating", "created_at")
+    search_fields = ("message",)
+    list_filter = ("created_at", "rating")
     readonly_fields = ("created_at",)
 
 
@@ -77,6 +77,15 @@ class ProductReviewAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ("common_name", "key")
     search_fields = ("common_name", "inci_name", "key")
+    fields = (
+        "key",
+        "common_name",
+        "inci_name",
+        "benefits",
+        "helps_with",
+        "avoid_with",
+        "side_effects",
+    )
 
 
 @admin.register(SkinConcern)

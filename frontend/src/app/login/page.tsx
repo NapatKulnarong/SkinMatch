@@ -8,6 +8,7 @@ import {
   login as loginRequest,
   signup as signupRequest,
   createAdminSession,
+  requestPasswordReset,
 } from "@/lib/api.auth";
 import {
   clearSession,
@@ -16,8 +17,9 @@ import {
   type StoredProfile,
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 
-type Mode = "intro" | "signup" | "login";
+type Mode = "intro" | "signup" | "login" | "forgot";
 
 type SignupState = {
   name: string;
@@ -34,6 +36,8 @@ type LoginState = {
   identifier: string;
   password: string;
 };
+
+type ForgotStatus = "idle" | "loading" | "success" | "error";
 
 const initialSignup: SignupState = {
   name: "",
@@ -62,7 +66,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
-          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
             <p className="text-lg font-semibold text-[#3B2F4A]">Loading sign-in…</p>
           </div>
         </main>
@@ -101,6 +105,9 @@ function LoginContent() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState<ForgotStatus>("idle");
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   useEffect(() => {
     const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
@@ -166,6 +173,9 @@ function LoginContent() {
     setSignupError(null);
     setLoginError(null);
     setGoogleError(null);
+    setForgotEmail("");
+    setForgotStatus("idle");
+    setForgotError(null);
   };
 
   const handleGoogleSignIn = () => {
@@ -194,6 +204,35 @@ function LoginContent() {
     setGoogleLoading(true);
     redirectTo(authUrl);
   };
+
+  const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedEmail = forgotEmail.trim();
+
+    if (!trimmedEmail) {
+      setForgotStatus("error");
+      setForgotError("Please enter the email associated with your account.");
+      return;
+    }
+
+    setForgotStatus("loading");
+    setForgotError(null);
+
+    try {
+      const response = await requestPasswordReset(trimmedEmail);
+      if (!response.ok) {
+        throw new Error("We couldn't send the reset link. Please try again in a moment.");
+      }
+      setForgotStatus("success");
+    } catch (error) {
+      setForgotStatus("error");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "We couldn't send the reset link. Please try again later.";
+      setForgotError(message);
+    }
+  };
   
   const onSignupChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -211,12 +250,15 @@ function LoginContent() {
     event.preventDefault();
     setSignupError(null);
 
-    if (signup.password.length < 8) {
-      setSignupError("Password must be at least 8 characters.");
-      return;
-    }
+    // Basic client-side validation
     if (signup.password !== signup.confirmPassword) {
       setSignupError("Passwords do not match.");
+      return;
+    }
+    
+    // Backend will validate password policy, but we do a basic check for UX
+    if (!signup.password) {
+      setSignupError("Please enter a password.");
       return;
     }
 
@@ -345,8 +387,13 @@ function LoginContent() {
         }
       }
 
-      // Regular user - go to account page
-      router.push("/account");
+      // Regular user - check for redirect parameter or go to account page
+      const redirectParam = searchParams.get("redirect");
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else {
+        router.push("/account");
+      }
     } catch (error: unknown) {
       clearSession();
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
@@ -359,58 +406,61 @@ function LoginContent() {
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
-    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:justify-center md:gap-12">
-      <div className="md:mr-6">
+    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-10 sm:px-6 lg:flex-row lg:gap-16">
+      <div className="hidden lg:flex justify-end lg:mr-0">
         <Image
           src="/img/mascot/matchy_2.png"
           alt="Matchy mascot waving hello"
-          width={700}
-          height={700}
+          width={520}
+          height={520}
           priority
-          className="drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-6 md:translate-y-8"
+          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[6px_6px_0_rgba(0,0,0,0.18)] sm:drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>
       <div
         className={[
-          "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
-          "shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
+          "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
+          "shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
           cardBg,
         ].join(" ")}
       >
         {mode === "intro" && (
           <>
-            <div className="p-8">
+          <div className="p-5 sm:p-7">
               <h2 className="text-3xl font-extrabold text-[#3B2F4A]">
-                Join our <span className="text-[#3B2F4A]">MatchClub</span>
+                Join <span className="text-[#3B2F4A]">MatchClub</span>
               </h2>
 
-              <ul className="mt-6 text-[15.5px] text-gray-700 font-semibold">
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+              <ul className="mt-4 text-gray-700 font-semibold text-sm sm:text-base">
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Save your match result</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Read &amp; write reviews on your product matches</span>
+                  <span>Save your skincare wish lists</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Be the first to get updates about the skincare industry</span>
+                  <span>Read &amp; write reviews on your matches</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start whitespace-nowrap">
+                <li className="pt-3 pb-1 flex gap-3 items-start">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Product discount alerts</span>
+                  <span>Get the latest updates on the skincare industry.</span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-[#B6A6D8] p-6">
+            <div className="bg-[#B6A6D8] p-4 sm:p-6">
               <button
                 data-testid="signup-google"
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base 
+                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
                 <span className="leading-none">
@@ -432,7 +482,10 @@ function LoginContent() {
                 data-testid="signup-email"
                 type="button"
                 onClick={() => changeMode("signup")}
-                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-base
+                          font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
                 <MailIcon className="block h-6 w-6 flex-shrink-0" />
                 <span className="leading-none">Sign up with Email</span>
@@ -454,7 +507,7 @@ function LoginContent() {
         )}
 
         {mode === "signup" && (
-          <div className="p-8" data-testid="signup-form">
+          <div className="p-6 sm:p-8" data-testid="signup-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
               Create your account
             </h2>
@@ -531,7 +584,7 @@ function LoginContent() {
                   />
                 </Field>
 
-                <Field label="Password" hint="(at least 8 characters)" colSpan={2}>
+                <Field label="Password" colSpan={2}>
                   <input
                     type="password"
                     name="password"
@@ -539,6 +592,10 @@ function LoginContent() {
                     onChange={onSignupChange}
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                     placeholder="••••••••"
+                  />
+                  <PasswordRequirements
+                    password={signup.password}
+                    className="mt-2"
                   />
                 </Field>
 
@@ -580,7 +637,7 @@ function LoginContent() {
         )}
 
         {mode === "login" && (
-          <div className="p-8" data-testid="login-form">
+          <div className="p-6 sm:p-8" data-testid="login-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
             <form onSubmit={handleLogin} className="mt-4 space-y-6">
@@ -621,7 +678,7 @@ function LoginContent() {
 
                 <button
                   type="button"
-                  onClick={() => alert("Password reset flow coming soon!")}
+                  onClick={() => changeMode("forgot")}
                   className="text-sm font-semibold text-[#6B5D83] hover:underline"
                 >
                   Forgot Password?
@@ -635,6 +692,67 @@ function LoginContent() {
                   className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-8 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loginLoading ? "Logging in..." : "Login"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {mode === "forgot" && (
+          <div className="p-6 sm:p-8" data-testid="forgot-form">
+            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
+              Reset your password
+            </h2>
+            <p className="text-sm text-[#2C2533]/80">
+              Enter the email linked to your SkinMatch account. We&apos;ll send you a reset
+              link to choose a new password.
+            </p>
+
+            <form onSubmit={handleForgotPassword} className="mt-6 space-y-6">
+              <Field label="Email address" colSpan={2}>
+                <input
+                  type="email"
+                  name="forgot-email"
+                  value={forgotEmail}
+                  onChange={(event) => {
+                    setForgotEmail(event.target.value);
+                    if (forgotStatus === "error") {
+                      setForgotStatus("idle");
+                      setForgotError(null);
+                    }
+                  }}
+                  className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                  placeholder="you@example.com"
+                  disabled={forgotStatus === "loading" || forgotStatus === "success"}
+                />
+              </Field>
+
+              {forgotStatus === "success" ? (
+                <p className="text-sm font-semibold text-[#166534]">
+                  If an account exists for that email, we just sent instructions to reset your
+                  password. Check your inbox and spam folder.
+                </p>
+              ) : null}
+
+              {forgotStatus === "error" && forgotError ? (
+                <p className="text-sm font-semibold text-red-700">{forgotError}</p>
+              ) : null}
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => changeMode("login")}
+                  className="text-sm font-semibold text-[#2C2533] hover:underline"
+                >
+                  ← Back to login
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={forgotStatus === "loading" || forgotStatus === "success"}
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {forgotStatus === "loading" ? "Sending..." : "Email reset link"}
                 </button>
               </div>
             </form>

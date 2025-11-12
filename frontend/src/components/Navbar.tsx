@@ -1,5 +1,5 @@
 // src/components/Navbar.tsx
-"use client"; // means "Run this code in the browser instead of only on the server."
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -17,15 +17,22 @@ export default function Navbar() {
   const headerRef = useRef<HTMLElement | null>(null);
   const setNavWidth = useNavWidthSetter();
 
-  // same look/size as your Button (flat)
   const pillBase =
-    "h-9 px-4 flex items-center justify-center rounded-full font-semibold text-sm transition";
+    "h-8 px-3 flex items-center justify-center rounded-full font-semibold text-xs transition-colors duration-200 sm:h-9 sm:px-4 sm:text-sm";
 
   const activeStyles: Record<string, string> = {
     orange: "bg-[#f4bc78] text-black",
     green:  "bg-[#acdb93] text-black",
     blue:   "bg-[#94c6ef] text-black",
   };
+
+  // Hover styles for each color
+  const hoverStyles: Record<string, string> = {
+    orange: "hover:bg-[#f4bc78] hover:text-black",
+    green:  "hover:bg-[#acdb93] hover:text-black",
+    blue:   "hover:bg-[#94c6ef] hover:text-black",
+  };
+
   const inactive = "bg-gray-200 text-black";
 
   const links = [
@@ -97,6 +104,7 @@ export default function Navbar() {
       setNavWidth(null);
     };
   }, [setNavWidth]);
+
   const loginLabel = (() => {
     if (!profile) return "Login / Sign Up";
     const parts = [profile.first_name, profile.last_name].filter(
@@ -111,54 +119,89 @@ export default function Navbar() {
   useEffect(() => {
     setAvatarError(false);
   }, [avatarSrc]);
+  const loginAriaLabel = profile ? "Open account" : "Log in or sign up";
 
   return (
     <header
       ref={headerRef}
-      className="absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-20"
+      className="fixed inset-x-0 z-30 flex w-full flex-col gap-2 bg-[#F5F5F0] px-4 py-3 pb-5 backdrop-blur sm:absolute sm:left-0 sm:right-0 sm:top-0 sm:z-20 sm:w-full sm:flex-row sm:items-center sm:justify-between sm:rounded-none sm:bg-transparent sm:px-6 sm:py-4"
     >
-      {/* Logo on the left (unchanged) */}
-      <div className="flex items-center space-x-2">
-        <Image src="/logo.png" alt="SkinMatch Logo" width={130} height={130} />
+      <div className="flex w-full items-center justify-between gap-3">
+        <Link href="/" className="shrink-0">
+          <Image
+            src="/logo.png"
+            alt="SkinMatch Logo"
+            width={130}
+            height={130}
+            className="w-24 sm:w-32"
+          />
+        </Link>
+
+        <Link
+          href={loginHref}
+          aria-current={isActive(loginHref) ? "page" : undefined}
+          aria-label={loginAriaLabel}
+          className="h-12 w-12 flex-shrink-0 sm:hidden"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={avatarError ? "/default-profile.png" : avatarSrc}
+            alt="Profile avatar"
+            className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
+              isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
+            }`}
+            onError={() => setAvatarError(true)}
+          />
+        </Link>
       </div>
 
-      {/* Center nav (unchanged) */}
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2 border-2 border-black rounded-full px-3 py-2 bg-white shadow-[2px_3px_0px_rgba(0,0,0,0.3)]">
+      <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+        <div className="flex w-full items-center justify-between gap-1 rounded-full border-2 border-black bg-white px-2 py-1 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:h-14 sm:w-auto sm:gap-2 sm:px-4 sm:py-3">
           {links.map(({ href, label, color }) => (
             <Link
               key={href}
               href={href}
               aria-current={isActive(href) ? "page" : undefined}
-              className={`${pillBase} ${isActive(href) ? activeStyles[color] : inactive}`}
+              className={`${pillBase} ${
+                isActive(href)
+                  ? activeStyles[color]
+                  : `${inactive} ${hoverStyles[color]}`
+              } flex-1 whitespace-nowrap sm:flex-none`}
             >
               {label}
             </Link>
           ))}
         </div>
 
-        {/* LOGIN BAR — matches your mockup */}
-        <div className="flex items-center gap-2 border-2 border-black rounded-full px-3 py-2 bg-white shadow-[2px_3px_0px_rgba(0,0,0,0.3)]">
-          {/* Inner pill that turns purple when on /login */}
+        <div className="hidden items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:flex sm:h-14">
           <Link
             href={loginHref}
             aria-current={isActive(loginHref) ? "page" : undefined}
-            className={`${pillBase} ${
-              isActive(loginHref) ? "bg-[#c7b6ea] text-black" : "bg-gray-200 text-black"
+            className={`${pillBase} hidden whitespace-nowrap sm:flex ${
+              isActive(loginHref)
+                ? "bg-[#c7b6ea] text-black"
+                : "bg-gray-200 text-black hover:bg-[#c7b6ea]"
             }`}
           >
             {loginLabel}
           </Link>
 
-          {/* Small avatar INSIDE the bar (right side) */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={avatarSrc}
-            src={avatarError ? "/default-profile.png" : avatarSrc}
-            alt="Profile avatar"
-            className="h-10 w-10 rounded-full border-2 border-black bg-[#e9e3eb] object-cover"
-            onError={() => setAvatarError(true)}
-          />
+          <Link
+            href={loginHref}
+            aria-current={isActive(loginHref) ? "page" : undefined}
+            aria-label={loginAriaLabel}
+            className="hidden h-10 w-10 flex-shrink-0 sm:block"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarError ? "/default-profile.png" : avatarSrc}
+              alt="Profile avatar"
+              className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
+                isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
+              }`}
+              onError={() => setAvatarError(true)}
+            />
+          </Link>
         </div>
       </div>
     </header>

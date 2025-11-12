@@ -8,8 +8,18 @@ import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
 const FALLBACK_IMAGE = "/img/facts_img/green_tea.jpg";
+const PALETTE = [
+  "from-[#e5f4ff] via-[#f0f9ff] to-white",
+  "from-[#fef5ec] via-[#fff3f3] to-white",
+  "from-[#eef9f1] via-[#f4fff6] to-white",
+  "from-[#f5f5ff] via-[#f0f0ff] to-white",
+];
 
-export default function SkinKnowledge() {
+type SkinKnowledgeProps = {
+  sectionId?: string;
+};
+
+export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,28 +40,28 @@ export default function SkinKnowledge() {
       .finally(() => {
         if (active) setLoading(false);
       });
-
     return () => {
       active = false;
     };
   }, []);
 
-  const visibleTopics = useMemo(() => {
-    return showAll ? topics : topics.slice(0, 6);
-  }, [topics, showAll]);
+  const visibleTopics = useMemo(
+    () => (showAll ? topics : topics.slice(0, 6)),
+    [topics, showAll]
+  );
 
   const hasMore = topics.length > 6;
-
   const handleToggle = () => setShowAll((prev) => !prev);
 
+  // Loading skeleton — matches Spotlight sizing
   if (loading) {
     return (
-      <PageContainer as="section" className="pt-16">
+      <PageContainer as="section" id={sectionId} className="pt-16">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
               key={idx}
-              className="h-56 rounded-[22px] border-2 border-black bg-white/40 shadow-[6px_8px_0_rgba(0,0,0,0.15)] animate-pulse"
+              className="h-[220px] rounded-[24px] border-2 border-black bg-white/60 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] animate-pulse"
             />
           ))}
         </div>
@@ -61,8 +71,8 @@ export default function SkinKnowledge() {
 
   if (error) {
     return (
-      <PageContainer as="section" className="pt-16">
-        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+      <PageContainer as="section" id={sectionId} className="pt-16">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           {error}
         </div>
       </PageContainer>
@@ -71,8 +81,8 @@ export default function SkinKnowledge() {
 
   if (!topics.length) {
     return (
-      <PageContainer as="section" className="pt-16">
-        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
+      <PageContainer as="section" id={sectionId} className="pt-16">
+        <div className="rounded-[22px] border-2 border-dashed border-black bg-white/60 p-6 text-center text-gray-700 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.2)]">
           No Skin Knowledge topics found yet.
         </div>
       </PageContainer>
@@ -80,48 +90,93 @@ export default function SkinKnowledge() {
   }
 
   return (
-    <PageContainer as="section" className="pt-16">
+    <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-12">
       <div className="relative">
-        <div className="mb-8">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-            Skin Knowledge
-          </h2>
-          <p className="mt-2 text-gray-700 md:text-lg">
-            Hand-picked ingredient guides to help you build smarter routines.
-          </p>
+        {/* Header */}
+        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#122016]">
+              Skin Knowledge
+            </h2>
+            <p className="hidden sm:block mt-2 text-[#1f2d26]/70 md:text-lg">
+              Hand-picked ingredient guides to help you build smarter routines.
+            </p>
+          </div>
+          <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Updated weekly
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Evidence based
+            </span>
+          </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleTopics.map((topic) => {
+        {/* Cards — same style as Ingredient Spotlight */}
+        <div className="lg:pt-1 flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
+          {visibleTopics.map((topic, index) => {
             const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
-            const description = topic.subtitle || topic.excerpt || "Read the full guide.";
+            const description =
+              topic.subtitle || topic.excerpt || "Read the full guide.";
+            const isNew = (topic.viewCount ?? 0) > 1000;
+            const palette = PALETTE[index % PALETTE.length];
 
             return (
               <Link
                 key={topic.slug}
                 href={`/facts/${topic.slug}`}
-                className="group relative block overflow-hidden rounded-[22px] border-2 border-black bg-white/70 shadow-[6px_8px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-1"
                 aria-label={`Read about ${topic.title}`}
+                className={`group relative flex flex-none w-[255px] lg:w-[360px] flex-col overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette}
+                            shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:min-w-0 sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
               >
-                <div className="relative h-56 w-full">
+                {/* Image header with fade */}
+                <div className="relative h-36 w-full overflow-hidden sm:h-56">
                   <Image
                     src={image}
-                    alt=""
+                    alt={topic.heroImageAlt ?? topic.title}
                     fill
                     priority={false}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 400px"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  {isNew && (
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white">
+                      New
+                    </span>
+                  )}
+                </div>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-
-                  <div className="absolute inset-0 flex flex-col justify-end p-5 text-white">
-                    <h3 className="text-lg font-bold leading-snug md:text-xl">
+                {/* Body */}
+                <div className="relative flex flex-1 flex-col justify-between gap-4 p-4 text-[#0f1f17]">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold leading-tight">
                       {topic.title}
                     </h3>
-                    <p className="mt-2 text-sm text-white/90 md:text-base">
+                    <p className="text-sm leading-relaxed text-[#0f1f17]/70 line-clamp-2">
                       {description}
                     </p>
+                  </div>
+
+                  {/* Footer: reads chip (desktop) + mobile “Read” pill bottom-right */}
+                  <div className="mt-auto flex items-center justify-between text-xs uppercase tracking-[0.28em] text-[#11224a]/50">
+                    <span className="hidden sm:inline">
+                      {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
+                    </span>
+
+                    {/* Mobile-only oval button pinned bottom-right; plain text on >= sm */}
+                    <span
+                      className="
+                        absolute bottom-3 right-3 sm:static
+                        inline-flex items-center gap-1
+                        text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.25em] text-[#11224a] transition
+                        rounded-full border border-[#11224a] bg-white px-4 py-1.5
+                        sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0
+                      "
+                    >
+                      Read
+                      <span aria-hidden className="hidden sm:inline">↗</span>
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -129,15 +184,22 @@ export default function SkinKnowledge() {
           })}
         </div>
 
-        {hasMore && (
-          <div className="mt-10 flex justify-center">
+        {topics.length > 6 && (
+          <div className="mt-8 flex justify-center">
             <button
               type="button"
-              onClick={handleToggle}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 font-semibold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+              disabled={!hasMore}
+              onClick={() => hasMore && handleToggle()}
+              className={`inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-6 py-2 font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 ${
+                hasMore
+                  ? "hover:-translate-y-[1px] hover:bg-white"
+                  : "cursor-not-allowed opacity-60"
+              }`}
             >
-              {showAll ? "Show less" : "Read more"}
-              <span aria-hidden className="text-lg">{showAll ? "▲" : "▼"}</span>
+              {hasMore ? (showAll ? "Show less" : "Show more") : "More coming soon"}
+              <span aria-hidden className="text-lg">
+                {hasMore ? (showAll ? "▲" : "▼") : "•"}
+              </span>
             </button>
           </div>
         )}

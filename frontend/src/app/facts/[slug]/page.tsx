@@ -9,10 +9,11 @@ import ArticleBlock from "@/components/facts/ArticleBlock";
 
 const FALLBACK_COVER = "/img/facts_img/sheet_mask.jpg";
 
-type Params = { params: { slug: string } };
+type Params = { params: Promise<{ slug: string }> };
 
 export default async function FactTopicPage({ params }: Params) {
-  const topic = await fetchFactTopicDetail(params.slug);
+  const { slug } = await params;
+  const topic = await fetchFactTopicDetail(slug);
   if (!topic) {
     notFound();
   }
@@ -22,12 +23,13 @@ export default async function FactTopicPage({ params }: Params) {
 
   return (
     <main className="bg-[#dbe9ea] min-h-screen pb-16">
-      <div className="mx-auto w-full max-w-5xl px-4 pt-32 md:pt-32">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-43 lg:pt-32 md:pt-32">
         {/* HERO CARD */}
         <PastelHero
           cover={cover}
           title={topic.title}
           subtitle={topic.subtitle || topic.excerpt || ""}
+          alt={topic.heroImageAlt}
         />
 
         {/* ARTICLE CARD */}
@@ -38,7 +40,7 @@ export default async function FactTopicPage({ params }: Params) {
             rounded-[8px]
             border-2 border-black
             bg-white/70
-            shadow-[6px_8px_0_rgba(0,0,0,0.35)]
+            shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]
             p-6
             md:p-8
           "
@@ -77,7 +79,7 @@ export default async function FactTopicPage({ params }: Params) {
                     rounded-[16px]
                     border-2 border-black
                     bg-white
-                    shadow-[6px_8px_0_rgba(0,0,0,0.25)]
+                    shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]
                     overflow-hidden
                     transition
                     hover:-translate-y-1

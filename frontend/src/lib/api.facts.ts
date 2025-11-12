@@ -5,6 +5,7 @@ import type {
   FactTopicSummary,
   SkinFactSection,
 } from "@/lib/types";
+import { getAuthToken } from "@/lib/auth-storage";
 
 type RawFactTopicSummary = {
   id: string;
@@ -20,9 +21,7 @@ type RawFactTopicSummary = {
 
 type RawFactContentBlock = {
   order: number;
-  block_type: "heading" | "text" | "paragraph" | "image";
-  heading?: string | null;
-  text?: string | null;
+  content?: string | null;
   image_url?: string | null;
   image_alt?: string | null;
 };
@@ -78,9 +77,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
 
 const mapBlock = (raw: RawFactContentBlock): FactContentBlock => ({
   order: raw.order,
-  blockType: raw.block_type, // "heading" | "text"
-  heading: raw.heading ?? null,
-  text: raw.text ?? null,
+  content: raw.content ?? null,
   imageUrl: raw.image_url ?? null,
   imageAlt: raw.image_alt ?? null,
 });
@@ -172,4 +169,45 @@ export async function fetchFactTopicDetail(
 
   const data: RawFactTopicDetail = await res.json();
   return mapDetail(data);
+}
+
+export async function fetchRecommendedTopics(
+  limit = 4
+): Promise<FactTopicSummary[]> {
+  if (shouldUseMock) {
+    // fall back to a blend of knowledge + popular when mocking
+    const [section, popular] = await Promise.all([
+      (async () => {
+        const { sectionTopicsMock } = await import("@/mocks/facts.mock");
+        await new Promise((r) => setTimeout(r, 80));
+        return (sectionTopicsMock["knowledge"] ?? []).slice(0, limit);
+      })(),
+      (async () => {
+        const { popularTopicsMock } = await import("@/mocks/facts.mock");
+        await new Promise((r) => setTimeout(r, 80));
+        return popularTopicsMock.slice(0, limit);
+      })(),
+    ]);
+    const combined = [...section, ...popular];
+    const deduped = combined.filter(
+      (t, i, arr) => arr.findIndex((x) => x.id === t.id) === i
+    );
+    return deduped.slice(0, limit);
+  }
+
+  const base = getApiBase();
+  const token = getAuthToken();
+  const res = await fetch(`${base}/facts/topics/recommended?limit=${limit}`, {
+    cache: "no-store",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (res.status === 401) {
+    // not logged in -> graceful fallback to popular
+    return fetchPopularTopics(limit);
+  }
+  if (!res.ok) {
+    throw new Error("Failed to load recommended topics");
+  }
+  const data: RawFactTopicSummary[] = await res.json();
+  return data.map(mapSummary);
 }

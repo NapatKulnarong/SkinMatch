@@ -55,6 +55,18 @@ class Ingredient(models.Model):
     common_name = models.CharField(max_length=120, unique=True)
     inci_name = models.CharField(max_length=200, blank=True)
     benefits = models.TextField(blank=True)
+    helps_with = models.TextField(
+        blank=True,
+        help_text="Free-form notes describing what this ingredient is known for helping.",
+    )
+    avoid_with = models.TextField(
+        blank=True,
+        help_text="List ingredients or product types to avoid combining with this ingredient.",
+    )
+    side_effects = models.TextField(
+        blank=True,
+        help_text="Potential concerns, side effects, or usage notes for this ingredient.",
+    )
 
     class Meta:
         ordering = ["common_name"]
@@ -102,6 +114,7 @@ class Product(models.Model):
     slug = models.SlugField(max_length=120, unique=True)
     name = models.CharField(max_length=180)
     brand = models.CharField(max_length=120, db_index=True)
+    barcode = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Optional EAN/UPC barcode identifier")
     origin_country = models.CharField(max_length=4, choices=Origin.choices)
     category = models.CharField(max_length=30, choices=Category.choices)
     summary = models.CharField(max_length=300, blank=True)
@@ -111,7 +124,6 @@ class Product(models.Model):
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.USD)
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     review_count = models.PositiveIntegerField(default=0)
-    image_url = models.URLField(blank=True)
     image = models.TextField(
         blank=True,
         default="",
@@ -381,8 +393,13 @@ class QuizFeedback(models.Model):
         null=True,
         blank=True,
     )
-    contact_email = models.EmailField(blank=True)
     message = models.TextField()
+    rating = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Optional star rating from 1 to 5.",
+    )
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -390,8 +407,10 @@ class QuizFeedback(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["created_at"]),
+            models.Index(fields=["rating", "created_at"]),
         ]
 
     def __str__(self) -> str:
-        base = self.contact_email or "anonymous"
-        return f"Feedback from {base} at {self.created_at:%Y-%m-%d %H:%M}"
+        metadata = self.metadata if isinstance(self.metadata, dict) else {}
+        display = metadata.get("display_name") or metadata.get("name") or "anonymous"
+        return f"Feedback from {display} at {self.created_at:%Y-%m-%d %H:%M}"
