@@ -106,6 +106,7 @@ export async function fetchTopicsBySection(
   if (sessionId) {
     params.append("session_id", sessionId);
   }
+  const token = getAuthToken();
   const res = await fetch(
     `${base}/facts/topics/section/${section}?${params.toString()}`,
     {
