@@ -21,25 +21,56 @@ def env_csv(name: str, default: str = "") -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
 
+def append_unique(values: list[str], value: str | None) -> None:
+    if value and value not in values:
+        values.append(value)
+
 # SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
 
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get(
-    "ALLOWED_HOSTS",
-    "localhost,127.0.0.1,backend"
-).split(",")
+ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS", "localhost,127.0.0.1,backend")
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ["*"]
+
+VERCEL_PROD_DOMAIN = os.getenv("VERCEL_PROD_DOMAIN", "").strip()
+if VERCEL_PROD_DOMAIN:
+    append_unique(ALLOWED_HOSTS, VERCEL_PROD_DOMAIN)
+    append_unique(ALLOWED_HOSTS, f".{VERCEL_PROD_DOMAIN}")  # support subdomains
 
 # CSRF / CORS
-CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
-CORS_ALLOWED_ORIGINS = [
+default_frontend_origins = [
     os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
     "http://localhost:3000",
     "http://frontend:3000",  # Docker service name
 ]
+
+CORS_ALLOWED_ORIGINS = env_csv(
+    "CORS_ALLOWED_ORIGINS",
+    ",".join(default_frontend_origins),
+)
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys([origin for origin in CORS_ALLOWED_ORIGINS if origin]))
+if VERCEL_PROD_DOMAIN:
+    append_unique(CORS_ALLOWED_ORIGINS, f"https://{VERCEL_PROD_DOMAIN}")
+
+CORS_ALLOWED_ORIGIN_REGEXES = env_csv(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    r"^https://.*-vercel\.app$",
+)
 CORS_ALLOW_CREDENTIALS = True
+
+default_csrf_origins = list(CORS_ALLOWED_ORIGINS)
+if VERCEL_PROD_DOMAIN:
+    append_unique(default_csrf_origins, f"https://{VERCEL_PROD_DOMAIN}")
+append_unique(default_csrf_origins, "https://*.vercel.app")
+
+CSRF_TRUSTED_ORIGINS = env_csv(
+    "CSRF_TRUSTED_ORIGINS",
+    ",".join(default_csrf_origins),
+)
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([origin for origin in CSRF_TRUSTED_ORIGINS if origin]))
 
 _raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
 GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
@@ -111,34 +142,29 @@ TEMPLATES = [
 WSGI_APPLICATION = "apidemo.wsgi.application"
 
 # Database
-db_url = os.getenv("DATABASE_URL") 
-conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "0"))
+conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "600"))
 ssl_require = env_bool("DB_SSL_REQUIRE", False)
 
-if db_url:
-    DATABASES = {
-        "default": dj_database_url.parse(
-            db_url,
-            conn_max_age=conn_max_age,
-            ssl_require=ssl_require,
-        )
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("POSTGRES_DB", "skinmatch_db"),
-            "USER": os.environ.get("POSTGRES_USER", "skinmatch_user"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
-            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-            "CONN_MAX_AGE": conn_max_age,
-        }
-    }
+default_db_url = os.getenv("DATABASE_URL")
+if not default_db_url:
+    default_db_url = (
+        "postgresql://"
+        f"{os.getenv('POSTGRES_USER', 'skinmatch_user')}:"
+        f"{os.getenv('POSTGRES_PASSWORD', '')}"
+        f"@{os.getenv('POSTGRES_HOST', '127.0.0.1')}:"
+        f"{os.getenv('POSTGRES_PORT', '5432')}/"
+        f"{os.getenv('POSTGRES_DB', os.getenv('DB_NAME', 'skinmatch_db'))}"
+    )
 
-for cfg in DATABASES.values():
-    cfg.setdefault("CONN_MAX_AGE", conn_max_age)
-    cfg["CONN_HEALTH_CHECKS"] = True
+DATABASES = {
+    "default": dj_database_url.config(
+        default=default_db_url,
+        conn_max_age=conn_max_age,
+        ssl_require=ssl_require,
+    )
+}
+
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

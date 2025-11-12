@@ -56,5 +56,6 @@ else:
     print("Superuser credentials not provided; skipping creation.")
 PY
 
-echo "🚀 Starting Django dev server..."
-exec python manage.py runserver 0.0.0.0:8000
+PORT=${PORT:-8000}
+echo "🚀 Starting Django dev server on port ${PORT}..."
+exec python manage.py runserver 0.0.0.0:${PORT}
