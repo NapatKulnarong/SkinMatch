@@ -144,7 +144,7 @@ export async function fetchTopicsBySection(
     }
   );
   if (!res.ok) {
-        throw new Error(`Failed to load topics for section ${section}`);
+    throw new Error(`Failed to load topics for section ${section}`);
   }
   const data: RawFactTopicSummary[] = await res.json();
   return data.map(mapSummary);
@@ -204,28 +204,42 @@ export async function fetchRecommendedTopics(
 
   const base = getApiBase();
   const token = getAuthToken();
-  // Add timestamp to prevent caching and ensure fresh recommendations after quiz updates
-  const timestamp = Date.now();
+  
+  // Build query params
   const params = new URLSearchParams({
     limit: limit.toString(),
-    _t: timestamp.toString(),
   });
-  if (sessionId) {
+  
+  // Add session_id for anonymous users (only if no token)
+  if (!token && sessionId) {
     params.append("session_id", sessionId);
   }
+  
   const url = `${base}/facts/topics/recommended?${params.toString()}`;
-  console.log("[fetchRecommendedTopics] Requesting:", url, { sessionId, hasToken: !!token });
+  console.log("[fetchRecommendedTopics] Requesting:", url, { 
+    sessionId, 
+    hasToken: !!token,
+    isAnonymous: !token 
+  });
+  
   const res = await fetch(url, {
     cache: "no-store",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+  
   if (res.status === 401) {
-    // not logged in -> graceful fallback to popular
-    return fetchPopularTopics(limit);
+    // Not logged in and no valid session -> return empty array
+    console.log("[fetchRecommendedTopics] 401 Unauthorized, returning empty array");
+    return [];
   }
+  
   if (!res.ok) {
+    console.error("[fetchRecommendedTopics] Failed with status:", res.status);
     throw new Error("Failed to load recommended topics");
   }
+  
   const data: RawFactTopicSummary[] = await res.json();
+  console.log("[fetchRecommendedTopics] Received topics:", data.length);
+  
   return data.map(mapSummary);
 }
