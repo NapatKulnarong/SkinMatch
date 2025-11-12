@@ -4,6 +4,8 @@ import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Trending Skincare Library • SkinMatch",
   description: "Catch up on every editor-reviewed launch and ingredient making noise in Thailand.",

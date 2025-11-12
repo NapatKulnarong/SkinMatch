@@ -4,6 +4,8 @@ import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Skin Knowledge Library • SkinMatch",
   description: "Dive into every Skin Knowledge explainer curated by the SkinMatch editors.",
