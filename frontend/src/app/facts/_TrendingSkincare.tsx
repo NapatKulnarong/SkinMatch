@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
+import { getAuthToken } from "@/lib/auth-storage";
+import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
 
 const FALLBACK_IMAGE = "/img/facts_img/centella_ampoule.jpg";
 
@@ -17,27 +20,65 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
-    fetchTopicsBySection("trending", 12)
+  const loadTopics = useCallback((providedSessionId?: string | null) => {
+    activeRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    const token = getAuthToken();
+    const isLoggedIn = Boolean(token);
+    let sessionId: string | null | undefined = providedSessionId;
+    
+    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
+      try {
+        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to read quiz session from localStorage", err);
+      }
+    }
+    
+    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
+    
+    fetchTopicsBySection("trending", 12, 0, sessionIdToUse)
       .then((data) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         setTopics(data);
+        setError(null);
+        setLoading(false);
       })
       .catch((err) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         console.error("Failed to load trending skincare topics", err);
         setError("We couldn't load trending skincare stories right now.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        setLoading(false);
       });
-
-    return () => {
-      active = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadTopics();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [loadTopics, pathname]);
+
+  useEffect(() => {
+    const handleQuizCompleted = (event: Event) => {
+      let sessionId: string | null | undefined = undefined;
+      if ("detail" in event) {
+        const customEvent = event as CustomEvent<{ sessionId?: string }>;
+        sessionId = customEvent.detail?.sessionId;
+      }
+      loadTopics(sessionId);
+    };
+
+    window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    return () => {
+      window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    };
+  }, [loadTopics]);
 
   const visible = useMemo(() => topics.slice(0, 6), [topics]);
   const showViewAll = topics.length > 6;

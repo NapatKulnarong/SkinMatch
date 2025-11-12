@@ -125,8 +125,9 @@ export default function QuizResultPage() {
     return insights;
   }, [guidance.insights, result?.summary]);
 
-  const aiStrategyNotes = result?.strategyNotes ?? [];
-  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
+  // Ensure strategyNotes is always an array, even if result is undefined or strategyNotes is missing
+  const aiStrategyNotes = Array.isArray(result?.strategyNotes) ? result.strategyNotes : [];
+  const strategyNotes = aiStrategyNotes.length > 0 ? aiStrategyNotes : fallbackStrategyNotes;
 
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
