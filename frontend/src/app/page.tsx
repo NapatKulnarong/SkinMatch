@@ -565,9 +565,21 @@ export default function HomePage() {
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e4e5ba] to-[#8ec78d] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
-          <div className="mx-auto max-w-3xl space-y-4">
-            <div className="lg:text-center space-y-2">
+        <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+          <div className="mx-auto max-w-3xl space-y-5">
+            <div className="sm:hidden space-y-2">
+              <div className="flex items-center gap-2">
+                <GlobeAltIcon className="h-8 w-8 text-[#4a6b47]" />
+                <h2 className="text-xl font-extrabold text-[#2d4a2b] leading-tight">
+                  Ingredient Quick Search
+                </h2>
+              </div>
+              <p className="text-sm text-[#2d4a2b]/70">
+                Swipe through trending actives or enter a hero ingredient to see matching formulas.
+              </p>
+            </div>
+
+            <div className="hidden sm:block lg:text-center space-y-2">
               <div className="flex items-center lg:justify-center gap-2 lg:gap-3">
                 <GlobeAltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#4a6b47]" />
                 <h2 className="text-xl sm:text-2xl font-bold text-[#2d4a2b]">Ingredient Quick Search</h2>
@@ -576,7 +588,7 @@ export default function HomePage() {
                 Discover what&apos;s inside your favorite products
               </p>
             </div>
-            
+
             <form onSubmit={handleIngredientSearch} className="relative">
               <input
                 type="text"
@@ -661,19 +673,19 @@ export default function HomePage() {
               )}
             </form>
 
-            <div className="flex flex-wrap md:justify-center gap-2">
-              <span className="hidden md:block text-xs font-semibold text-[#2d4a2b]/60">Trending:</span>
-              {TRENDING_INGREDIENTS.map((ingredient) => (
-                <button
-                  key={ingredient.name}
-                  type="button"
-                  onClick={() => handleTrendingSelect(ingredient.name)}
-                  className="rounded-full border border-black/20 bg-white px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-[#4a6b47] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
-                >
-                  {ingredient.name}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:overflow-visible sm:gap-2">
+            <span className="hidden md:block text-xs font-semibold text-[#2d4a2b]/60">Trending:</span>
+            {TRENDING_INGREDIENTS.map((ingredient) => (
+              <button
+                key={ingredient.name}
+                type="button"
+                onClick={() => handleTrendingSelect(ingredient.name)}
+                className="flex-none rounded-full border border-black/20 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
+              >
+                {ingredient.name}
+              </button>
+            ))}
+          </div>
           </div>
         </section>
 
