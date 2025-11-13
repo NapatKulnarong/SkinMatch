@@ -110,3 +110,9 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
+
+---
+
+## 🔐 Security
+
+Start with the operational checklist in [SECURITY.md](./SECURITY.md) to enable HTTPS, MFA for admins, routine backups, and basic monitoring. Production deployments must override the new `DJANGO_SECURE_*` and cookie env vars documented there so Django enforces TLS-only cookies and HSTS.
