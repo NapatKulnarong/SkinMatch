@@ -10,11 +10,11 @@ import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/re
 import { GlobeAltIcon } from "@heroicons/react/24/outline";
 
 import { StarIcon } from "@heroicons/react/24/solid";
-import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import { ProductScanner } from "@/components/ProductScanner";
+import { EnvironmentAlertPanel } from "@/components/EnvironmentAlertPanel";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
 import {
@@ -453,7 +453,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
-      <Navbar />
       <PageContainer className="relative flex flex-col gap-6 sm:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
         {/* Hero Section */}
         <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
@@ -655,6 +654,9 @@ export default function HomePage() {
 
         {/* Product Scanner */}
         <ProductScanner />
+
+        {/* Environment Alerts */}
+        <EnvironmentAlertPanel className="mt-8" />
 
         {/* Testimonials */}
         <section className="space-y-4 sm:space-y-6">

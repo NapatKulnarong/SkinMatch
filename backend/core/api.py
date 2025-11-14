@@ -34,6 +34,7 @@ from .models import (
     SkinFactTopic,
     SkinFactView,
     NewsletterSubscriber,
+    SkinProfile,
 )
 from pydantic import ConfigDict, field_validator, model_validator
 
@@ -49,11 +50,12 @@ else:
     else:
         EmailStr = _EmailStr  # type: ignore
 
-from .auth import create_access_token, JWTAuth
+from .auth import create_access_token, JWTAuth, decode_token
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router
 from quiz.models import QuizSession, Product
 from .models import WishlistItem
+from .environment import fetch_environment_alerts, EnvironmentServiceError
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,9 @@ api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
 api.add_router("/scan-text", scan_text_router)
 User = get_user_model()
+DEFAULT_LATITUDE = 13.7563
+DEFAULT_LONGITUDE = 100.5018
+DEFAULT_LOCATION_LABEL = "Bangkok"
 
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -200,6 +205,46 @@ class FactContentBlockOut(Schema):
 class FactTopicDetailOut(FactTopicSummary):
     content_blocks: List[FactContentBlockOut]
     updated_at: datetime
+
+
+class UVSummaryOut(Schema):
+    index: float
+    max_index: float
+    level: str
+    level_label: str
+    message: str
+
+
+class AirQualitySummaryOut(Schema):
+    pm25: float
+    pm10: float
+    aqi: int
+    level: str
+    level_label: str
+    message: str
+
+
+class AlertItemOut(Schema):
+    id: str
+    category: str
+    severity: str
+    title: str
+    message: str
+    tips: List[str]
+    valid_until: datetime
+
+
+class EnvironmentAlertResponse(Schema):
+    generated_at: datetime
+    latitude: float
+    longitude: float
+    location_label: Optional[str] = None
+    uv: UVSummaryOut
+    air_quality: AirQualitySummaryOut
+    alerts: List[AlertItemOut]
+    source_name: str
+    source_url: str
+    refresh_minutes: int
 
 
 class NewsletterSubscribeIn(Schema):
@@ -918,6 +963,31 @@ def list_users(request, limit: int = 50, offset: int = 0):
 def api_root(request):
     return {"message": "Welcome to the API!"}
 
+
+# --------------- Environment alerts ---------------
+
+
+@api.get("/alerts/environment", response=EnvironmentAlertResponse)
+def get_environment_alerts(
+    request,
+    latitude: float | None = None,
+    longitude: float | None = None,
+):
+    lat, lon, inferred_label = _normalize_coordinates(latitude, longitude)
+    user = _resolve_request_user_object(request)
+    keywords = _keywords_for_user(user)
+    try:
+        payload = fetch_environment_alerts(
+            latitude=lat,
+            longitude=lon,
+            keywords=keywords,
+            location_label=inferred_label,
+        )
+    except EnvironmentServiceError as exc:
+        raise HttpError(503, str(exc))
+    return payload
+
+
 # -----------------------------skin fact---------------------------------------------
 
 @api.get("/facts/topics/popular", response=List[FactTopicSummary])
@@ -1122,6 +1192,58 @@ def remove_from_wishlist(request, product_id: uuid.UUID):
     item.delete()
     return {"ok": True, "status": "removed"}
 
+
+def _normalize_coordinates(
+    latitude: float | None,
+    longitude: float | None,
+) -> tuple[float, float, str | None]:
+    lat = latitude if latitude is not None else DEFAULT_LATITUDE
+    lon = longitude if longitude is not None else DEFAULT_LONGITUDE
+    if not (-90 <= lat <= 90):
+        raise HttpError(400, "Latitude must be between -90 and 90 degrees.")
+    if not (-180 <= lon <= 180):
+        raise HttpError(400, "Longitude must be between -180 and 180 degrees.")
+    label = DEFAULT_LOCATION_LABEL if latitude is None and longitude is None else None
+    return lat, lon, label
+
+
+def _resolve_request_user_object(request):
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False):
+        return user
+    auth_header = ""
+    if hasattr(request, "headers"):
+        auth_header = request.headers.get("Authorization", "") or ""
+    if not auth_header and hasattr(request, "META"):
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "") or ""
+    if auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+        data = decode_token(token)
+        if data and data.get("user_id"):
+            try:
+                return User.objects.get(id=data["user_id"])
+            except User.DoesNotExist:
+                return None
+    return None
+
+
+def _keywords_for_user(user) -> list[str]:
+    if not user:
+        return []
+    profile = (
+        SkinProfile.objects.filter(user=user, is_latest=True)
+        .order_by("-created_at")
+        .first()
+    )
+    if not profile:
+        return []
+    profile_data = {
+        "primary_concerns": profile.primary_concerns or [],
+        "secondary_concerns": profile.secondary_concerns or [],
+        "eye_area_concerns": profile.eye_area_concerns or [],
+    }
+    return _concern_keywords_from_profile(profile_data)
+
 def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
     """Very small heuristic mapping of concerns to ingredient/keyword hints."""
     concerns: list[str] = []
@@ -1244,4 +1366,3 @@ def recommended_facts(request, limit: int = 4):
         picked.extend(list(extra))
 
     return [_serialize_fact_topic_summary(t, request) for t in picked]
-

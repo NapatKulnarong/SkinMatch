@@ -138,7 +138,7 @@ export function ProductScanner() {
 
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-      <div className="hidden lg:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
+      <div className="hidden md:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
         <img
           src="/img/mascot/matchy_scan.png"
           alt="Matchy with camera"

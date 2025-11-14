@@ -162,7 +162,7 @@ function renderParagraph({ text, highlightEmail }: TermsParagraph) {
       {before}
       <Link
         href={`mailto:${highlightEmail}`}
-        className="font-semibold text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-4 transition hover:text-[#1d4ed8]"
+        className="font-semibold text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-4 transition-colors hover:text-[#1d4ed8] hover:decoration-[#2563eb]/60"
       >
         {highlightEmail}
       </Link>
@@ -201,76 +201,182 @@ export default function TermsPage() {
   const termsEmailBody = buildTermsEmailBody();
 
   return (
-    <main className="min-h-screen bg-[#f4f8fb] text-[#1f2d26]">
-      <section className="border-b border-[#1f2d26]/10 bg-[#ffe7da] py-24">
-        <PageContainer className="space-y-6">
-          <p className="inline-flex items-center rounded-full border-2 border-black/10 bg-white px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#1f2d26]/70 shadow-[4px_4px_0_rgba(31,45,38,0.18)]">
+    <main className="min-h-screen bg-gradient-to-br from-[#f4f8fb] via-[#fef5f1] to-[#f4f8fb] text-[#1f2d26]">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden border-b border-[#1f2d26]/10 bg-gradient-to-br from-[#ffe7da] via-[#ffd5c8] to-[#ffccb8] px-4 py-12 sm:px-6 sm:py-20 lg:py-28">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-10 right-10 h-32 w-32 rounded-full bg-white/40 blur-3xl" />
+          <div className="absolute bottom-10 left-10 h-40 w-40 rounded-full bg-[#ff9b82]/20 blur-3xl" />
+        </div>
+        
+        <div className="mt-28 lg:mt-0 relative mx-auto max-w-7xl space-y-4 sm:space-y-6">
+          <div className="hidden md:inline-flex items-center gap-2 rounded-full border-2 border-black/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#1f2d26]/70 shadow-[2px_2px_0_rgba(31,45,38,0.1)] sm:px-4 sm:text-xs sm:tracking-[0.2em] sm:shadow-[3px_3px_0_rgba(31,45,38,0.12)]">
+            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
             Terms & Trust
-          </p>
-          <h1 className="max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl">
+          </div>
+          
+          <h1 className="max-w-3xl text-2xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl xl:text-6xl">
             Terms of Service
           </h1>
-          <p className="max-w-3xl text-lg leading-relaxed text-[#1f2d26]/80 sm:text-xl">
+          
+          <p className="max-w-2xl text-sm leading-relaxed text-[#1f2d26]/75 sm:text-lg lg:text-xl">
             These terms outline the rules for using SkinMatch. Please read them carefully so
             you understand your rights, responsibilities, and the limits of our services.
           </p>
-          <p className="text-sm font-semibold text-[#1f2d26]/60">
-            Effective date: {TERMS_LAST_UPDATED}
-          </p>
-        </PageContainer>
+          
+          <div className="flex flex-col gap-1.5 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:pt-2">
+            <p className="text-xs font-semibold text-[#1f2d26]/60 sm:text-base">
+              Effective: {TERMS_LAST_UPDATED}
+            </p>
+            <span className="hidden h-1 w-1 rounded-full bg-[#1f2d26]/30 sm:block" />
+            <p className="text-xs text-[#1f2d26]/60 sm:text-base">
+              Last updated: {TERMS_LAST_UPDATED}
+            </p>
+          </div>
+        </div>
       </section>
 
-      <PageContainer as="section" className="py-20">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <article className="space-y-10 rounded-3xl border-2 border-black bg-white p-8 shadow-[8px_10px_0_rgba(31,45,38,0.15)] lg:p-10">
-            {SECTIONS.map((section) => (
-              <section key={section.title} className="space-y-4">
-                <h2 className="text-2xl font-bold text-[#0f172a]">
-                  {section.title}
-                </h2>
-                {section.paragraphs.map((paragraph, index) => (
-                  <p key={index} className="text-base leading-relaxed text-[#1f2d26]/80">
-                    {renderParagraph(paragraph)}
-                  </p>
-                ))}
-                {section.bullets ? (
-                  <ul className="space-y-3 rounded-2xl border border-[#1f2d26]/10 bg-[#fff7f0] p-5">
-                    {section.bullets.map((item) => (
-                      <li key={item} className="text-base leading-relaxed text-[#1f2d26]/80">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
+      {/* Main Content */}
+      <PageContainer as="section" className="py-10 sm:py-16 lg:py-20">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+          {/* Terms Content */}
+          <article className="space-y-8 overflow-hidden rounded-2xl border-2 border-black/80 bg-white p-6 shadow-[6px_8px_0_rgba(31,45,38,0.12)] transition-shadow hover:shadow-[8px_10px_0_rgba(31,45,38,0.15)] sm:rounded-3xl sm:p-8 lg:space-y-10 lg:p-10">
+            {/* Progress indicator for mobile */}
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 bg-gradient-to-b from-white via-white to-white/0 px-6 pb-4 pt-6 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pb-6 sm:pt-8 lg:hidden">
+              <div className="flex items-center gap-3 rounded-xl border border-[#1f2d26]/10 bg-[#f4f8fb] px-4 py-2.5 text-xs font-medium text-[#1f2d26]/70">
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Scroll to read all {SECTIONS.length} sections</span>
+              </div>
+            </div>
+
+            {SECTIONS.map((section, idx) => (
+              <section 
+                key={section.title} 
+                id={`section-${idx + 1}`}
+                className="group scroll-mt-24 space-y-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#ffe7da] to-[#ffd5c8] text-sm font-bold text-[#1f2d26] shadow-sm">
+                    {idx + 1}
+                  </span>
+                  <h2 className="flex-1 text-xl font-bold text-[#0f172a] transition-colors group-hover:text-[#1f2d26] sm:text-2xl">
+                    {section.title.replace(/^\d+\.\s*/, '')}
+                  </h2>
+                </div>
+                
+                <div className="space-y-3 pl-11">
+                  {section.paragraphs.map((paragraph, index) => (
+                    <p key={index} className="text-sm leading-relaxed text-[#1f2d26]/80 sm:text-base">
+                      {renderParagraph(paragraph)}
+                    </p>
+                  ))}
+                  
+                  {section.bullets && (
+                    <ul className="space-y-2.5 rounded-xl border border-[#1f2d26]/10 bg-gradient-to-br from-[#fff7f0] to-[#fef5f1] p-4 sm:rounded-2xl sm:p-5">
+                      {section.bullets.map((item, bulletIdx) => (
+                        <li key={bulletIdx} className="flex gap-3 text-sm leading-relaxed text-[#1f2d26]/80 sm:text-base">
+                          <span className="mt-1.5 flex h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ff9b82]" />
+                          <span className="flex-1">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {idx < SECTIONS.length - 1 && (
+                  <div className="pl-11 pt-2">
+                    <div className="h-px bg-gradient-to-r from-[#1f2d26]/10 via-[#1f2d26]/5 to-transparent" />
+                  </div>
+                )}
               </section>
             ))}
+
+            {/* Footer CTA */}
+            <div className="mt-8 rounded-2xl border-2 border-[#1f2d26]/10 bg-gradient-to-br from-[#f4f8fb] to-[#fef5f1] p-6 sm:p-8">
+              <h3 className="mb-3 text-lg font-bold text-[#1f2d26] sm:text-xl">
+                Questions about these terms?
+              </h3>
+              <p className="mb-4 text-sm leading-relaxed text-[#1f2d26]/70 sm:text-base">
+                Our legal team is here to help clarify any concerns you may have.
+              </p>
+              <Link
+                href="mailto:legal@skinmatch.app"
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-black bg-[#ffb3c6] px-5 py-2.5 text-sm font-semibold text-[#1f2d26] shadow-[4px_4px_0_rgba(255,107,157,0.3)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#ffc9d4] hover:shadow-[2px_2px_0_rgba(255,107,157,0.3)] sm:px-6 sm:py-3 sm:text-base"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Contact Legal Team
+              </Link>
+            </div>
           </article>
 
-          <aside className="flex flex-col gap-6 rounded-3xl border-2 border-black bg-[#1f2d26] p-8 text-white shadow-[8px_10px_0_rgba(31,45,38,0.3)]">
-            <h2 className="text-2xl font-bold">Quick Highlights</h2>
-            <ul className="space-y-4 text-sm leading-relaxed">
-              <li>
-                SkinMatch is for personal skincare guidance—always consult a professional
-                for medical decisions.
-              </li>
-              <li>
-                Keep your account info accurate and secure; you are responsible for its
-                use.
-              </li>
-              <li>
-                We may update features or terms; continued use means you accept the
-                changes.
-              </li>
-              <li>
-                Contact our legal team if you have questions or see misuse of the
-                platform.
-              </li>
-            </ul>
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-relaxed">
-              <p className="font-semibold uppercase tracking-[0.25em] text-white/70">
-                Need a copy?
-              </p>
-              <TermsEmailRequest termsEmailBody={termsEmailBody} />
+          {/* Sidebar - Desktop Sticky, Mobile Full Width */}
+          <aside className="space-y-6">
+            {/* Table of Contents - Desktop Only */}
+            <nav className="hidden rounded-2xl border-2 border-black/10 bg-white p-6 shadow-sm lg:block">
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.15em] text-[#1f2d26]/60">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Contents
+              </h3>
+              <ol className="space-y-2 text-sm">
+                {SECTIONS.map((section, idx) => (
+                  <li key={idx}>
+                    <a
+                      href={`#section-${idx + 1}`}
+                      className="block rounded-lg px-3 py-2 text-[#1f2d26]/70 transition-colors hover:bg-[#f4f8fb] hover:text-[#1f2d26]"
+                    >
+                      {section.title}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+
+            {/* Quick Highlights */}
+            <div className="rounded-2xl border-2 border-black bg-gradient-to-br from-[#ffc2c3] via-[#ffecee] to-[#ffc2c3] p-6 shadow-[6px_8px_0_rgba(255,155,181,0.3)] sm:rounded-3xl sm:p-8 lg:sticky lg:top-6">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm shadow-sm">
+                  <svg className="h-5 w-5 text-[#ff6b9d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-[#1f2d26] sm:text-2xl">Quick Highlights</h2>
+              </div>
+              
+              <ul className="space-y-4 text-sm leading-relaxed sm:text-base">
+                {[
+                  "SkinMatch is for personal skincare guidance—always consult a professional for medical decisions.",
+                  "Keep your account info accurate and secure; you are responsible for its use.",
+                  "We may update features or terms; continued use means you accept the changes.",
+                  "Contact our legal team if you have questions or see misuse of the platform."
+                ].map((highlight, idx) => (
+                  <li key={idx} className="flex gap-3 text-[#1f2d26]/80">
+                    <span className="mt-1.5 flex h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ff6b9d]" />
+                    <span>{highlight}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Email Request Card */}
+              <div className="mt-6 rounded-xl border-2 border-blackimage.png/60 bg-white/40 p-5 backdrop-blur-sm shadow-inner">
+                <div className="mb-3 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-[#ff6b9d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#1f2d26]/70">
+                    Need a Copy?
+                  </p>
+                </div>
+                <TermsEmailRequest termsEmailBody={termsEmailBody} />
+              </div>
             </div>
           </aside>
         </div>
