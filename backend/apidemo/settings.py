@@ -13,6 +13,11 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+DJANGO_ENV = os.getenv("DJANGO_ENV", "development").lower()
+env_specific_path = BASE_DIR / f".env.{DJANGO_ENV}"
+if env_specific_path.exists():
+    load_dotenv(env_specific_path, override=True)
+
 # Utility helpers
 def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
@@ -69,6 +74,23 @@ SECURE_REFERRER_POLICY = os.getenv(
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = os.getenv("DJANGO_X_FRAME_OPTIONS", "DENY")
 
+CONTENT_SECURITY_POLICY = os.getenv(
+    "DJANGO_CONTENT_SECURITY_POLICY",
+    (
+        "default-src 'self'; "
+        "img-src 'self' data: blob:; "
+        "media-src 'self' data: blob:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    ),
+)
+CONTENT_SECURITY_POLICY_REPORT_ONLY = env_bool("DJANGO_CSP_REPORT_ONLY", False)
+
 _raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
 GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
 GOOGLE_OAUTH_CLIENT_ID = GOOGLE_OAUTH_CLIENT_IDS[0] if GOOGLE_OAUTH_CLIENT_IDS else ""
@@ -109,6 +131,7 @@ SITE_ID = 1
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

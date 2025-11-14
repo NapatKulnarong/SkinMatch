@@ -1,11 +1,17 @@
 # Level 1 Security Hardening Guide
 
-This repository now includes secure-by-default Django settings (see `backend/apidemo/settings.py`) and the environment flags documented below. Follow the operational checklist to finish “Level 1: Essential Website Security”.
+This repository now includes secure-by-default Django settings (see `backend/apidemo/settings.py`) and the environment flags documented below. Follow the operational checklist to finish “Level 1: Essential Website Security”. Use `backend/.env.production.example` as the baseline for deployment secrets (copy it to your secret manager or `.env.production`) and run checks with `DJANGO_ENV=production python manage.py check --deploy` so Django loads the hardened defaults before each release.
 
 ## 1. HTTPS / SSL Certificate
 - Terminate TLS with your ingress (Nginx/Traefik/Cloudflare). Issue certificates with Let’s Encrypt (`certbot --nginx -d skinmatch.com -d www.skinmatch.com`) or your host’s tooling.
 - Set these env vars in production: `DJANGO_SECURE_SSL_REDIRECT=True`, `DJANGO_SESSION_COOKIE_SECURE=True`, `DJANGO_CSRF_COOKIE_SECURE=True`, `DJANGO_SECURE_HSTS_SECONDS=31536000`, `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=True`, `DJANGO_SECURE_HSTS_PRELOAD=True`.
 - Keep `DJANGO_USE_PROXY_SSL_HEADER=True` so Django trusts the upstream proxy’s `X-Forwarded-Proto` header. Verify HTTP→HTTPS redirects after deploy.
+
+## 1b. Security Headers
+- Content Security Policy is enforced by `core.middleware.SecurityHeadersMiddleware`. Tune it through `DJANGO_CONTENT_SECURITY_POLICY` (string) and `DJANGO_CSP_REPORT_ONLY` (bool). Default policy blocks external frames, restricts scripts/styles to `'self'`, and allows inline scripts/styles for Django admin convenience.
+- `X-Frame-Options` comes from `DJANGO_X_FRAME_OPTIONS` (defaults to `DENY`), so only override it if you embed the app elsewhere.
+- `X-Content-Type-Options: nosniff` and `Strict-Transport-Security` are emitted automatically when the respective `SECURE_*` settings are enabled; keep them turned on wherever HTTPS terminates.
+- `SECURE_REFERRER_POLICY` controls the `Referrer-Policy` header. The default `strict-origin-when-cross-origin` is a solid balance between usability and privacy.
 
 ## 2. Strong Authentication
 - Password strength is enforced via Django’s validators plus `core.password_validators.ComplexityPasswordValidator`.
@@ -43,6 +49,7 @@ This repository now includes secure-by-default Django settings (see `backend/api
 ## Quick Reference: Security Env Vars
 Set these in your production `.env` (values shown are secure defaults):
 ```
+DJANGO_ENV=production
 DJANGO_SECURE_SSL_REDIRECT=True
 DJANGO_SESSION_COOKIE_SECURE=True
 DJANGO_CSRF_COOKIE_SECURE=True
@@ -55,6 +62,8 @@ DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=True
 DJANGO_SECURE_HSTS_PRELOAD=True
 DJANGO_SECURE_REFERRER_POLICY=strict-origin-when-cross-origin
 DJANGO_X_FRAME_OPTIONS=DENY
+DJANGO_CONTENT_SECURITY_POLICY="default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+DJANGO_CSP_REPORT_ONLY=False
 DJANGO_USE_PROXY_SSL_HEADER=True
 DJANGO_USE_X_FORWARDED_HOST=True
 ```

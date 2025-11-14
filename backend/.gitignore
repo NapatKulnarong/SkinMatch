@@ -15,6 +15,7 @@ media/
 staticfiles/
 .env
 .env.*
+!.env.*.example
 
 # VS Code
 .vscode/
