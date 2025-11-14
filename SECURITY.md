@@ -55,17 +55,23 @@ This repository now includes secure-by-default Django settings (see `backend/api
 - Centralize logs (Loki, CloudWatch, Datadog) and review access logs weekly for spikes or repeated 4xx/5xx codes.
 - Enable automated security scans (Cloudflare scanner, OpenVAS against staging) and extend CI with `python manage.py check --deploy` to catch insecure settings before deploys.
 
-## Database Security
+## 9. Database Security
 
-For database-specific hardening (prepared statements, least privilege, encryption, audit logs, and network restrictions), see [DATABASE_SECURITY.md](DATABASE_SECURITY.md).
+See [`docs/database-security.md`](./docs/database-security.md) for detailed steps covering:
 
-**Quick checklist:**
+- Prepared statements / parameterized queries (ORM-first, raw cursor helpers)
+- Principle of least privilege (separate roles for app, migrations, read-only)
+- Encryption at rest (disk-level and optional column encryption)
+- Audit logging (connection/statement logging plus forwarding guidance)
+- Disabling remote DB access (bind Postgres to private interfaces only)
 
-- ✅ Parameterized queries (Django ORM handles this)
-- 🔄 Least privilege roles (see DATABASE_SECURITY.md for setup)
-- 🔄 Encryption at rest (configure in production)
-- 🔄 Audit logging (configured in docker-compose.yml)
-- ✅ Network restrictions (database bound to 127.0.0.1)
+## 10. Input Validation & Sanitization
+
+- Quiz feedback and product reviews are cleaned via `core.sanitizers` before they are saved or serialized, so any HTML/JS snippets are stripped server-side.
+- Those models now call `full_clean()` inside `save()`, guaranteeing that Django validators (rating bounds, uniqueness, etc.) run for every write.
+- Image uploads for Skin Facts are limited to a MIME allowlist plus the `FACT_IMAGE_MAX_UPLOAD_MB` cap (see `.env`), enforced by `core.validators`.
+- CSRF protection stays enabled globally via `django.middleware.csrf.CsrfViewMiddleware`; avoid adding `@csrf_exempt` to POST/PUT/PATCH/DELETE endpoints unless absolutely necessary.
+- Reuse the helpers in `core.sanitizers`/`core.validators` whenever you add new user input or upload surfaces.
 
 ## Quick Reference: Security Env Vars
 
@@ -87,6 +93,7 @@ DJANGO_SECURE_REFERRER_POLICY=strict-origin-when-cross-origin
 DJANGO_X_FRAME_OPTIONS=DENY
 DJANGO_CONTENT_SECURITY_POLICY="default-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 DJANGO_CSP_REPORT_ONLY=False
+FACT_IMAGE_MAX_UPLOAD_MB=5
 DJANGO_USE_PROXY_SSL_HEADER=True
 DJANGO_USE_X_FORWARDED_HOST=True
 ```

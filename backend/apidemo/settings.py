@@ -227,6 +227,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+FACT_IMAGE_MAX_UPLOAD_MB = int(os.getenv("FACT_IMAGE_MAX_UPLOAD_MB", "5"))
 
 # WhiteNoise staticfiles storage (prod only)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

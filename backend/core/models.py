@@ -8,6 +8,7 @@ from django.core.validators import FileExtensionValidator, validate_email
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from .validators import validate_fact_image_size, validate_image_mime_type
 
 # Create your models here.
 class UserProfile(models.Model):
@@ -158,7 +159,11 @@ class SkinFactTopic(models.Model):
     section = models.CharField(max_length=20, choices=Section.choices)
     hero_image = models.ImageField(
         upload_to="facts/hero/",
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
         blank=True,
         help_text="Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
@@ -223,7 +228,11 @@ class SkinFactContentBlock(models.Model):
         upload_to="facts/blocks/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
         help_text="Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block."
     )
 
