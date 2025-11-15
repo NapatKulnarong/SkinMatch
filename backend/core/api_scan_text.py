@@ -18,9 +18,12 @@ except ImportError:  # pragma: no cover - optional dependency guard
     np = None
 
 try:
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 except ImportError:  # pragma: no cover - optional dependency guard
     Image = None
+
+    class UnidentifiedImageError(Exception):  # type: ignore
+        pass
 
 try:
     import pytesseract
@@ -171,7 +174,10 @@ def _load_pil(file: UploadedFile) -> Image.Image:
         except Exception:
             # Some UploadedFile objects don't support seek; ignore.
             pass
-    img = Image.open(io.BytesIO(data))
+    try:
+        img = Image.open(io.BytesIO(data))
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise HttpError(400, "Uploaded file is not a valid image.")
     img.load()  # Force Pillow to decode now so errors bubble immediately.
     return img.convert("RGB")
 

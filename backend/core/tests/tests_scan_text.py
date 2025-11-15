@@ -19,7 +19,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
-from PIL import Image
+try:  # optional dependency guard for minimal CI envs
+    from PIL import Image
+except ImportError:  # pragma: no cover
+    Image = None  # type: ignore
 
 from core.api_scan_text import _call_gemini_for_json, _fallback_extract
 
@@ -28,6 +31,8 @@ SCAN_ENDPOINT = "/api/scan-text/label/analyze-llm"
 
 def _make_image_file(name: str = "test_label.png") -> SimpleUploadedFile:
     """Create a tiny in-memory PNG used for upload payloads."""
+    if Image is None:  # pragma: no cover - dependency missing
+        raise RuntimeError("Pillow is required for scan_text tests")
     image = Image.new("RGB", (32, 32), color="white")
     buffer = BytesIO()
     image.save(buffer, format="PNG")
@@ -284,12 +289,13 @@ class InvalidImageTests(TestCase):
             b"This is not an image",
             content_type="text/plain",
         )
-        with self.assertRaises(Exception):
-            self.client.post(
-                SCAN_ENDPOINT,
-                {"file": text_file},
-                format="multipart",
-            )
+        response = self.client.post(
+            SCAN_ENDPOINT,
+            {"file": text_file},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("valid image", response.json().get("detail", ""))
 
     def test_missing_file_field(self):
         response = self.client.post(SCAN_ENDPOINT, {}, format="multipart")

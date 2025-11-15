@@ -13,7 +13,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Flag used to disable certain production-only settings while running tests
-RUNNING_TESTS = "PYTEST_CURRENT_TEST" in os.environ
+RUNNING_TESTS = "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("CI") == "true"
 
 # Allow env files to live outside the web root by pointing DJANGO_ENV_FILE to an absolute path
 ENV_FILE_OVERRIDE = os.getenv("DJANGO_ENV_FILE")
