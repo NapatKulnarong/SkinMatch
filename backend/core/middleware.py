@@ -11,6 +11,9 @@ from django.contrib.auth import logout
 from django.http import HttpResponseForbidden, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 
+from .security_events import record_security_event
+from .security_utils import bump_counter, get_client_ip
+
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +135,13 @@ class SessionIdleTimeoutMiddleware:
             logout(request)
         elif hasattr(request, "session"):
             request.session.flush()
+        metadata = {"user_id": getattr(user, "pk", None), "path": request.path, "ip": get_client_ip(request)}
+        record_security_event(
+            "session.timeout",
+            "info",
+            f"Idle session cleared for path {request.path}",
+            metadata=metadata,
+        )
         if self._is_api_request(request.path or ""):
             return JsonResponse({"detail": "Session expired"}, status=401)
         target = self.redirect_url
@@ -281,5 +291,58 @@ class AdminAccessControlMiddleware:
         return None
 
     def _reject(self, request, reason: str):
+        client_ip = self._get_client_ip(request)
+        metadata = {"path": request.path, "ip": str(client_ip) if client_ip else None}
         logger.warning("Admin access blocked: %s", reason)
+        record_security_event("admin.access_blocked", "warning", reason, metadata=metadata, force_alert=True)
         return HttpResponseForbidden(reason)
+
+
+class SecurityMonitoringMiddleware:
+    """
+    Light-weight IDS style middleware that looks for obvious scanner signatures
+    and repeated error responses per IP.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        keywords = getattr(settings, "SECURITY_SUSPICIOUS_PATH_KEYWORDS", [])
+        self.keywords = tuple(k.lower() for k in keywords if k)
+        codes = getattr(settings, "SECURITY_MONITOR_STATUS_CODES", None) or [401, 403, 404, 405]
+        self.status_codes = tuple(codes)
+        self.rate_threshold = int(getattr(settings, "SECURITY_MONITOR_RATE_THRESHOLD", 25))
+        self.rate_window = int(getattr(settings, "SECURITY_MONITOR_RATE_WINDOW_SECONDS", 300))
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        try:
+            self._inspect_request(request, response)
+        except Exception:  # pragma: no cover - defensive, don't break responses
+            logger.exception("SecurityMonitoringMiddleware failed to inspect request")
+        return response
+
+    def _inspect_request(self, request, response):
+        path = (request.path or "").lower()
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        ip = get_client_ip(request)
+        if path and self.keywords and any(keyword in path for keyword in self.keywords):
+            record_security_event(
+                "traffic.suspicious_path",
+                "warning",
+                f"Suspicious path requested: {request.path}",
+                metadata={"path": request.path, "ip": ip, "user_agent": user_agent},
+            )
+
+        status = getattr(response, "status_code", None)
+        if not status or status not in self.status_codes or not ip:
+            return
+        cache_key = f"security:status:{status}:{ip}"
+        count = bump_counter(cache_key, self.rate_window)
+        if count >= self.rate_threshold:
+            record_security_event(
+                "traffic.anomaly",
+                "error",
+                f"{count} responses with status {status} for {ip}",
+                metadata={"ip": ip, "status": status, "path": request.path},
+                force_alert=True,
+            )

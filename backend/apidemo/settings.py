@@ -26,6 +26,15 @@ def env_csv(name: str, default: str = "") -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
 
+def env_int_list(name: str, default: str = "") -> list[int]:
+    values: list[int] = []
+    for item in env_csv(name, default):
+        try:
+            values.append(int(item))
+        except ValueError:
+            continue
+    return values
+
 # SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
 
@@ -65,6 +74,20 @@ SESSION_IDLE_TIMEOUT_EXEMPT_PATHS = env_csv(
 )
 SESSION_TIMEOUT_API_PREFIXES = env_csv("DJANGO_SESSION_TIMEOUT_API_PREFIXES", "/api/")
 SESSION_TIMEOUT_REDIRECT_URL = os.getenv("DJANGO_SESSION_TIMEOUT_REDIRECT_URL", "")
+
+SECURITY_ALERT_EMAILS = env_csv("SECURITY_ALERT_EMAILS", "")
+SECURITY_ALERT_MIN_LEVEL = os.getenv("SECURITY_ALERT_MIN_LEVEL", "ERROR").upper()
+SECURITY_LOG_FILE = os.getenv("SECURITY_LOG_FILE", "")
+SECURITY_LOG_LEVEL = os.getenv("SECURITY_LOG_LEVEL", "INFO").upper()
+SECURITY_FAILED_LOGIN_THRESHOLD = int(os.getenv("SECURITY_FAILED_LOGIN_THRESHOLD", "5"))
+SECURITY_FAILED_LOGIN_WINDOW_SECONDS = int(os.getenv("SECURITY_FAILED_LOGIN_WINDOW_SECONDS", "900"))
+SECURITY_SUSPICIOUS_PATH_KEYWORDS = env_csv(
+    "SECURITY_SUSPICIOUS_PATH_KEYWORDS",
+    "wp-login,wp-admin,phpmyadmin,.git/,server-status,.env",
+)
+SECURITY_MONITOR_STATUS_CODES = env_int_list("SECURITY_MONITOR_STATUS_CODES", "401,403,404,405")
+SECURITY_MONITOR_RATE_THRESHOLD = int(os.getenv("SECURITY_MONITOR_RATE_THRESHOLD", "25"))
+SECURITY_MONITOR_RATE_WINDOW_SECONDS = int(os.getenv("SECURITY_MONITOR_RATE_WINDOW_SECONDS", "300"))
 
 CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
 CSRF_COOKIE_HTTPONLY = env_bool("DJANGO_CSRF_COOKIE_HTTPONLY", True)
@@ -162,6 +185,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "core.middleware.SessionIdleTimeoutMiddleware",
     "core.middleware.AdminAccessControlMiddleware",
+    "core.middleware.SecurityMonitoringMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -322,6 +346,10 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Logging configuration
+security_handlers = ["security_console"]
+if SECURITY_LOG_FILE:
+    security_handlers.append("security_file")
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -334,11 +362,18 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'json': {
+            '()': 'core.logging_utils.JsonLogFormatter',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+        },
+        'security_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
         },
     },
     'loggers': {
@@ -356,9 +391,21 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'security': {
+            'handlers': security_handlers,
+            'level': SECURITY_LOG_LEVEL,
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
 }
+
+if SECURITY_LOG_FILE:
+    LOGGING['handlers']['security_file'] = {
+        'class': 'logging.handlers.WatchedFileHandler',
+        'filename': SECURITY_LOG_FILE,
+        'formatter': 'json',
+    }

@@ -128,3 +128,14 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 2. Populate staff roles (see RBAC section) before re-opening admin access.
 3. Set `ADMIN_ALLOWED_IPS`/`ADMIN_ALLOWED_ROLES`/`ADMIN_ALLOWED_COUNTRIES` in your secret manager and reload the app.
 4. Smoke test admin login from an allowed IP and confirm blocked responses from non-allowed IPs or countries. Use `curl -H 'CF-IPCountry: XX'` locally to simulate different geographies if needed.
+
+### Security Monitoring & Logging
+- All high-signal events flow through the dedicated `security` logger using JSON formatting (see `core/logging_utils.JsonLogFormatter`). Point `SECURITY_LOG_FILE` at a location shipped by Fluent Bit/Filebeat or rely on stdout scraping. The logger level is configurable via `SECURITY_LOG_LEVEL`.
+- `core.security_events.record_security_event` fans out to log files and (if configured) email alerts. Provide on-call recipients through `SECURITY_ALERT_EMAILS` and trim noise with `SECURITY_ALERT_MIN_LEVEL` (defaults to `ERROR`). Each alert email includes the metadata captured in code.
+- Intrusion detection is enforced by `SecurityMonitoringMiddleware`:
+  - `SECURITY_SUSPICIOUS_PATH_KEYWORDS` lists substrings that, when requested, generate `traffic.suspicious_path` events (defaults include `wp-admin`, `phpmyadmin`, `.env`, etc.).
+  - `SECURITY_MONITOR_STATUS_CODES`, `SECURITY_MONITOR_RATE_THRESHOLD`, and `SECURITY_MONITOR_RATE_WINDOW_SECONDS` define which HTTP statuses and rates (per IP) should trigger `traffic.anomaly` events + alerts.
+- Login telemetry is captured via Django signals:
+  - Every `user_login_failed` produces a `auth.login_failed` event containing IP, UA, and the attempted identifier. Once an IP generates `SECURITY_FAILED_LOGIN_THRESHOLD` failures inside `SECURITY_FAILED_LOGIN_WINDOW_SECONDS`, the system raises a `auth.bruteforce_detected` alert.
+  - Successful logins emit `auth.login_success` events so SOC tools can correlate who is active.
+- Django admin changes trigger `admin.action` events via the `LogEntry` signal hook, so there is an immutable audit trail beyond the built-in admin history. Tail `/var/log/skinmatch/security.log` (or your configured log destination) to verify entries whenever staff edit production data.
