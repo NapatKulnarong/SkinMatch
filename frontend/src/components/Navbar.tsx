@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useNavWidthSetter } from "./NavWidthContext";
+import NotificationBell from "./NotificationBell";
 import {
   getStoredProfile,
   PROFILE_EVENT,
@@ -22,14 +23,14 @@ export default function Navbar() {
 
   const activeStyles: Record<string, string> = {
     orange: "bg-[#f4bc78] text-black",
-    green:  "bg-[#acdb93] text-black",
+    green:  "bg-[#afe3a3] text-black",
     blue:   "bg-[#94c6ef] text-black",
   };
 
   // Hover styles for each color
   const hoverStyles: Record<string, string> = {
     orange: "hover:bg-[#f4bc78] hover:text-black",
-    green:  "hover:bg-[#acdb93] hover:text-black",
+    green:  "hover:bg-[#afe3a3] hover:text-black",
     blue:   "hover:bg-[#94c6ef] hover:text-black",
   };
 
@@ -208,29 +209,33 @@ export default function Navbar() {
             width={130}
             height={130}
             className="w-24 sm:w-32"
+            priority
           />
-        </Link>
+       </Link>
 
-        <Link
-          href={loginHref}
-          aria-current={isActive(loginHref) ? "page" : undefined}
-          aria-label={loginAriaLabel}
-          className="h-12 w-12 flex-shrink-0 sm:hidden"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={avatarError ? "/default-profile.png" : avatarSrc}
-            alt="Profile avatar"
-            className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
-              isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
-            }`}
-            onError={() => setAvatarError(true)}
-          />
-        </Link>
+        <div className="flex items-center gap-2 sm:hidden">
+          <NotificationBell />
+          <Link
+            href={loginHref}
+            aria-current={isActive(loginHref) ? "page" : undefined}
+            aria-label={loginAriaLabel}
+            className="h-12 w-12 flex-shrink-0"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarError ? "/default-profile.png" : avatarSrc}
+              alt="Profile avatar"
+              className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
+                isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
+              }`}
+              onError={() => setAvatarError(true)}
+            />
+          </Link>
+        </div>
       </div>
 
       <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-        <div className="flex w-full items-center justify-between gap-1 rounded-full border-2 border-black bg-white px-2 py-1 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:h-14 sm:w-auto sm:gap-2 sm:px-4 sm:py-3">
+        <div className="order-1 flex w-full items-center justify-between gap-1 rounded-full border-2 border-black bg-white px-2 py-1 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:h-14 sm:w-auto sm:gap-2 sm:px-4 sm:py-3">
           {links.map(({ href, label, color }) => (
             <Link
               key={href}
@@ -247,7 +252,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:flex sm:h-14">
+        <div className="order-2 hidden items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:flex sm:h-14">
           <Link
             href={loginHref}
             aria-current={isActive(loginHref) ? "page" : undefined}
@@ -277,6 +282,8 @@ export default function Navbar() {
             />
           </Link>
         </div>
+
+        <NotificationBell className="order-3 hidden sm:flex" />
       </div>
     </header>
   );

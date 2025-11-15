@@ -12,6 +12,9 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Flag used to disable certain production-only settings while running tests
+RUNNING_TESTS = "PYTEST_CURRENT_TEST" in os.environ
+
 # Allow env files to live outside the web root by pointing DJANGO_ENV_FILE to an absolute path
 ENV_FILE_OVERRIDE = os.getenv("DJANGO_ENV_FILE")
 if ENV_FILE_OVERRIDE:
@@ -68,7 +71,7 @@ CORS_ALLOW_CREDENTIALS = True
 if env_bool("DJANGO_USE_PROXY_SSL_HEADER", True):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_SSL_REDIRECT = False if RUNNING_TESTS else env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
 USE_X_FORWARDED_HOST = env_bool("DJANGO_USE_X_FORWARDED_HOST", True)
 
 SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
