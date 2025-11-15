@@ -61,7 +61,10 @@ const backendLikeOrigins = (() => {
 })();
 
 export const resolveApiBase = () => {
-  const baseFromClient = stripTrailingSlash(process.env.NEXT_PUBLIC_API_BASE || "/api");
+  const versionFallback = process.env.NEXT_PUBLIC_API_VERSION || "v1";
+  const baseFromClient = stripTrailingSlash(
+    process.env.NEXT_PUBLIC_API_BASE || `/api/${versionFallback}`
+  );
   const isServer = typeof window === "undefined";
 
   if (!isServer) {

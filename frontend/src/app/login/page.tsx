@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -21,6 +22,9 @@ import { PasswordRequirements } from "@/components/PasswordRequirements";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
 
+const isModeValue = (value: string | null): value is Mode =>
+  value === "intro" || value === "signup" || value === "login" || value === "forgot";
+
 type SignupState = {
   name: string;
   surname: string;
@@ -30,6 +34,8 @@ type SignupState = {
   confirmPassword: string;
   dob: string;
   gender: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
 };
 
 type LoginState = {
@@ -48,6 +54,8 @@ const initialSignup: SignupState = {
   confirmPassword: "",
   dob: "",
   gender: "",
+  acceptTerms: false,
+  acceptPrivacy: false,
 };
 
 const initialLogin: LoginState = {
@@ -97,7 +105,10 @@ export { redirectTo } from "./redirect";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>("intro");
+  const [mode, setMode] = useState<Mode>(() => {
+    const initialMode = searchParams.get("mode");
+    return isModeValue(initialMode) ? initialMode : "intro";
+  });
   const [signup, setSignup] = useState<SignupState>(initialSignup);
   const [login, setLogin] = useState<LoginState>(initialLogin);
   const [signupError, setSignupError] = useState<string | null>(null);
@@ -169,7 +180,24 @@ function LoginContent() {
     }
   }, [searchParams, router]);
 
+  const syncModeInQuery = (next: Mode, { replace = false }: { replace?: boolean } = {}) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "intro") {
+      params.delete("mode");
+    } else {
+      params.set("mode", next);
+    }
+    const qs = params.toString();
+    const url = `/login${qs ? `?${qs}` : ""}`;
+    if (replace) {
+      router.replace(url, { scroll: false });
+    } else {
+      router.push(url, { scroll: false });
+    }
+  };
+
   const changeMode = (next: Mode) => {
+    const previousMode = mode;
     setMode(next);
     setSignupError(null);
     setLoginError(null);
@@ -177,7 +205,24 @@ function LoginContent() {
     setForgotEmail("");
     setForgotStatus("idle");
     setForgotError(null);
+    const shouldReplaceHistory = next === previousMode;
+    syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
+
+  const searchParamsKey = searchParams.toString();
+
+  useEffect(() => {
+    const nextMode = searchParams.get("mode");
+    setMode((prev) => {
+      if (isModeValue(nextMode) && nextMode !== prev) {
+        return nextMode;
+      }
+      if (!nextMode && prev !== "intro") {
+        return "intro";
+      }
+      return prev;
+    });
+  }, [searchParamsKey]);
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
@@ -242,6 +287,13 @@ function LoginContent() {
     setSignup((prev) => ({ ...prev, [name]: value }));
   };
 
+  const onSignupCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, checked } = e.target;
+    setSignup((prev) => ({ ...prev, [name]: checked }));
+  };
+
   const onLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setLogin((prev) => ({ ...prev, [name]: value }));
@@ -304,6 +356,16 @@ function LoginContent() {
     }
   }
 
+    if (!signup.acceptTerms) {
+      setSignupError("You must agree to the Terms of Service to continue.");
+      return;
+    }
+
+    if (!signup.acceptPrivacy) {
+      setSignupError("You must agree to the Privacy Policy to continue.");
+      return;
+    }
+
     setSignupLoading(true);
     try {
       await signupRequest({
@@ -315,6 +377,8 @@ function LoginContent() {
         confirm_password: signup.confirmPassword,
         date_of_birth: formattedDob,
         gender: signup.gender || undefined,
+        accept_terms_of_service: signup.acceptTerms,
+        accept_privacy_policy: signup.acceptPrivacy,
       });
 
       const loginResponse = await loginRequest({
@@ -611,6 +675,44 @@ function LoginContent() {
                     placeholder="Re-enter password"
                   />
                 </Field>
+              </div>
+
+              <div className="mt-4 space-y-3 rounded-2xl border-2 border-black bg-white/90 p-4">
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptTerms"
+                    checked={signup.acceptTerms}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-terms"
+                  />
+                  <span>
+                    I agree to the{" "}
+                    <Link href="/terms" className="underline">
+                      Terms of Service
+                    </Link>
+                    {" "}and understand that violating the terms may lead to account suspension.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptPrivacy"
+                    checked={signup.acceptPrivacy}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-privacy"
+                  />
+                  <span>
+                    I acknowledge the{" "}
+                    <Link href="/privacy" className="underline">
+                      Privacy Policy
+                    </Link>
+                    {" "}and consent to SkinMatch processing my data to provide personalized skincare guidance.
+                  </span>
+                </label>
               </div>
 
               {signupError && (

@@ -69,7 +69,6 @@ api = NinjaAPI(version=getattr(settings, "API_VERSION_DEFAULT", "v1"), title="Sk
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
 api.add_router("/scan-text", scan_text_router)
-api_urlpatterns = api.urls
 User = get_user_model()
 
 if genai:
@@ -85,6 +84,8 @@ class SignUpIn(Schema):
     confirm_password: str
     date_of_birth: str | None = None # 'YYYY-MM-DD'
     gender: str | None = None #'male'|'female'|'prefer_not'
+    accept_terms_of_service: bool
+    accept_privacy_policy: bool
 
 class SignUpOut(Schema):
     ok: bool
@@ -703,7 +704,13 @@ def signup(request, payload: SignUpIn):
     # basic checks
     if payload.password != payload.confirm_password:
         return {"ok": False, "message": "Passwords do not match"}
-    
+
+    if not payload.accept_terms_of_service:
+        return {"ok": False, "message": "You must accept the Terms of Service to create an account."}
+
+    if not payload.accept_privacy_policy:
+        return {"ok": False, "message": "You must accept the Privacy Policy to create an account."}
+
     # enforce uniqueness in code (case-insensitive)
     if User.objects.filter(username__iexact=payload.username).exists():
         return {"ok": False, "message": "Username already taken"}
@@ -772,6 +779,15 @@ def signup(request, payload: SignUpIn):
     if gender_choice is not None and profile.gender != gender_choice:
         profile.gender = gender_choice
         profile_updates.append("gender")
+
+    acceptance_timestamp = timezone.now()
+    if payload.accept_terms_of_service and profile.terms_accepted_at is None:
+        profile.terms_accepted_at = acceptance_timestamp
+        profile_updates.append("terms_accepted_at")
+
+    if payload.accept_privacy_policy and profile.privacy_policy_accepted_at is None:
+        profile.privacy_policy_accepted_at = acceptance_timestamp
+        profile_updates.append("privacy_policy_accepted_at")
 
     if profile_updates:
         profile.save(update_fields=profile_updates + ["updated_at"])
@@ -1411,3 +1427,6 @@ def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
         keywords = ["hyaluronic", "niacinamide", "vitamin c", "ceramide"]
     # dedupe, keep order
     return list(dict.fromkeys([kw.lower() for kw in keywords]))
+
+
+api_urlpatterns = api.urls
