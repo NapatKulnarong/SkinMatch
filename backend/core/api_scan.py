@@ -1,9 +1,13 @@
 from ninja import Router, File, Schema
 from ninja.files import UploadedFile
-from PIL import Image
 from ninja.errors import HttpError
 from io import BytesIO
 from quiz.models import Product
+
+try:  # Pillow is optional in lightweight test environments
+    from PIL import Image
+except ImportError:  # pragma: no cover - optional dependency guard
+    Image = None
 
 scan_router = Router(tags=["Scan"])
 
@@ -28,6 +32,8 @@ class ScanOut(Schema):
 def scan_barcode(request, file: UploadedFile = File(...)):
     # Decode
     try:
+        if Image is None:
+            raise HttpError(503, "Image processing dependencies are not installed")
         decode = get_decode()
         image = Image.open(BytesIO(file.read()))
         decoded_objects = decode(image)
@@ -43,6 +49,8 @@ def scan_barcode(request, file: UploadedFile = File(...)):
 def scan_and_resolve(request, file: UploadedFile = File(...)):
     # Decode and resolve in database
     try:
+        if Image is None:
+            raise HttpError(503, "Image processing dependencies are not installed")
         decode = get_decode()
         image = Image.open(BytesIO(file.read()))
         decoded_objects = decode(image)

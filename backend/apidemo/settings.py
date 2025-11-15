@@ -96,6 +96,10 @@ API_INPUT_BLOCKLIST = env_csv(
     "API_INPUT_BLOCKLIST",
     "<script,</script>,union select,drop table,insert into",
 )
+API_INPUT_BLOCKLIST_EXEMPT_PATHS = env_csv(
+    "API_INPUT_BLOCKLIST_EXEMPT_PATHS",
+    "/api/quiz/feedback",
+)
 API_VERSION_DEFAULT = os.getenv("API_VERSION_DEFAULT", "v1")
 SENSITIVE_PATH_PATTERNS = env_csv(
     "SENSITIVE_PATH_PATTERNS",

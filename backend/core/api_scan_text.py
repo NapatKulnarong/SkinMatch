@@ -4,12 +4,28 @@ import io, os, re, json
 from typing import List, Optional, Tuple
 
 from ninja.errors import HttpError
-import cv2
-import numpy as np
-from PIL import Image
-import pytesseract
 from ninja import Router, File, Schema
 from ninja.files import UploadedFile
+
+try:
+    import cv2
+except ImportError:  # pragma: no cover - optional dependency guard
+    cv2 = None
+
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - optional dependency guard
+    np = None
+
+try:
+    from PIL import Image
+except ImportError:  # pragma: no cover - optional dependency guard
+    Image = None
+
+try:
+    import pytesseract
+except ImportError:  # pragma: no cover - optional dependency guard
+    pytesseract = None
 
 try:
     import google.generativeai as genai
@@ -25,6 +41,21 @@ from .text_cleaner import clean_ocr_text
 from .api_scan import scan_router as _legacy_scan_router
 
 scan_text_router = Router(tags=["scan-text"])
+
+
+def _ensure_ocr_dependencies() -> None:
+    missing: list[str] = []
+    if Image is None:
+        missing.append("Pillow")
+    if cv2 is None:
+        missing.append("opencv-python-headless")
+    if np is None:
+        missing.append("numpy")
+    if pytesseract is None:
+        missing.append("pytesseract")
+    if missing:
+        joined = ", ".join(missing)
+        raise HttpError(503, f"Label OCR is unavailable: missing dependencies ({joined})")
 
 EXAMPLE_JSON = {
     "benefits": [
@@ -132,6 +163,7 @@ def _build_llm_prompt(ocr_text: str) -> Tuple[str, str, dict]:
 # ---------------- OCR helpers (English only) ----------------
 def _load_pil(file: UploadedFile) -> Image.Image:
     """Read an uploaded file into an RGB PIL image (raises if not an image)."""
+    _ensure_ocr_dependencies()
     data = file.read()
     if hasattr(file, "seek"):
         try:
@@ -154,10 +186,12 @@ def _preprocess(image: Image.Image) -> Image.Image:
     return image
 
 def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
+    _ensure_ocr_dependencies()
     return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def _ocr_text(pil_img: Image.Image) -> str:
     """Run preprocess → cv2 conversion → OCR (Thai/English)."""
+    _ensure_ocr_dependencies()
     prepared = _preprocess(pil_img)
     np_img = cv2.cvtColor(np.array(prepared), cv2.COLOR_RGB2BGR)
     raw_text = cv2_to_text(np_img)
@@ -165,10 +199,12 @@ def _ocr_text(pil_img: Image.Image) -> str:
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
     """Glue helper used by the API endpoint (kept separate for test patching)."""
+    _ensure_ocr_dependencies()
     pil = _load_pil(file)
     return _ocr_text(pil)
 
 def cv2_to_text(img: np.ndarray) -> str:
+    _ensure_ocr_dependencies()
     return pytesseract.image_to_string(img, lang="tha+eng")
 
 # ---------------- Fallback extractor (English/Thai keywords) ----------------

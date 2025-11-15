@@ -502,7 +502,7 @@ def _sanitize_feedback_metadata(metadata: dict | None) -> dict[str, str]:
 
 
 def _compose_feedback_message(raw_message: str | None, rating: int | None) -> str:
-    message = (raw_message or "").strip()
+    message = sanitize_plain_text(raw_message or "")
     if message:
         return message
     if rating:

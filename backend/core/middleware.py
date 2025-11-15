@@ -405,6 +405,7 @@ class APIInputValidationMiddleware:
         self.blocklist = [re.compile(pattern, re.IGNORECASE) for pattern in patterns if pattern]
         self.enabled = bool(self.max_body_bytes or self.blocklist)
         self.protected_prefixes = tuple(getattr(settings, "API_PROTECTED_PATH_PREFIXES", ["/api/"]))
+        self.blocklist_exempt_paths = tuple(getattr(settings, "API_INPUT_BLOCKLIST_EXEMPT_PATHS", []))
 
     def __call__(self, request):
         if not self.enabled or not self._is_api_request(request.path):
@@ -438,6 +439,9 @@ class APIInputValidationMiddleware:
         if not self.blocklist:
             return True
 
+        if self._is_blocklist_exempt(request.path):
+            return True
+
         try:
             body = request.body.decode("utf-8", errors="ignore")
         except Exception:
@@ -453,6 +457,12 @@ class APIInputValidationMiddleware:
                 )
                 return False
         return True
+
+    def _is_blocklist_exempt(self, path: str | None) -> bool:
+        if not self.blocklist_exempt_paths:
+            return False
+        target = path or ""
+        return any(target.startswith(prefix) for prefix in self.blocklist_exempt_paths)
 
 
 class APIKeyMiddleware:

@@ -1,10 +1,26 @@
+from __future__ import annotations
+
 import math
-import cv2
-import numpy as np
-from PIL import Image
+
+try:
+    import cv2
+except ImportError:  # pragma: no cover - optional dependency guard
+    cv2 = None
+
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - optional dependency guard
+    np = None
+
+try:
+    from PIL import Image
+except ImportError:  # pragma: no cover - optional dependency guard
+    Image = None
 
 def _deskew(gray: np.ndarray) -> np.ndarray:
     # Estimate skew via Hough lines; fall back to original if nothing found
+    if cv2 is None:
+        return gray
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
     lines = cv2.HoughLines(edges, 1, np.pi/180, 120)
     if lines is None:
@@ -25,6 +41,9 @@ def _deskew(gray: np.ndarray) -> np.ndarray:
 
 def preprocess_for_ocr(pil_img: Image.Image) -> Image.Image:
     # upscale a bit
+    if cv2 is None or np is None:
+        return pil_img
+
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
     img = cv2.resize(img, None, fx=1.8, fy=1.8, interpolation=cv2.INTER_CUBIC)
 
