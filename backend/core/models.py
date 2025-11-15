@@ -20,6 +20,12 @@ class UserProfile(models.Model):
         FEMALE = "female", "Female"
         MALE = "male", "Male"
         PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class Role(models.TextChoices):
+        ADMIN = "admin", "Administrator"
+        STAFF = "staff", "Staff"
+        READ_ONLY = "read_only", "Read-only"
+        MEMBER = "member", "Member"
     
     u_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, 
@@ -31,6 +37,13 @@ class UserProfile(models.Model):
     avatar_url = models.URLField(blank=True) # optional profile pic
     date_of_birth = models.DateField(null=True, blank=True) # dd/mm/yyyy
     gender = models.CharField(max_length=20, choices=Gender.choices, null=True, blank=True)
+    role = models.CharField(
+        max_length=32,
+        choices=Role.choices,
+        default=Role.MEMBER,
+        db_index=True,
+        help_text="RBAC role used for staff/admin protections."
+    )
     is_verified = models.BooleanField(default=False)
     google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
 
@@ -64,6 +77,18 @@ class UserProfile(models.Model):
     def full_name(self):
         n = f"{self.user.first_name} {self.user.last_name}".strip()
         return n or self.user.username
+
+    def has_role(self, *roles: str) -> bool:
+        """
+        Convenience helper for RBAC checks.
+        """
+        if not roles:
+            return False
+        try:
+            current = (self.role or "").lower()
+        except AttributeError:
+            return False
+        return current in {r.lower() for r in roles}
     
 
 class SkinProfile(models.Model):

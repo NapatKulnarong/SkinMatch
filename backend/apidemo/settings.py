@@ -56,6 +56,15 @@ USE_X_FORWARDED_HOST = env_bool("DJANGO_USE_X_FORWARDED_HOST", True)
 SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = env_bool("DJANGO_SESSION_COOKIE_HTTPONLY", True)
 SESSION_COOKIE_SAMESITE = os.getenv("DJANGO_SESSION_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_AGE = int(os.getenv("DJANGO_SESSION_COOKIE_AGE", "14400"))  # 4 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_bool("DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE", True)
+SESSION_IDLE_TIMEOUT_SECONDS = int(os.getenv("DJANGO_SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
+SESSION_IDLE_TIMEOUT_EXEMPT_PATHS = env_csv(
+    "DJANGO_SESSION_IDLE_TIMEOUT_EXEMPT_PATHS",
+    "/healthz/,/accounts/login/",
+)
+SESSION_TIMEOUT_API_PREFIXES = env_csv("DJANGO_SESSION_TIMEOUT_API_PREFIXES", "/api/")
+SESSION_TIMEOUT_REDIRECT_URL = os.getenv("DJANGO_SESSION_TIMEOUT_REDIRECT_URL", "")
 
 CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
 CSRF_COOKIE_HTTPONLY = env_bool("DJANGO_CSRF_COOKIE_HTTPONLY", True)
@@ -73,6 +82,21 @@ SECURE_REFERRER_POLICY = os.getenv(
 )
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = os.getenv("DJANGO_X_FRAME_OPTIONS", "DENY")
+
+ADMIN_PROTECTED_PATH_PREFIXES = env_csv("ADMIN_PROTECTED_PATH_PREFIXES", "/admin/")
+ADMIN_ALLOWED_ROLES = [role.lower() for role in env_csv("ADMIN_ALLOWED_ROLES", "admin,staff")]
+ADMIN_ALLOWED_IPS = env_csv("ADMIN_ALLOWED_IPS", "127.0.0.1,::1")
+ADMIN_TRUSTED_IP_HEADERS = env_csv(
+    "ADMIN_TRUSTED_IP_HEADERS",
+    "HTTP_X_FORWARDED_FOR,REMOTE_ADDR",
+)
+ADMIN_COUNTRY_HEADERS = env_csv(
+    "ADMIN_COUNTRY_HEADERS",
+    "HTTP_CF_IPCOUNTRY,HTTP_X_APPENGINE_COUNTRY,GEOIP_COUNTRY_CODE",
+)
+ADMIN_ALLOWED_COUNTRIES = [
+    code.upper() for code in env_csv("ADMIN_ALLOWED_COUNTRIES", "")
+]
 
 CONTENT_SECURITY_POLICY = os.getenv(
     "DJANGO_CONTENT_SECURITY_POLICY",
@@ -136,10 +160,11 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.SessionIdleTimeoutMiddleware",
+    "core.middleware.AdminAccessControlMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "apidemo.urls"

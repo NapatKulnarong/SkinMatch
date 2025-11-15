@@ -99,3 +99,32 @@ DJANGO_USE_X_FORWARDED_HOST=True
 ```
 
 Adjust values per environment; keep the stricter settings anywhere public traffic is served.
+
+## Level 2: Advanced Access Control
+
+### Role-Based Access Control (RBAC)
+- `UserProfile` now includes a `role` field with predefined choices (`admin`, `staff`, `read_only`, `member`). A data migration maps existing superusers to `admin` and staff users to `staff`.
+- Assign roles for new staff inside Django admin (User Profile inline) or via shell:
+  ```python
+  from core.models import UserProfile
+  profile = UserProfile.objects.select_related("user").get(user__email="ops@skinmatch.com")
+  profile.role = UserProfile.Role.ADMIN
+  profile.save(update_fields=["role"])
+  ```
+- The new `core.middleware.AdminAccessControlMiddleware` enforces that only staff members whose profile role is listed in `ADMIN_ALLOWED_ROLES` can reach admin URLs (superusers still bypass the check).
+
+### Admin IP & Country Allow Lists
+- `ADMIN_ALLOWED_IPS` accepts comma-separated IPs or CIDR ranges (e.g., `203.0.113.17,10.10.0.0/16`). Only requests whose client IP (after applying headers from `ADMIN_TRUSTED_IP_HEADERS`) match one of those networks can load admin routes.
+- Add multiple admin paths with `ADMIN_PROTECTED_PATH_PREFIXES` if you expose additional control panels.
+- Optional geographic restrictions rely on upstream geo headers such as `CF-IPCountry`. Set `ADMIN_ALLOWED_COUNTRIES=SG,TH` to only allow those ISO codes. Leave empty to disable the geo check or override the header names through `ADMIN_COUNTRY_HEADERS`.
+
+### Session Timeout & Secure Cookies
+- Sessions expire after `DJANGO_SESSION_COOKIE_AGE` seconds (default 4 hours) and the new `SessionIdleTimeoutMiddleware` logs idle users out after `DJANGO_SESSION_IDLE_TIMEOUT_SECONDS` (default 30 minutes). Customize exemption paths with `DJANGO_SESSION_IDLE_TIMEOUT_EXEMPT_PATHS` if you need long-lived uploads or health probes.
+- API consumers receive a JSON `401` when the idle timeout triggers; browser sessions are redirected to `DJANGO_SESSION_TIMEOUT_REDIRECT_URL` (defaults to `/login?timeout=1`).
+- Keep `DJANGO_SESSION_COOKIE_SECURE=True`, `DJANGO_SESSION_COOKIE_HTTPONLY=True`, and (ideally) `DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE=True` in production so cookies are never exposed to insecure transport or JavaScript.
+
+### Deployment Checklist
+1. Run `python manage.py migrate` so the new `role` column exists.
+2. Populate staff roles (see RBAC section) before re-opening admin access.
+3. Set `ADMIN_ALLOWED_IPS`/`ADMIN_ALLOWED_ROLES`/`ADMIN_ALLOWED_COUNTRIES` in your secret manager and reload the app.
+4. Smoke test admin login from an allowed IP and confirm blocked responses from non-allowed IPs or countries. Use `curl -H 'CF-IPCountry: XX'` locally to simulate different geographies if needed.
