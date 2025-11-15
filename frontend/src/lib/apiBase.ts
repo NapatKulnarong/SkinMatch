@@ -90,7 +90,11 @@ export const resolveApiBase = () => {
   return stripTrailingSlash(fromEnv);
 };
 
-export const resolveMediaUrl = (value?: string | null): string | null => {
+type MediaOptions = {
+  keepBackendOrigin?: boolean;
+};
+
+export const resolveMediaUrl = (value?: string | null, options?: MediaOptions): string | null => {
   if (!value) {
     return null;
   }
@@ -106,6 +110,9 @@ export const resolveMediaUrl = (value?: string | null): string | null => {
   try {
     const parsed = new URL(trimmed);
     if (backendLikeOrigins.has(parsed.origin)) {
+      if (options?.keepBackendOrigin) {
+        return parsed.href;
+      }
       return parsed.pathname + parsed.search;
     }
     return trimmed;
