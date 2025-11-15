@@ -30,6 +30,12 @@ if not ENV_FILE_OVERRIDE:
     if env_specific_path.exists():
         load_dotenv(env_specific_path, override=True)
 
+BACKEND_URL = (
+    os.getenv("BACKEND_URL")
+    or os.getenv("INTERNAL_BACKEND_URL")
+    or "http://localhost:8000"
+)
+
 # Utility helpers
 def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")

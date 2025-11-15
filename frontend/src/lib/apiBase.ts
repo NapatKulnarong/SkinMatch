@@ -61,7 +61,10 @@ const backendLikeOrigins = (() => {
 })();
 
 export const resolveApiBase = () => {
-  const baseFromClient = stripTrailingSlash(process.env.NEXT_PUBLIC_API_BASE || "/api");
+  const versionFallback = process.env.NEXT_PUBLIC_API_VERSION || "v1";
+  const baseFromClient = stripTrailingSlash(
+    process.env.NEXT_PUBLIC_API_BASE || `/api/${versionFallback}`
+  );
   const isServer = typeof window === "undefined";
 
   if (!isServer) {
@@ -87,7 +90,11 @@ export const resolveApiBase = () => {
   return stripTrailingSlash(fromEnv);
 };
 
-export const resolveMediaUrl = (value?: string | null): string | null => {
+type MediaOptions = {
+  keepBackendOrigin?: boolean;
+};
+
+export const resolveMediaUrl = (value?: string | null, options?: MediaOptions): string | null => {
   if (!value) {
     return null;
   }
@@ -103,6 +110,9 @@ export const resolveMediaUrl = (value?: string | null): string | null => {
   try {
     const parsed = new URL(trimmed);
     if (backendLikeOrigins.has(parsed.origin)) {
+      if (options?.keepBackendOrigin) {
+        return parsed.href;
+      }
       return parsed.pathname + parsed.search;
     }
     return trimmed;

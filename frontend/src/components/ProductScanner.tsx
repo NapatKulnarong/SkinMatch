@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CameraIcon,
@@ -139,10 +140,13 @@ export function ProductScanner() {
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
       <div className="hidden md:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
-        <img
+        <Image
           src="/img/mascot/matchy_scan.png"
           alt="Matchy with camera"
+          width={280}
+          height={280}
           className="h-auto w-[190px] sm:w-[220px] md:w-[280px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
+          priority
         />
       </div>
 
@@ -178,10 +182,13 @@ export function ProductScanner() {
                 onChange={handleInputChange}
               />
               {previewUrl ? (
-                <img
+                <Image
                   src={previewUrl}
                   alt="Uploaded label preview"
-                  className="max-h-48 rounded-2xl border border-black/10 object-contain"
+                  width={320}
+                  height={320}
+                  unoptimized
+                  className="max-h-48 rounded-2xl border border-black/10 object-contain w-auto h-auto"
                 />
               ) : (
                 <div className="space-y-2">

@@ -48,6 +48,16 @@ class UserProfile(models.Model):
     )
     is_verified = models.BooleanField(default=False)
     google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Terms of Service."
+    )
+    privacy_policy_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Privacy Policy."
+    )
 
     #audit
     created_at = models.DateTimeField(auto_now_add=True)

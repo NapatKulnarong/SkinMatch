@@ -70,11 +70,54 @@ export async function fetchEnvironmentAlerts(
     throw new Error(message || "Unable to fetch environment alerts.");
   }
 
-  const payload = await res.json();
+  const payload: AlertApiPayload = await res.json();
   return mapAlertResponse(payload);
 }
 
-const mapAlertResponse = (payload: any): EnvironmentAlertResponse => ({
+type AlertApiPayload = {
+  generated_at: string;
+  latitude: number;
+  longitude: number;
+  location_label?: string | null;
+  uv?: {
+    index?: number;
+    max_index?: number;
+    level?: string;
+    level_label?: string;
+    message?: string;
+  };
+  air_quality?: {
+    pm25?: number;
+    pm10?: number;
+    aqi?: number;
+    level?: string;
+    level_label?: string;
+    message?: string;
+  };
+  alerts?: RawAlert[];
+  source_name?: string;
+  source_url?: string;
+  refresh_minutes?: number;
+};
+
+type RawAlert = {
+  id: string;
+  category?: string;
+  severity?: string;
+  title?: string;
+  message?: string;
+  tips?: unknown;
+  valid_until?: string;
+};
+
+const normalizeTips = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === "string");
+};
+
+const mapAlertResponse = (payload: AlertApiPayload): EnvironmentAlertResponse => ({
   generatedAt: payload.generated_at,
   latitude: payload.latitude,
   longitude: payload.longitude,
@@ -95,14 +138,14 @@ const mapAlertResponse = (payload: any): EnvironmentAlertResponse => ({
     message: payload.air_quality?.message ?? "",
   },
   alerts: Array.isArray(payload.alerts)
-    ? payload.alerts.map((item: any) => ({
+    ? payload.alerts.map((item) => ({
         id: item.id,
-        category: item.category,
-        severity: item.severity,
-        title: item.title,
-        message: item.message,
-        tips: Array.isArray(item.tips) ? item.tips : [],
-        validUntil: item.valid_until,
+        category: item.category ?? "general",
+        severity: item.severity ?? "unknown",
+        title: item.title ?? "Alert",
+        message: item.message ?? "",
+        tips: normalizeTips(item.tips),
+        validUntil: item.valid_until ?? payload.generated_at,
       }))
     : [],
   sourceName: payload.source_name ?? "Open-Meteo",

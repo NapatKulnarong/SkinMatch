@@ -1,4 +1,5 @@
 import type { StoredProfile } from "./auth-storage";
+import { resolveApiBase } from "./apiBase";
 
 export type SignupPayload = {
   first_name: string;
@@ -9,6 +10,8 @@ export type SignupPayload = {
   confirm_password: string;
   date_of_birth?: string | null;
   gender?: string | null;
+  accept_terms_of_service: boolean;
+  accept_privacy_policy: boolean;
 };
 
 export type LoginPayload = {
@@ -22,7 +25,7 @@ export type ApiResponse<T> = {
   data?: T;
 };
 
-const API_BASE = "/api";
+const API_BASE = resolveApiBase();
 
 async function handleJson<T>(res: Response): Promise<T> {
   const text = await res.text();

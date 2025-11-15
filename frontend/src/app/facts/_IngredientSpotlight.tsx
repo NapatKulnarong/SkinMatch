@@ -8,7 +8,7 @@ import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
-const FALLBACK_IMAGE = "/img/facts_img/serum_texture.jpg";
+const FALLBACK_IMAGE = "/img/facts_img/centella_ampoule.jpg";
 const PALETTE = [
   "from-[#e5f4ff] via-[#f0f9ff] to-white",
   "from-[#fef5ec] via-[#fff3f3] to-white",
