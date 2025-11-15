@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Security Level 1 & 2 tests
         run: |
-          pytest -q tests/test_security_level1.py tests/test_security_level2.py
+          DATABASE_URL=sqlite:///test_db.sqlite3 pytest --nomigrations -q core/tests/tests_security_lev1.py core/tests/tests_security_lev2.py
 
       - name: Run dependency vulnerability scan (pip-audit)
         run: |
