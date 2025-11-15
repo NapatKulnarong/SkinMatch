@@ -3,6 +3,7 @@ import os
 from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import quote
 from uuid import uuid4
 import uuid
 
@@ -237,7 +238,6 @@ class SendTermsEmailOut(Schema):
 
 def _get_newsletter_welcome_email_html(email: str = "") -> str:
     """Generate HTML email template for newsletter welcome email."""
-    from urllib.parse import quote
     
     # Use FRONTEND_ORIGIN for development, or SITE_URL for production
     site_url = (
@@ -1252,6 +1252,11 @@ def fact_topic_detail(request, slug: str):
     topic.refresh_from_db(fields=["view_count", "updated_at"])
 
     blocks = [_serialize_fact_block(block, request) for block in topic.content_blocks.all()]
+    hero_url = _resolve_media_url(request, topic.hero_image)
+    if not hero_url:
+        hero_url = _build_placeholder_image(topic.title)
+    logger.debug("[Hero Image Detail] %s: %s", topic.title, hero_url)
+
     return FactTopicDetailOut(
         id=topic.id,
         slug=topic.slug,
@@ -1259,7 +1264,7 @@ def fact_topic_detail(request, slug: str):
         subtitle=topic.subtitle or None,
         excerpt=topic.excerpt or None,
         section=topic.section,
-        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_url=hero_url,
         hero_image_alt=topic.hero_image_alt or None,
         view_count=topic.view_count,
         updated_at=topic.updated_at,
@@ -1267,7 +1272,19 @@ def fact_topic_detail(request, slug: str):
     )
 
 
+def _build_placeholder_image(title: str) -> str:
+    """Fallback placeholder image shown when no hero image exists."""
+    safe_title = (title or "SkinMatch").strip() or "SkinMatch"
+    text = quote(safe_title[:20])
+    return f"https://placehold.co/600x400/e5e5e5/666666?text={text}"
+
+
 def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSummary:
+    hero_url = _resolve_media_url(request, topic.hero_image)
+    if not hero_url:
+        hero_url = _build_placeholder_image(topic.title)
+    logger.debug("[Hero Image] %s: %s", topic.title, hero_url)
+
     return FactTopicSummary(
         id=topic.id,
         slug=topic.slug,
@@ -1275,7 +1292,7 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
         subtitle=topic.subtitle or None,
         excerpt=topic.excerpt or None,
         section=topic.section,
-        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_url=hero_url,
         hero_image_alt=topic.hero_image_alt or None,
         view_count=topic.view_count,
     )
@@ -1292,20 +1309,35 @@ def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBl
 
 
 def _resolve_media_url(request, image_field) -> Optional[str]:
+    """Resolve media URL for use by the frontend, handling local dev rewrites."""
     if not image_field:
         return None
 
     try:
         relative_url = image_field.url  # e.g. "/media/facts/hero/myimg.jpg"
-    except ValueError:
+    except (ValueError, AttributeError):
         return None
 
-    if not request:
-        # fallback: just return relative
+    if not relative_url:
+        return None
+
+    if relative_url.startswith(("http://", "https://")):
         return relative_url
 
-    # Build something like "http://backend:8000/media/facts/hero/myimg.jpg"
-    return request.build_absolute_uri(relative_url)
+    relative = relative_url if relative_url.startswith("/") else f"/{relative_url}"
+    backend_base = getattr(settings, "BACKEND_URL", None)
+
+    absolute = None
+    if request:
+        try:
+            absolute = request.build_absolute_uri(relative)
+        except Exception:  # pragma: no cover - defensive guard
+            absolute = None
+
+    if not absolute and backend_base:
+        absolute = f"{backend_base.rstrip('/')}{relative}"
+
+    return absolute or relative
 
 
 # ------------------------------------------------------------------------------------
