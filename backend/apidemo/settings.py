@@ -11,12 +11,21 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+
+# Allow env files to live outside the web root by pointing DJANGO_ENV_FILE to an absolute path
+ENV_FILE_OVERRIDE = os.getenv("DJANGO_ENV_FILE")
+if ENV_FILE_OVERRIDE:
+    env_path = Path(ENV_FILE_OVERRIDE)
+    if env_path.exists():
+        load_dotenv(env_path)
+else:
+    load_dotenv(BASE_DIR / ".env")
 
 DJANGO_ENV = os.getenv("DJANGO_ENV", "development").lower()
-env_specific_path = BASE_DIR / f".env.{DJANGO_ENV}"
-if env_specific_path.exists():
-    load_dotenv(env_specific_path, override=True)
+if not ENV_FILE_OVERRIDE:
+    env_specific_path = BASE_DIR / f".env.{DJANGO_ENV}"
+    if env_specific_path.exists():
+        load_dotenv(env_specific_path, override=True)
 
 # Utility helpers
 def env_bool(name: str, default: bool = False) -> bool:
@@ -88,6 +97,10 @@ API_INPUT_BLOCKLIST = env_csv(
     "<script,</script>,union select,drop table,insert into",
 )
 API_VERSION_DEFAULT = os.getenv("API_VERSION_DEFAULT", "v1")
+SENSITIVE_PATH_PATTERNS = env_csv(
+    "SENSITIVE_PATH_PATTERNS",
+    ".env,.env.,/.git,/.git/,/config/,/docker-compose.yaml,/docker-compose.yml,/package-lock.json,/yarn.lock,/xmlrpc.php",
+)
 
 SECURITY_ALERT_EMAILS = env_csv("SECURITY_ALERT_EMAILS", "")
 SECURITY_ALERT_MIN_LEVEL = os.getenv("SECURITY_ALERT_MIN_LEVEL", "ERROR").upper()
@@ -193,6 +206,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
     "core.middleware.SecurityHeadersMiddleware",
+    "core.middleware.SensitiveFileProtectionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

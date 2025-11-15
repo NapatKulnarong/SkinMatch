@@ -10,7 +10,7 @@ from typing import Iterable
 
 from django.conf import settings
 from django.contrib.auth import logout
-from django.http import HttpResponseForbidden, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 
 from .api_keys import allowed_networks_for, get_api_client_from_key, touch_api_client_usage
@@ -68,6 +68,48 @@ class SecurityHeadersMiddleware:
             response["Strict-Transport-Security"] = hsts_value
 
         return response
+
+
+class SensitiveFileProtectionMiddleware:
+    """
+    Blocks access to sensitive files (e.g., .env, .git) and optional endpoints like xmlrpc.php.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        patterns = getattr(settings, "SENSITIVE_PATH_PATTERNS", [])
+        self.patterns = [pattern.strip().lower() for pattern in patterns if pattern.strip()]
+
+    def __call__(self, request):
+        path = (request.path or "").lower()
+        if path and self._matches_protected_pattern(path):
+            record_security_event(
+                "filesystem.protected_path",
+                "warning",
+                f"Attempted access to protected path: {request.path}",
+                metadata={"path": request.path, "ip": get_client_ip(request)},
+                force_alert=True,
+            )
+            return HttpResponseNotFound()
+        return self.get_response(request)
+
+    def _matches_protected_pattern(self, path: str) -> bool:
+        for pattern in self.patterns:
+            if not pattern:
+                continue
+            if pattern.startswith("*"):
+                suffix = pattern[1:]
+                if suffix and path.endswith(suffix):
+                    return True
+            elif pattern.endswith("*"):
+                prefix = pattern[:-1]
+                if path.startswith(prefix):
+                    return True
+            else:
+                normalized = pattern.rstrip("/")
+                if path == pattern or path == normalized or path.startswith(normalized + "/"):
+                    return True
+        return False
 
 
 class SessionIdleTimeoutMiddleware:
