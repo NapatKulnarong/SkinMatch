@@ -57,7 +57,7 @@ This repository now includes secure-by-default Django settings (see `backend/api
 
 ## 9. Database Security
 
-See [`docs/database-security.md`](./docs/database-security.md) for detailed steps covering:
+See [`docs/database-security.md`](./docs/DATABASE_SECURITY.md) for detailed steps covering:
 
 - Prepared statements / parameterized queries (ORM-first, raw cursor helpers)
 - Principle of least privilege (separate roles for app, migrations, read-only)
@@ -103,6 +103,7 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 ## Level 2: Advanced Access Control
 
 ### Role-Based Access Control (RBAC)
+
 - `UserProfile` now includes a `role` field with predefined choices (`admin`, `staff`, `read_only`, `member`). A data migration maps existing superusers to `admin` and staff users to `staff`.
 - Assign roles for new staff inside Django admin (User Profile inline) or via shell:
   ```python
@@ -114,22 +115,26 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - The new `core.middleware.AdminAccessControlMiddleware` enforces that only staff members whose profile role is listed in `ADMIN_ALLOWED_ROLES` can reach admin URLs (superusers still bypass the check).
 
 ### Admin IP & Country Allow Lists
+
 - `ADMIN_ALLOWED_IPS` accepts comma-separated IPs or CIDR ranges (e.g., `203.0.113.17,10.10.0.0/16`). Only requests whose client IP (after applying headers from `ADMIN_TRUSTED_IP_HEADERS`) match one of those networks can load admin routes.
 - Add multiple admin paths with `ADMIN_PROTECTED_PATH_PREFIXES` if you expose additional control panels.
 - Optional geographic restrictions rely on upstream geo headers such as `CF-IPCountry`. Set `ADMIN_ALLOWED_COUNTRIES=SG,TH` to only allow those ISO codes. Leave empty to disable the geo check or override the header names through `ADMIN_COUNTRY_HEADERS`.
 
 ### Session Timeout & Secure Cookies
+
 - Sessions expire after `DJANGO_SESSION_COOKIE_AGE` seconds (default 4 hours) and the new `SessionIdleTimeoutMiddleware` logs idle users out after `DJANGO_SESSION_IDLE_TIMEOUT_SECONDS` (default 30 minutes). Customize exemption paths with `DJANGO_SESSION_IDLE_TIMEOUT_EXEMPT_PATHS` if you need long-lived uploads or health probes.
 - API consumers receive a JSON `401` when the idle timeout triggers; browser sessions are redirected to `DJANGO_SESSION_TIMEOUT_REDIRECT_URL` (defaults to `/login?timeout=1`).
 - Keep `DJANGO_SESSION_COOKIE_SECURE=True`, `DJANGO_SESSION_COOKIE_HTTPONLY=True`, and (ideally) `DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE=True` in production so cookies are never exposed to insecure transport or JavaScript.
 
 ### Deployment Checklist
+
 1. Run `python manage.py migrate` so the new `role` column exists.
 2. Populate staff roles (see RBAC section) before re-opening admin access.
 3. Set `ADMIN_ALLOWED_IPS`/`ADMIN_ALLOWED_ROLES`/`ADMIN_ALLOWED_COUNTRIES` in your secret manager and reload the app.
 4. Smoke test admin login from an allowed IP and confirm blocked responses from non-allowed IPs or countries. Use `curl -H 'CF-IPCountry: XX'` locally to simulate different geographies if needed.
 
 ### Security Monitoring & Logging
+
 - All high-signal events flow through the dedicated `security` logger using JSON formatting (see `core/logging_utils.JsonLogFormatter`). Point `SECURITY_LOG_FILE` at a location shipped by Fluent Bit/Filebeat or rely on stdout scraping. The logger level is configurable via `SECURITY_LOG_LEVEL`.
 - `core.security_events.record_security_event` fans out to log files and (if configured) email alerts. Provide on-call recipients through `SECURITY_ALERT_EMAILS` and trim noise with `SECURITY_ALERT_MIN_LEVEL` (defaults to `ERROR`). Each alert email includes the metadata captured in code.
 - Intrusion detection is enforced by `SecurityMonitoringMiddleware`:
@@ -141,6 +146,7 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - Django admin changes trigger `admin.action` events via the `LogEntry` signal hook, so there is an immutable audit trail beyond the built-in admin history. Tail `/var/log/skinmatch/security.log` (or your configured log destination) to verify entries whenever staff edit production data.
 
 ### API Security Controls
+
 - API consumers must now present either a JWT/OAuth token **or** a dedicated API key. Anonymous requests can be blocked entirely by setting `API_REQUIRE_KEY_FOR_ANONYMOUS=True`. Configure header/query expectations via `API_KEY_HEADER` (defaults to `X-API-Key`) and `API_KEY_QUERY_PARAM`.
 - Issue and rotate API keys via the new **API Clients** admin section. Keys are stored hashed (`APIClient.key_hash`), with optional CIDR allow lists and per-key throttles. Store the raw key in your secret manager; Django only persists the hash. Example provisioning flow:
   ```python
@@ -157,6 +163,7 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - API usage is continuously monitored through the same security logging pipeline and can be forwarded to your SIEM. Combine the structured logs with upstream metrics (e.g., load balancer stats) for anomaly detection and alerting.
 
 ### File & Directory Hardening
+
 - Serve config secrets from outside the repo root. Point `DJANGO_ENV_FILE` at `/etc/skinmatch/.env` (or your secret manager's mounted path) so Django never exposes `.env` even if the project directory becomes web-accessible. The loader still falls back to in-repo `.env` for local development.
 - `SensitiveFileProtectionMiddleware` blocks common reconnaissance targets (`.env`, `.git`, `xmlrpc.php`, `docker-compose.yml`, etc.). Tune the denylist with `SENSITIVE_PATH_PATTERNS` if you have additional artifacts that should never leak.
 - Run `./scripts/harden_permissions.sh /var/www/skinmatch` (or omit the argument to target the repo root) after each deploy. It sets directories to `0755`, files to `0644`, and tightens `.env*` files to `0600`. Execute it as the deploy user or via CI/CD before reloading services.
@@ -164,6 +171,7 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - We do not rely on XML-RPC; the middleware now responds with `404` for `/xmlrpc.php` probes to reduce noise. Apply equivalent deny rules at the load balancer or CDN to drop traffic earlier.
 
 ### Dependency & Code Security
+
 - The CI workflow (`.github/workflows/ci.yml`) already installs `bandit` and `pip-audit` to flag insecure Python code and vulnerable dependencies on every PR. Keep the jobs in place and fail the build once you are ready to block on findings (remove the `|| true` guards).
 - Add GitHub-native dependency watchers: enable Dependabot (GitHub → Settings → Code security and analysis → Dependabot alerts/updates) or Snyk if you prefer their dashboard. Configure weekly update PRs for `backend/requirements.txt` and `frontend/package.json` so outdated packages are surfaced quickly.
 - Schedule a monthly `pip-audit -r backend/requirements.txt` + `npm audit` run outside CI (e.g., via cron or GitHub Actions `workflow_dispatch`) to catch issues even if CI isn't executed for long stretches.
@@ -171,8 +179,16 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - Remove dead/commented-out code, debugging helpers, or `print` statements before merging. Rely on structured logging (`logging.debug/info/...`) that can be filtered per environment. Periodically run `rg -n "print(" backend frontend` to make sure stray debug prints don't sneak into prod.
 
 ### Advanced Backup Strategy
+
 - **Versioned backups:** Run `pg_dump --format=custom --file=/backups/pg/$(date -u +%Y%m%dT%H%M%SZ)_skinmatch.dump` nightly and keep at least 30 days of snapshots. For media assets, use `aws s3 sync media/ s3://skinmatch-media-backups/$(date -u +%Y/%m/%d)/ --delete --exact-timestamps` so every run lands in a time-stamped prefix.
 - **Encrypt at rest and in transit:** Pipe database dumps through `age` or `gpg` before uploading (`pg_dump ... | age -r backup@skinmatch.com > dump.age`) and enable SSE-KMS/SSE-C on the object store bucket. Rotate the encryption keys annually and after staff changes.
 - **Geo-diverse storage:** Replicate backups to at least two regions (e.g., AWS S3 `ap-southeast-1` and `us-west-2`) or mix providers (S3 + Backblaze B2). Use lifecycle policies to tier older versions into Glacier/Deep Archive while keeping last 7 days in hot storage for quick restores.
 - **Test disaster recovery:** Once per quarter, restore the latest backup into a staging environment: `pg_restore --clean --dbname=skinmatch_dr --format=custom dump.age` (after decrypting) and `aws s3 sync s3://skinmatch-media-backups/latest media-restore/`. Script the steps and record the time taken so deviations are obvious.
 - **Document RTO/RPO:** Keep a runbook (e.g., `docs/runbooks/disaster-recovery.md`) that states Recovery Time Objective (target: < 2 hours to restore DB + media) and Recovery Point Objective (target: < 24 hours of data loss). Note who is on-call for DR, where credentials live, and how to escalate if restore windows are exceeded.
+
+### Security Testing
+- **Automated scans:** Schedule a weekly GitHub Actions workflow (e.g., cron `0 3 * * Mon`) that reuses the Bandit + pip-audit steps plus `npm audit` for the frontend. Augment with OWASP ZAP baseline scan against staging: `docker run -t owasp/zap2docker-stable zap-baseline.py -t https://staging.skinmatch.com -r zap-report.html`. Publish results as workflow artifacts.
+- **Penetration tests:** At least twice a year, have an internal engineer or third party run a lightweight pentest focusing on authentication flows, admin access, and customer data exfiltration. Capture findings in Jira with severity labels and remediation owners.
+- **OWASP Top 10 validation:** Map each risk (A01 injection, A02 auth, etc.) to concrete test cases. For example, use Burp/ZAP to fuzz inputs for SQLi/XSS, verify rate limiting for brute-force, check S3 buckets for misconfigurations (A05 security misconfiguration), and confirm sensitive data exposure protections (A03).
+- **Attack simulations:** Coordinate with the ops team to run tabletop exercises (phishing compromise, leaked API key, ransomware). For each scenario, simulate alert channels (PagerDuty/Slack), incident response checklist, and post-mortem. Track timing to see if RTO/RPO and SOC playbooks hold up.
+- **Review & remediation:** Security scan outputs (Bandit, pip-audit, ZAP, pentest reports) should feed into your issue tracker within 24 hours. Triage monthly, prioritizing Critical/High issues for resolution in the current sprint and documenting accept-risk decisions for anything deferred.
