@@ -65,7 +65,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
         </p>
       </div>
 
-      <div className="relative mt-5 rounded-[22px] border-2 border-black bg-white/95 p-4 pt-14 sm:p-6 sm:pt-8 shadow-[3px_4px_0_rgba(0,0,0,0.2)]">
+      <div className="relative mt-5 rounded-[5px] border-2 border-black bg-white/95 p-4 pt-14 sm:p-6 sm:pt-8 shadow-[3px_4px_0_rgba(0,0,0,0.2)]">
         <button
           type="button"
           onClick={refresh}
@@ -94,7 +94,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
         </div>
 
         <div className="mt-4">
-          <div className="relative overflow-hidden rounded-full border-2 border-black bg-gradient-to-r from-[#2e9c4c] via-[#ffd449] via-[#ff6b21] via-[#f7317a] to-[#7e3dcf] h-5">
+          <div className="relative overflow-hidden rounded-[5px] border-2 border-black bg-gradient-to-r from-[#2e9c4c] via-[#ffd449] via-[#ff6b21] via-[#f7317a] to-[#7e3dcf] h-5">
             <div
               className="absolute -top-1 h-7 w-[2px] bg-black shadow-[0_0_0_2px_#fff]"
               style={{ left: `calc(${uvPointerPercent}% - 1px)` }}
@@ -108,7 +108,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
         </div>
 
         <div
-          className="mt-4 rounded-[18px] border-2 border-dashed border-black p-4"
+          className="mt-4 rounded-[5px] border-2 border-dashed border-black p-4"
           style={{ backgroundColor: `${colorForRisk}1A` }}
         >
           {loading ? (
@@ -155,7 +155,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#1f2d26]/60">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] lg:text-[13px] text-[#1f2d26]/60">
         <span>Last updated {formattedTime}</span>
         <span>Auto-refreshes every 15 minutes</span>
       </div>

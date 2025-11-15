@@ -669,17 +669,17 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:grid sm:snap-none sm:overflow-visible sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pt-1 pb-3">
             {successStories.map((story, index) => {
               const ratingValue = Math.max(0, Math.min(5, Math.round(story.rating ?? 5)));
               const key = story.id ?? `${story.name}-${index}`;
               return (
               <article
                 key={key}
-                className="flex-none w-[260px] sm:w-auto sm:flex-auto rounded-3xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)] snap-start overflow-hidden"
+                className="flex-none w-[260px] sm:w-[398px] rounded-[28px] border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)] snap-start overflow-hidden"
               >
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+                <div className="flex h-full flex-col space-y-3 sm:space-y-4">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-black bg-gradient-to-br from-[#f8d1d4] to-[#d8949a] text-sm sm:text-base font-bold text-[#5a2a3a]">
                         {story.initials}
@@ -689,7 +689,7 @@ export default function HomePage() {
                         <p className="text-[10px] sm:text-xs text-[#3C3D37]/60 truncate">{story.location}</p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5 flex-shrink-0 pr-1 sm:pr-0 sm:self-start">
+                    <div className="flex gap-0.5 ml-12 sm:ml-14">
                       {Array.from({ length: ratingValue }).map((_, i) => (
                         <StarIcon key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-[#f59e0b]" />
                       ))}
@@ -700,7 +700,7 @@ export default function HomePage() {
                     &ldquo;{story.text}&rdquo;
                   </p>
 
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
+                  <div className="mt-auto inline-flex max-w-max items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
                     <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#4a6b47]" />
                     <span className="text-[10px] sm:text-xs font-semibold text-[#4a6b47]">
                       {story.badge}

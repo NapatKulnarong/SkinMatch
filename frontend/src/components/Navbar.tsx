@@ -209,8 +209,9 @@ export default function Navbar() {
             width={130}
             height={130}
             className="w-24 sm:w-32"
+            priority
           />
-        </Link>
+       </Link>
 
         <div className="flex items-center gap-2 sm:hidden">
           <NotificationBell />
