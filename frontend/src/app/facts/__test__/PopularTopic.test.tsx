@@ -30,7 +30,7 @@ const buildTopic = (overrides: Partial<FactTopicSummary> = {}): FactTopicSummary
   subtitle: "Subtitle",
   excerpt: "Excerpt",
   section: "knowledge",
-  heroImageUrl: "http://backend:8000/media/topics/sample.jpg",
+  heroImageUrl: "/media/topics/sample.jpg",
   heroImageAlt: "Sample hero",
   viewCount: 10,
   ...overrides,
@@ -65,7 +65,7 @@ describe("PopularTopics hero image rendering", () => {
         id: "3",
         slug: "anti-aging",
         title: "Anti-Aging",
-        heroImageUrl: "http://backend:8000/media/topics/anti-aging.jpg",
+        heroImageUrl: "/media/topics/anti-aging.jpg",
         heroImageAlt: "Anti aging hero",
       }),
     ];

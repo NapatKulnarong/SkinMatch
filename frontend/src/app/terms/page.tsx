@@ -141,8 +141,8 @@ const SECTIONS: TermsSection[] = [
     title: "13. Contact",
     paragraphs: [
       {
-        text: "If you have questions about these terms, reach the SkinMatch legal team at legal@skinmatch.app.",
-        highlightEmail: "legal@skinmatch.app",
+        text: "If you have questions about these terms, reach the SkinMatch legal team at skinmatch.contact@gmail.com.",
+        highlightEmail: "skinmatch.contact@gmail.com",
       },
     ],
   },

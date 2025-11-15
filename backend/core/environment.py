@@ -156,11 +156,20 @@ def _ensure_aware(dt: datetime) -> datetime:
     return dt
 
 
-def _latest_value(times: Iterable[str], values: Iterable[float]) -> float:
+def _latest_value(times: Iterable[str], values: Iterable[float | int | str | None]) -> float:
     time_list = list(times)
     value_list = list(values)
     now = datetime.now(timezone.utc)
     latest = None
+
+    def _to_float(value: float | int | str | None) -> float | None:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
     for raw_time, value in zip(time_list, value_list):
         try:
             point_time = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
@@ -168,14 +177,18 @@ def _latest_value(times: Iterable[str], values: Iterable[float]) -> float:
             continue
         point_time = _ensure_aware(point_time)
         if point_time <= now:
-            latest = value
+            candidate = _to_float(value)
+            if candidate is not None:
+                latest = candidate
         else:
             break
-    if latest is None:
-        if value_list:
-            return float(value_list[-1])
-        return 0.0
-    return float(latest or 0.0)
+    if latest is not None:
+        return latest
+    for value in reversed(value_list):
+        candidate = _to_float(value)
+        if candidate is not None:
+            return candidate
+    return 0.0
 
 
 def _build_alerts(uv_data: dict, air_data: dict, keywords: list[str]) -> list[dict]:

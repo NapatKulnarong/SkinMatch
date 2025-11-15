@@ -1,6 +1,8 @@
 "use client";
 
-import { ArrowPathIcon, MapPinIcon, SunIcon, ExclamationTriangleIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, MapPinIcon, ExclamationTriangleIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { SunIcon } from "@heroicons/react/24/solid";
+
 
 import { useEnvironmentAlerts } from "./EnvironmentAlertsProvider";
 
@@ -53,39 +55,41 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
     <section
       className={`rounded-[24px] sm:rounded-[32px] border-2 border-black bg-gradient-to-br from-[#d5ecff] via-[#c4e4ff] to-[#e6f4ff] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.3)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.22)] ${className}`}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-base sm:text-lg font-extrabold text-[#134472] uppercase tracking-wide">
-            <ShieldCheckIcon className="h-6 w-6" />
-            <span>Sunscreen UV Alert</span>
-          </div>
-          <p className="text-xs sm:text-sm text-[#134472]/80">
-            Daily UV intelligence so you know when to reapply SPF and add extra protection.
-          </p>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-base text-xl lg:text-2xl font-extrabold text-[#134472] tracking-wide">
+          <SunIcon className="h-7 w-7 lg:h-10 lg:w-10 text-[#f59e0b]" />
+          <span>Sunscreen UV Alert</span>
         </div>
+        <p className="mt-2 text-xs sm:text-sm text-[#134472]/80">
+          Daily UV intelligence so you know when to reapply SPF and add extra protection.
+        </p>
+      </div>
+
+      <div className="relative mt-5 rounded-[22px] border-2 border-black bg-white/95 p-4 pt-14 sm:p-6 sm:pt-8 shadow-[3px_4px_0_rgba(0,0,0,0.2)]">
         <button
           type="button"
           onClick={refresh}
-          className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#1f2d26] shadow-[2px_3px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:shadow-[3px_4px_0_rgba(0,0,0,0.25)] disabled:opacity-70"
+          className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border-2 border-black bg-white px-3 py-1.5 text-xs font-semibold text-[#1f2d26] 
+                    shadow-[2px_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[3px_4px_0_rgba(0,0,0,0.2)] hover:bg-[#cce8ff] 
+                    disabled:opacity-70 sm:right-4 sm:top-4 sm:px-4 sm:py-2 sm:text-sm"
           disabled={loading}
         >
-          <ArrowPathIcon className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
         </button>
-      </div>
-
-      <div className="mt-5 rounded-[22px] border-2 border-black bg-white/95 p-4 shadow-[3px_4px_0_rgba(0,0,0,0.2)]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-semibold text-[#1f2d26] flex items-center gap-2">
-            <MapPinIcon className="h-4 w-4" />
-            <span>{locationLabel}</span>
-          </div>
-          <div className="text-sm font-semibold text-[#1f2d26]">
-            UV Index:{" "}
-            <span className="text-xl sm:text-2xl font-black text-[#0d3064]">
-              {uvSummary ? uvSummary.index.toFixed(1) : "--"}
-            </span>{" "}
-            <span className="text-xs uppercase tracking-wide text-[#0d3064]/70">{uvRisk}</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2 sm:pr-28 -mt-4">
+            <div className="text-sm font-semibold text-[#1f2d26] flex items-center gap-2">
+              <MapPinIcon className="h-4 w-4" />
+              <span>{locationLabel}</span>
+            </div>
+            <div className="text-sm font-semibold text-[#1f2d26]">
+              UV Index:{" "}
+              <span className="text-xl sm:text-2xl font-black text-[#0d3064]">
+                {uvSummary ? uvSummary.index.toFixed(1) : "--"}
+              </span>{" "}
+              <span className="text-xs uppercase tracking-wide text-[#0d3064]/70">{uvRisk}</span>
+            </div>
           </div>
         </div>
 
@@ -138,9 +142,12 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
               )}
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-black bg-[#e0f7ff] p-3 text-sm text-[#1f2d26]">
-              <p className="font-semibold">You&apos;re all clear</p>
-              <p className="text-xs text-[#1f2d26]/70">
+            <div className="text-sm text-[#1f2d26]">
+              <div className="flex items-center gap-2 font-semibold text-[#1f2d26]">
+                <ShieldCheckIcon className="h-5 w-5 text-[#2d5a2d]" />
+                <span>You&apos;re all clear</span>
+              </div>
+              <p className="mt-1 text-xs text-[#1f2d26]/70">
                 We&apos;ll ping you when UV or air quality needs extra care.
               </p>
             </div>
@@ -148,9 +155,9 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-1 text-[11px] text-[#1f2d26]/60 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#1f2d26]/60">
         <span>Last updated {formattedTime}</span>
-        <span>Auto-refreshes every 10 minutes</span>
+        <span>Auto-refreshes every 15 minutes</span>
       </div>
     </section>
   );

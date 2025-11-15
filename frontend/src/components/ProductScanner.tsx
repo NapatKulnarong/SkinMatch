@@ -146,17 +146,17 @@ export function ProductScanner() {
         />
       </div>
 
-      <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-6 sm:pt-10">
+      <div className="relative px-6 py-8 sm:px-10 sm:py-6 pt-6 sm:pt-10">
         <div className="mx-auto w-full max-w-7xl lg:text-center space-y-4">
           <div className="space-y-2">
             <div className="flex items-center lg:justify-center gap-2 lg:gap-3">
-              <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8C1007]" />
+              <CameraIcon className="h-7 w-7 md:h-10 md:w-10 sm:h-10 sm:w-10 text-[#8C1007]" />
               <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007]">
                 Instant Product Scanner
               </h2>  
             </div>
             <p className="text-sm sm:text-base text-[#6b3e3e]/90 max-w-2xl mx-auto">
-            Please upload a clear photo of the ingredient list. We will read the label, identify key active ingredients, 
+            Upload a clear photo of the ingredient list. We will read the label, identify key active ingredients, 
             flag concerns, and provide a brief overview of the product’s use.
             </p>
           </div>
@@ -184,7 +184,7 @@ export function ProductScanner() {
                 />
               ) : (
                 <div className="space-y-2">
-                  <SparklesIcon className="mx-auto h-7 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
+                  <SparklesIcon className="mx-auto h-6 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
                   <p className="text-sm font-semibold text-[#5a4230]">Drop a photo or tap to browse</p>
                   <p className="text-xs text-[#5a4230]/70">PNG / JPG up to 10MB</p>
                 </div>
@@ -230,7 +230,7 @@ export function ProductScanner() {
             </div>
           )}
           {isUploading && (
-            <div className="flex flex-col items-center gap-2 rounded-[5px] lg:rounded-2xl border-2 border-black bg-white/80 px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
+            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] lg:rounded-2xl border-2 border-black bg-white/80 px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
               <SparklesIcon className="h-6 w-6 animate-bounce text-[#a85b5b]" />
               <p>Analyzing ingredients… sit tight!</p>
             </div>
@@ -266,6 +266,10 @@ export function ProductScanner() {
               ))}
             </div>
           )}
+
+          <p className="w-full text-center text-xs lg:text-sm font-semibold text-[#6b3e3e]/70">
+            powered by Gemini AI
+          </p>
         </div>
       </div>
     </section>

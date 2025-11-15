@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { NavWidthProvider } from "@/components/NavWidthContext";
 import { EnvironmentAlertsProvider } from "@/components/EnvironmentAlertsProvider";
+import { NotificationCenterProvider } from "@/components/NotificationCenter";
 
 // app-wide metadata
 export const metadata: Metadata = {
@@ -18,12 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-body">
-        <EnvironmentAlertsProvider>
-          <NavWidthProvider>
-            <Navbar />
-            {children}
-          </NavWidthProvider>
-        </EnvironmentAlertsProvider>
+        <NotificationCenterProvider>
+          <EnvironmentAlertsProvider>
+            <NavWidthProvider>
+              <Navbar />
+              {children}
+            </NavWidthProvider>
+          </EnvironmentAlertsProvider>
+        </NotificationCenterProvider>
       </body>
     </html>
   );

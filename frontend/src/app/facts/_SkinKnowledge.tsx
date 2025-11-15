@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
+import { getAuthToken } from "@/lib/auth-storage";
+import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
 
 const FALLBACK_IMAGE = "/img/facts_img/green_tea.jpg";
 const PALETTE = [
@@ -23,26 +26,66 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
+  const activeRef = useRef(true);
 
-  useEffect(() => {
-    let active = true;
-    fetchTopicsBySection("knowledge", 9)
+  const loadTopics = useCallback((providedSessionId?: string | null) => {
+    activeRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    // Get session_id for anonymous users
+    const token = getAuthToken();
+    const isLoggedIn = Boolean(token);
+    let sessionId: string | null | undefined = providedSessionId;
+    
+    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
+      try {
+        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to read quiz session from localStorage", err);
+      }
+    }
+    
+    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
+    
+    fetchTopicsBySection("knowledge", 9, 0, sessionIdToUse)
       .then((data) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         setTopics(data);
+        setError(null);
+        setLoading(false);
       })
       .catch((err) => {
-        if (!active) return;
+        if (!activeRef.current) return;
         console.error("Failed to load Skin Knowledge topics", err);
         setError("We couldn't load Skin Knowledge topics right now.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      active = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadTopics();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [loadTopics, pathname]);
+
+  useEffect(() => {
+    const handleQuizCompleted = (event: Event) => {
+      let sessionId: string | null | undefined = undefined;
+      if ("detail" in event) {
+        const customEvent = event as CustomEvent<{ sessionId?: string }>;
+        sessionId = customEvent.detail?.sessionId;
+      }
+      loadTopics(sessionId);
+    };
+
+    window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    return () => {
+      window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    };
+  }, [loadTopics]);
 
   const visibleTopics = useMemo(() => topics.slice(0, 6), [topics]);
   const showViewAll = topics.length > 6;

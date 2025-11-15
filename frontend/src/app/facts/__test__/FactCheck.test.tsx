@@ -50,10 +50,10 @@ describe("FactCheck imagery", () => {
     render(<FactCheck />);
 
     const poresImage = await screen.findByRole("img", { name: "Skin pores closeup" });
-    expect(poresImage).toHaveAttribute("src", "http://backend:8000/media/factcheck/pores.jpg");
+    expect(poresImage).toHaveAttribute("src", "/media/factcheck/pores.jpg");
 
     const acneImage = await screen.findByRole("img", { name: "Acne treatment" });
-    expect(acneImage).toHaveAttribute("src", "http://backend:8000/media/factcheck/acne.jpg");
+    expect(acneImage).toHaveAttribute("src", "/media/factcheck/acne.jpg");
   });
 });
 
@@ -93,12 +93,12 @@ describe("TrendingSkincare imagery", () => {
     render(<TrendingSkincare />);
 
     const haImage = await screen.findByRole("img", { name: "Hyaluronic acid serum" });
-    expect(haImage).toHaveAttribute("src", "http://backend:8000/media/trending/ha.jpg");
+    expect(haImage).toHaveAttribute("src", "/media/trending/ha.jpg");
 
     const niacinamideImage = await screen.findByRole("img", { name: "Niacinamide" });
     expect(niacinamideImage?.getAttribute("src")).toContain("/img/facts_img/centella_ampoule.jpg");
 
     const peptidesImage = await screen.findByRole("img", { name: "Peptide serum" });
-    expect(peptidesImage).toHaveAttribute("src", "http://backend:8000/media/trending/peptides.jpg");
+    expect(peptidesImage).toHaveAttribute("src", "/media/trending/peptides.jpg");
   });
 });

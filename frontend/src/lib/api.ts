@@ -1,4 +1,6 @@
 // src/lib/api.ts
+import { resolveApiBase } from "./apiBase";
+
 export async function fetchHomepage() {
   // while backend isn't ready, this flag is 1 (use mock)
   if (process.env.NEXT_PUBLIC_USE_MOCK === "1") {
@@ -9,7 +11,7 @@ export async function fetchHomepage() {
   }
 
   // when backend is ready, flip NEXT_PUBLIC_USE_MOCK=0 and this will run:
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/homepage`, { cache: "no-store" });
+  const res = await fetch(`${resolveApiBase()}/homepage`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load homepage");
   return res.json();
 }

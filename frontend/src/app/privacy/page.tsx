@@ -91,10 +91,10 @@ const SECTIONS: PolicySection[] = [
         Questions or requests about your privacy are always welcome. Reach our
         data protection team at{" "}
         <Link
-          href="mailto:privacy@skinmatch.app"
+          href="mailto:skinmatch.contact@gmail.com"
           className="font-semibold text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-4 transition hover:text-[#1d4ed8]"
         >
-          privacy@skinmatch.app
+          skinmatch.contact@gmail.com
         </Link>
         .
       </>,

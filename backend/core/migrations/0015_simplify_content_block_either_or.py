@@ -3,6 +3,7 @@
 import django.core.validators
 from django.db import migrations, models
 from django.db import connection
+from django.db.utils import DatabaseError
 
 
 def migrate_old_fields_to_content(apps, schema_editor):
@@ -10,45 +11,52 @@ def migrate_old_fields_to_content(apps, schema_editor):
     Migrate data from old fields (heading, text) to new content field.
     Combines heading and text into markdown content.
     """
-    with connection.cursor() as cursor:
-        # Check if old fields exist (they should at this point)
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='core_skinfactcontentblock' 
-            AND column_name IN ('heading', 'text')
-        """)
-        existing_columns = [row[0] for row in cursor.fetchall()]
-        has_heading = 'heading' in existing_columns
-        has_text = 'text' in existing_columns
-        
-        if not (has_heading or has_text):
-            return  # Old fields don't exist, nothing to migrate
-        
-        # Migrate data: combine heading and text into content
-        if has_heading and has_text:
+    try:
+        with connection.cursor() as cursor:
+            # Check if old fields exist (they should at this point)
             cursor.execute("""
-                UPDATE core_skinfactcontentblock
-                SET content = CASE
-                    WHEN heading IS NOT NULL AND heading != '' AND text IS NOT NULL AND text != '' THEN heading || E'\n\n' || text
-                    WHEN heading IS NOT NULL AND heading != '' THEN heading
-                    WHEN text IS NOT NULL AND text != '' THEN text
-                    ELSE COALESCE(content, '')
-                END
-                WHERE (heading IS NOT NULL AND heading != '') OR (text IS NOT NULL AND text != '')
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='core_skinfactcontentblock' 
+                AND column_name IN ('heading', 'text')
             """)
-        elif has_heading:
-            cursor.execute("""
-                UPDATE core_skinfactcontentblock
-                SET content = COALESCE(heading, content, '')
-                WHERE heading IS NOT NULL AND heading != ''
-            """)
-        elif has_text:
-            cursor.execute("""
-                UPDATE core_skinfactcontentblock
-                SET content = COALESCE(text, content, '')
-                WHERE text IS NOT NULL AND text != ''
-            """)
+            existing_columns = [row[0] for row in cursor.fetchall()]
+            has_heading = 'heading' in existing_columns
+            has_text = 'text' in existing_columns
+            
+            if not (has_heading or has_text):
+                return  # Old fields don't exist, nothing to migrate
+            
+            # Migrate data: combine heading and text into content
+            if has_heading and has_text:
+                cursor.execute("""
+                    UPDATE core_skinfactcontentblock
+                    SET content = CASE
+                        WHEN heading IS NOT NULL AND heading != '' AND text IS NOT NULL AND text != '' THEN heading || E'\n\n' || text
+                        WHEN heading IS NOT NULL AND heading != '' THEN heading
+                        WHEN text IS NOT NULL AND text != '' THEN text
+                        ELSE COALESCE(content, '')
+                    END
+                    WHERE (heading IS NOT NULL AND heading != '') OR (text IS NOT NULL AND text != '')
+                """)
+            elif has_heading:
+                cursor.execute("""
+                    UPDATE core_skinfactcontentblock
+                    SET content = COALESCE(heading, content, '')
+                    WHERE heading IS NOT NULL AND heading != ''
+                """)
+            elif has_text:
+                cursor.execute("""
+                    UPDATE core_skinfactcontentblock
+                    SET content = COALESCE(text, content, '')
+                    WHERE text IS NOT NULL AND text != ''
+                """)
+    except DatabaseError as e:
+        # Log the error but don't fail the migration - allow it to continue
+        # The migration will be retried or can be fixed manually
+        print(f"Warning: Error during data migration: {e}")
+        # Re-raise to ensure migration is marked as failed if critical
+        raise
 
 
 def enforce_either_or_logic(apps, schema_editor):
@@ -56,35 +64,46 @@ def enforce_either_or_logic(apps, schema_editor):
     Enforce either/or logic: blocks should have either content OR image, not both.
     If both exist, prioritize image (clear content).
     """
-    with connection.cursor() as cursor:
-        # Check if content column exists
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='core_skinfactcontentblock' 
-            AND column_name='content'
-        """)
-        if cursor.fetchone() is None:
-            return  # Content column doesn't exist, skip
-        
-        # Get all blocks with both content and image
-        cursor.execute("""
-            SELECT id 
-            FROM core_skinfactcontentblock
-            WHERE content IS NOT NULL 
-            AND content != ''
-            AND image IS NOT NULL
-            AND image != ''
-        """)
-        
-        for row in cursor.fetchall():
-            block_id = row[0]
-            # Clear content if image exists (prioritize image)
+    try:
+        with connection.cursor() as cursor:
+            # Check if content column exists
             cursor.execute("""
-                UPDATE core_skinfactcontentblock
-                SET content = ''
-                WHERE id = %s
-            """, [block_id])
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='core_skinfactcontentblock' 
+                AND column_name='content'
+            """)
+            if cursor.fetchone() is None:
+                return  # Content column doesn't exist, skip
+            
+            # Get all blocks with both content and image
+            cursor.execute("""
+                SELECT id 
+                FROM core_skinfactcontentblock
+                WHERE content IS NOT NULL 
+                AND content != ''
+                AND image IS NOT NULL
+                AND image != ''
+            """)
+            
+            for row in cursor.fetchall():
+                block_id = row[0]
+                # Clear content if image exists (prioritize image)
+                try:
+                    cursor.execute("""
+                        UPDATE core_skinfactcontentblock
+                        SET content = ''
+                        WHERE id = %s
+                    """, [block_id])
+                except DatabaseError as e:
+                    # Log but continue with other blocks
+                    print(f"Warning: Error updating block {block_id}: {e}")
+                    continue
+    except DatabaseError as e:
+        # Log the error but don't fail the migration - allow it to continue
+        print(f"Warning: Error during either/or logic enforcement: {e}")
+        # Re-raise to ensure migration is marked as failed if critical
+        raise
 
 
 def reverse_migrate_blocks(apps, schema_editor):

@@ -30,6 +30,7 @@ from ninja.files import UploadedFile
 
 from .models import (
     UserProfile,
+    SkinProfile,
     SkinFactContentBlock,
     SkinFactTopic,
     SkinFactView,
@@ -52,7 +53,7 @@ else:
 
 from .auth import create_access_token, JWTAuth, decode_token
 from .google_auth import authenticate_google_id_token
-from quiz.views import router as quiz_router
+from quiz.views import router as quiz_router, _resolve_request_user
 from quiz.models import QuizSession, Product
 from .models import WishlistItem
 from .environment import fetch_environment_alerts, EnvironmentServiceError
@@ -1025,19 +1026,266 @@ def popular_facts(request, limit: int = 5):
 
 
 @api.get("/facts/topics/section/{section}", response=List[FactTopicSummary])
-def facts_by_section(request, section: str, limit: int = 12, offset: int = 0):
+def facts_by_section(request, section: str, limit: int = 12, offset: int = 0, session_id: Optional[str] = None):
+    """Get topics for a specific section, optionally personalized based on COMPLETED quiz results."""
     valid_sections = {choice.value for choice in SkinFactTopic.Section}
     section_key = section.lower()
     if section_key not in valid_sections:
         raise HttpError(404, "Unknown section")
 
     limit = max(1, min(limit, 50))
-    qs = (
-        SkinFactTopic.objects.filter(section=section_key, is_published=True)
-        .order_by("-updated_at", "-created_at")
+    user = _resolve_request_user(request)
+    
+    # Get profile data for personalization ONLY from COMPLETED quiz sessions
+    profile_data: dict | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False  # MUST be completed
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[facts_by_section] Using completed anonymous session: {session_uuid}")
+        except (ValueError, TypeError):
+            logger.debug(f"[facts_by_section] Invalid session_id: {session_id}")
+    
+    # For logged-in users, try SkinProfile first, then fall back to latest completed session
+    if not profile_data and user:
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+            logger.debug(f"[facts_by_section] Using SkinProfile for user {user.id}")
+        else:
+            latest_session = (
+                QuizSession.objects.filter(
+                    user=user, 
+                    completed_at__isnull=False  # MUST be completed
+                )
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[facts_by_section] Using completed session for user {user.id}")
+    
+    # Base query for the section
+    qs = SkinFactTopic.objects.filter(section=section_key, is_published=True)
+    
+    # If we have profile data from COMPLETED quiz, personalize the results
+    if profile_data:
+        keywords = _concern_keywords_from_profile(profile_data)
+        if keywords:
+            # Build keyword filter
+            keyword_q = Q()
+            for kw in keywords:
+                keyword_q |= (
+                    Q(title__icontains=kw)
+                    | Q(subtitle__icontains=kw)
+                    | Q(excerpt__icontains=kw)
+                )
+            # Get topics matching keywords first, then others
+            matching = list(qs.filter(keyword_q).order_by("-updated_at", "-created_at"))
+            non_matching = list(
+                qs.exclude(id__in=[t.id for t in matching])
+                .order_by("-view_count", "-updated_at", "-created_at")
+            )
+            topics = matching + non_matching
+            logger.debug(f"[facts_by_section] Personalized: {len(matching)} matching, {len(non_matching)} others")
+        else:
+            topics = list(qs.order_by("-view_count", "-updated_at", "-created_at"))
+            logger.debug(f"[facts_by_section] No keywords, using default order")
+    else:
+        # No completed quiz, just order by popularity
+        topics = list(qs.order_by("-view_count", "-updated_at", "-created_at"))
+        logger.debug(f"[facts_by_section] No completed quiz, using popularity order")
+    
+    # Apply pagination
+    paginated = topics[offset : offset + limit]
+    return [_serialize_fact_topic_summary(topic, request) for topic in paginated]
+
+
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary])
+def recommended_facts(request, limit: int = 4, session_id: Optional[str] = None):
+    """Personalized Skin Facts based on COMPLETED quiz only.
+    
+    Works for both authenticated and anonymous users.
+    For anonymous users, pass session_id to get recommendations based on their completed quiz.
+    Returns empty list if no completed quiz found (frontend will show fallback).
+    """
+    user = _resolve_request_user(request)
+    limit = max(1, min(limit, 8))
+    
+    logger.debug(f"[recommended_facts] user={user}, session_id={session_id}, limit={limit}")
+
+    # Get profile data from COMPLETED quiz session only
+    profile_data: dict | None = None
+    latest_session: QuizSession | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False  # MUST be completed
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Found completed anonymous session: {session_uuid}")
+        except (ValueError, TypeError):
+            logger.debug(f"[recommended_facts] Invalid session_id: {session_id}")
+    
+    # For logged-in users, get their latest COMPLETED session
+    if not profile_data and user:
+        # Try to get from SkinProfile (persisted profile with is_latest=True)
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+            logger.debug(f"[recommended_facts] Using SkinProfile for user {user.id}")
+        else:
+            # Fall back to latest completed session's profile_snapshot
+            latest_session = (
+                QuizSession.objects.filter(
+                    user=user, 
+                    completed_at__isnull=False  # MUST be completed
+                )
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Using completed session for user {user.id}")
+
+    # If no completed quiz found, return empty list
+    if not profile_data:
+        logger.debug("[recommended_facts] No completed quiz found, returning empty list")
+        return []
+
+    # Extract keywords from profile
+    keywords: list[str] = _concern_keywords_from_profile(profile_data)
+    logger.debug(f"[recommended_facts] Extracted keywords: {keywords[:10]}")
+
+    if not keywords:
+        logger.debug("[recommended_facts] No keywords extracted, returning empty list")
+        return []
+
+    # Base query for published topics
+    qs = SkinFactTopic.objects.filter(is_published=True)
+
+    # Build Q filter for keywords (title, subtitle, excerpt)
+    keyword_q = Q()
+    for kw in keywords:
+        keyword_q |= (
+            Q(title__icontains=kw)
+            | Q(subtitle__icontains=kw)
+            | Q(excerpt__icontains=kw)
+        )
+
+    # Filter topics by keywords
+    filtered = qs.filter(keyword_q)
+
+    if not filtered.exists():
+        logger.debug("[recommended_facts] No topics matched keywords")
+        return []
+
+    # Get user's viewing history to avoid showing already-viewed topics
+    viewed_ids = []
+    if user:
+        viewed_ids = list(
+            SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+        )
+
+    # Prefer different sections for diversity (max 2 per section)
+    ordered = (
+        filtered.annotate()
+        .order_by(
+            Case(
+                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
+                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
+                When(section=SkinFactTopic.Section.FACT_CHECK, then=2),
+                When(section=SkinFactTopic.Section.TRENDING, then=3),
+                default=4,
+                output_field=IntegerField(),
+            ),
+            "-updated_at",
+            "-view_count",
+        )
     )
-    topics = qs[offset : offset + limit]
-    return [_serialize_fact_topic_summary(topic, request) for topic in topics]
+
+    # Fetch topics
+    topics = list(ordered[: limit * 3])  # overfetch for diversity filtering
+
+    # Apply section diversity: max 2 topics per section
+    def score_topic(t: SkinFactTopic) -> tuple[int, int, int]:
+        """Score for sorting: (viewed_penalty, section_rank, -view_count)"""
+        section_rank = {
+            SkinFactTopic.Section.INGREDIENT_SPOTLIGHT: 0,
+            SkinFactTopic.Section.KNOWLEDGE: 1,
+            SkinFactTopic.Section.FACT_CHECK: 2,
+            SkinFactTopic.Section.TRENDING: 3,
+        }.get(t.section, 4)
+        
+        viewed_penalty = 1 if t.id in viewed_ids else 0
+        return (viewed_penalty, section_rank, -t.view_count)
+
+    topics.sort(key=score_topic)
+    
+    # Pick topics with section diversity
+    picked = []
+    seen_ids = set()
+    section_counts = {}
+    
+    for t in topics:
+        if t.id in seen_ids:
+            continue
+        
+        # Limit to 2 topics per section for diversity
+        section_count = section_counts.get(t.section, 0)
+        if section_count >= 2:
+            continue
+        
+        seen_ids.add(t.id)
+        section_counts[t.section] = section_count + 1
+        picked.append(t)
+        
+        if len(picked) >= limit:
+            break
+
+    # If we still need more after section limits, add remaining topics
+    if len(picked) < limit:
+        for t in topics:
+            if t.id not in seen_ids:
+                picked.append(t)
+                seen_ids.add(t.id)
+                if len(picked) >= limit:
+                    break
+
+    logger.debug(f"[recommended_facts] Returning {len(picked)} topics")
+    return [_serialize_fact_topic_summary(topic, request) for topic in picked]
 
 
 @api.get("/facts/topics/{slug}", response=FactTopicDetailOut)
@@ -1285,28 +1533,85 @@ def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
     # dedupe, keep order
     return list(dict.fromkeys([kw.lower() for kw in keywords]))
 
-
-@api.get("/facts/topics/recommended", response=List[FactTopicSummary], auth=JWTAuth())
-def recommended_facts(request, limit: int = 4):
-    """Personalized Skin Facts based on latest quiz profile and reading history."""
-    user: User = request.auth
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary])
+def recommended_facts(request, limit: int = 4, session_id: Optional[str] = None):
+    """Personalized Skin Facts based on COMPLETED quiz only.
+    
+    Works for both authenticated and anonymous users.
+    For anonymous users, pass session_id to get recommendations based on their completed quiz.
+    Returns empty list if no completed quiz found (frontend will show fallback).
+    """
+    user = _resolve_request_user(request)
     limit = max(1, min(limit, 8))
+    
+    logger.debug(f"[recommended_facts] user={user}, session_id={session_id}, limit={limit}")
 
-    # Try to find the latest completed quiz session with a result profile
-    latest_session: QuizSession | None = (
-        QuizSession.objects.filter(user=user).order_by("-completed_at", "-started_at").first()
-    )
+    # Get profile data from COMPLETED quiz session only
+    profile_data: dict | None = None
+    latest_session: QuizSession | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False  # MUST be completed
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Found completed anonymous session: {session_uuid}")
+        except (ValueError, TypeError):
+            logger.debug(f"[recommended_facts] Invalid session_id: {session_id}")
+    
+    # For logged-in users, get their latest COMPLETED session
+    if not profile_data and user:
+        # Try to get from SkinProfile (persisted profile with is_latest=True)
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+            logger.debug(f"[recommended_facts] Using SkinProfile for user {user.id}")
+        else:
+            # Fall back to latest completed session's profile_snapshot
+            latest_session = (
+                QuizSession.objects.filter(
+                    user=user, 
+                    completed_at__isnull=False  # MUST be completed
+                )
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Using completed session for user {user.id}")
 
-    keywords: list[str] = []
-    if latest_session and isinstance(latest_session.result_summary, dict):
-        # Prefer the profile snapshot/result summary which mirrors SkinProfile fields
-        profile_like = latest_session.result_summary or latest_session.profile_snapshot or {}
-        keywords = _concern_keywords_from_profile(profile_like)
+    # If no completed quiz found, return empty list
+    if not profile_data:
+        logger.debug("[recommended_facts] No completed quiz found, returning empty list")
+        return []
 
+    # Extract keywords from profile
+    keywords: list[str] = _concern_keywords_from_profile(profile_data)
+    logger.debug(f"[recommended_facts] Extracted keywords: {keywords[:10]}")
+
+    if not keywords:
+        logger.debug("[recommended_facts] No keywords extracted, returning empty list")
+        return []
+
+    # Base query for published topics
     qs = SkinFactTopic.objects.filter(is_published=True)
 
-    # Score topics by keyword occurrence in title/subtitle/excerpt
-    # Build a Q OR chain across keywords
+    # Build Q filter for keywords (title, subtitle, excerpt)
     keyword_q = Q()
     for kw in keywords:
         keyword_q |= (
@@ -1315,21 +1620,30 @@ def recommended_facts(request, limit: int = 4):
             | Q(excerpt__icontains=kw)
         )
 
-    filtered = qs.filter(keyword_q) if keywords else qs
+    # Filter topics by keywords
+    filtered = qs.filter(keyword_q)
 
-    # If we have reading history, boost previously viewed topics and dedupe later
-    viewed_ids = list(
-        SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
-    )
+    if not filtered.exists():
+        logger.debug("[recommended_facts] No topics matched keywords")
+        return []
 
-    # Prefer ingredient spotlight and knowledge, then others, then by recency/views
+    # Get user's viewing history to avoid showing already-viewed topics
+    viewed_ids = []
+    if user:
+        viewed_ids = list(
+            SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+        )
+
+    # Prefer different sections for diversity (max 2 per section)
     ordered = (
         filtered.annotate()
         .order_by(
             Case(
                 When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
                 When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
-                default=2,
+                When(section=SkinFactTopic.Section.FACT_CHECK, then=2),
+                When(section=SkinFactTopic.Section.TRENDING, then=3),
+                default=4,
                 output_field=IntegerField(),
             ),
             "-updated_at",
@@ -1337,32 +1651,53 @@ def recommended_facts(request, limit: int = 4):
         )
     )
 
-    topics = list(ordered[: limit * 3])  # overfetch a bit before re-ranking
+    # Fetch topics
+    topics = list(ordered[: limit * 3])  # overfetch for diversity filtering
 
-    # Light re-ranking: push already-viewed slightly down
-    def score(t: SkinFactTopic) -> tuple[int, int, int]:
-        section_rank = 0 if t.section == SkinFactTopic.Section.INGREDIENT_SPOTLIGHT else (1 if t.section == SkinFactTopic.Section.KNOWLEDGE else 2)
+    # Apply section diversity: max 2 topics per section
+    def score_topic(t: SkinFactTopic) -> tuple[int, int, int]:
+        """Score for sorting: (viewed_penalty, section_rank, -view_count)"""
+        section_rank = {
+            SkinFactTopic.Section.INGREDIENT_SPOTLIGHT: 0,
+            SkinFactTopic.Section.KNOWLEDGE: 1,
+            SkinFactTopic.Section.FACT_CHECK: 2,
+            SkinFactTopic.Section.TRENDING: 3,
+        }.get(t.section, 4)
+        
         viewed_penalty = 1 if t.id in viewed_ids else 0
         return (viewed_penalty, section_rank, -t.view_count)
 
-    topics.sort(key=score)
+    topics.sort(key=score_topic)
+    
+    # Pick topics with section diversity
     picked = []
-    seen = set()
+    seen_ids = set()
+    section_counts = {}
+    
     for t in topics:
-        if t.id in seen:
+        if t.id in seen_ids:
             continue
-        seen.add(t.id)
+        
+        # Limit to 2 topics per section for diversity
+        section_count = section_counts.get(t.section, 0)
+        if section_count >= 2:
+            continue
+        
+        seen_ids.add(t.id)
+        section_counts[t.section] = section_count + 1
         picked.append(t)
+        
         if len(picked) >= limit:
             break
 
-    # Fallback to popular/knowledge if not enough
+    # If we still need more after section limits, add remaining topics
     if len(picked) < limit:
-        extra = (
-            SkinFactTopic.objects.filter(is_published=True)
-            .exclude(id__in=[t.id for t in picked])
-            .order_by("-view_count", "-updated_at")[: limit - len(picked)]
-        )
-        picked.extend(list(extra))
+        for t in topics:
+            if t.id not in seen_ids:
+                picked.append(t)
+                seen_ids.add(t.id)
+                if len(picked) >= limit:
+                    break
 
-    return [_serialize_fact_topic_summary(t, request) for t in picked]
+    logger.debug(f"[recommended_facts] Returning {len(picked)} topics")
+    return [_serialize_fact_topic_summary(topic, request) for topic in picked]

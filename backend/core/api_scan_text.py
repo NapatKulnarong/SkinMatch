@@ -22,6 +22,7 @@ if genai is not None and API_KEY:
 
 from .utils_ocr import preprocess_for_ocr
 from .text_cleaner import clean_ocr_text
+from .api_scan import scan_router as _legacy_scan_router
 
 scan_text_router = Router(tags=["scan-text"])
 
@@ -130,11 +131,20 @@ def _build_llm_prompt(ocr_text: str) -> Tuple[str, str, dict]:
 
 # ---------------- OCR helpers (English only) ----------------
 def _load_pil(file: UploadedFile) -> Image.Image:
+    """Read an uploaded file into an RGB PIL image (raises if not an image)."""
     data = file.read()
-    return Image.open(io.BytesIO(data)).convert("RGB")
+    if hasattr(file, "seek"):
+        try:
+            file.seek(0)
+        except Exception:
+            # Some UploadedFile objects don't support seek; ignore.
+            pass
+    img = Image.open(io.BytesIO(data))
+    img.load()  # Force Pillow to decode now so errors bubble immediately.
+    return img.convert("RGB")
 
+# Legacy helper name expected by older tests/routes.
 def _load_image(file: UploadedFile) -> Image.Image:
-    """Backwards-compatible alias expected by legacy tests."""
     return _load_pil(file)
 
 def _preprocess(image: Image.Image) -> Image.Image:
@@ -147,34 +157,43 @@ def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
     return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def _ocr_text(pil_img: Image.Image) -> str:
-    if preprocess_for_ocr:
-        pil_img = preprocess_for_ocr(pil_img)
-        return pytesseract.image_to_string(pil_img, lang="eng")
-
-    img = _pil_to_bgr(pil_img)
-    img = cv2.resize(img, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
-    img = cv2.bilateralFilter(img, d=7, sigmaColor=75, sigmaSpace=75)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    th = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 35, 11
-    )
-    return pytesseract.image_to_string(th, lang="eng")
+    """Run preprocess → cv2 conversion → OCR (Thai/English)."""
+    prepared = _preprocess(pil_img)
+    np_img = cv2.cvtColor(np.array(prepared), cv2.COLOR_RGB2BGR)
+    raw_text = cv2_to_text(np_img)
+    return clean_ocr_text(raw_text)
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
-    """Run full preprocess -> OCR -> cleanup"""
-    data = file.read()
-    pil = Image.open(io.BytesIO(data)).convert("RGB")
-
-    # Preprocess + clean up
-    pre_pil = preprocess_for_ocr(pil)
-    pre_np = cv2.cvtColor(np.array(pre_pil), cv2.COLOR_RGB2BGR)
-    raw_text = cv2_to_text(pre_np)
-    return clean_ocr_text(raw_text)
+    """Glue helper used by the API endpoint (kept separate for test patching)."""
+    pil = _load_pil(file)
+    return _ocr_text(pil)
 
 def cv2_to_text(img: np.ndarray) -> str:
     return pytesseract.image_to_string(img, lang="tha+eng")
 
-# ---------------- Fallback extractor (English keywords) ----------------
+# ---------------- Fallback extractor (English/Thai keywords) ----------------
+_ACTIVE_RULES = [
+    (r"\bniacinamide\b", "niacinamide", "Niacinamide helps support tone and barrier resilience."),
+    (r"\burea\b", "urea", "Urea is a humectant (NMF) that locks in water."),
+    (r"saccharide\s+isomerate", "saccharide isomerate", "Saccharide Isomerate binds moisture for long-lasting hydration."),
+    (r"\bceramide", "ceramide complex", "Ceramides replenish the barrier."),
+    (r"beta\s*glucan|oat\s*extract|avena\s+sativa", "avena sativa (oat) extract", None),
+    (r"\bpanthenol\b", "panthenol", None),
+    (r"tocopheryl\s*acetate|vitamin\s*e", "vitamin e", None),
+    (r"oryza\s+sativa.*bran\s*oil", "rice bran oil", None),
+    (r"aloe\s+barbadensis", "aloe barbadensis leaf juice", None),
+    (r"\bglycerin\b", "glycerin", None),
+    (r"centella|asiatica", "centella asiatica extract", None),
+    (r"hyaluronic\s+acid|sodium\s+hyaluronate", "hyaluronic acid", None),
+    (r"trehalose", "trehalose", None),
+    (r"sorbitol", "sorbitol", None),
+]
+
+_FREE_FROM_REMOVALS = [
+    (r"\balcohol[-\s]?free\b|free\s+from\s+alcohol", "drying alcohol"),
+    (r"\bparaben[-\s]?free\b|free\s+from\s+parabens?", "parabens"),
+]
+
 def _fallback_extract(text: str) -> dict:
     t = text.lower()
     def has(p: str) -> bool:
@@ -245,11 +264,16 @@ def _fallback_extract(text: str) -> dict:
     if _has_active("Urea"):
         notes.append("Urea is a humectant (NMF) — boosts hydration.")
 
+    dedup = lambda seq: list(dict.fromkeys(seq))
+    actives_out = sorted(dedup(actives), key=str.lower)
+    concerns_out = sorted(dedup(concerns), key=str.lower)
+    benefits_out = dedup(benefits)[:8]
+    notes_out = dedup(notes)[:6]
     return {
-        "benefits": benefits[:8],
-        "actives": sorted(set(actives)),
-        "concerns": sorted(set(concerns)),
-        "notes": notes[:6],
+        "benefits": benefits_out,
+        "actives": actives_out,
+        "concerns": concerns_out,
+        "notes": notes_out,
         "confidence": 0.55,
     }
 
@@ -441,16 +465,31 @@ def norm_list(values) -> list[str]:
             out.append(normalized)
     return out
 
-def _combine_lists(primary, fallback):
+def _combine_lists(primary, fallback, *, sort_results: bool = False, prefer_primary: bool = False):
     primary_norm = norm_list(primary)
     fallback_norm = norm_list(fallback)
+    if prefer_primary and primary_norm:
+        combined = list(primary_norm)
+        return sorted(combined, key=lambda s: s.lower()) if sort_results else combined
     existing = {item.lower() for item in primary_norm}
     combined = list(primary_norm)
     for item in fallback_norm:
         if item.lower() not in existing:
             combined.append(item)
             existing.add(item.lower())
+    if sort_results:
+        combined = sorted(combined, key=lambda s: s.lower())
     return combined
+
+def _call_primary_model(ocr_text: str) -> dict | None:
+    """
+    Try the legacy single-call helper first (so existing tests/mocks still work),
+    then fall back to the newer ensemble prompt if that returns nothing.
+    """
+    legacy = _call_gemini_for_json(ocr_text)
+    if legacy:
+        return legacy
+    return _call_gemini_ensemble(ocr_text)
 
 # ---------------- Output schema ----------------
 class LabelLLMOut(Schema):
@@ -464,62 +503,48 @@ class LabelLLMOut(Schema):
 class LabelTextIn(Schema):
     text: str
 
-def _generate_insights_with_retry(text: str, max_attempts: int = 4):
-    gemini_available = genai is not None and os.getenv("GOOGLE_API_KEY")
-    
-    # Try Gemini first for high-quality results
-    if gemini_available:
-        attempt = 0
-        while attempt < max_attempts:
-            primary = _call_gemini_ensemble(text)
-            if primary:
-                # Use fallback to supplement Gemini results
-                fallback = _fallback_extract(text)
-                combined = {
-                    "benefits": _combine_lists(primary.get("benefits", []), fallback.get("benefits", [])),
-                    "actives": _combine_lists(primary.get("actives", []), fallback.get("actives", [])),
-                    "concerns": _combine_lists(primary.get("concerns", []), fallback.get("concerns", [])),
-                    "notes": _combine_lists(primary.get("notes", []), fallback.get("notes", [])),
-                }
-                confidence = primary.get("confidence", 0.0)
-                total_items = sum(len(values) for values in combined.values())
-                
-                # Return high-quality results (confidence >= 0.8 and sufficient items)
-                if confidence >= 0.8 and total_items >= 3:
-                    return combined, float(confidence)
-            
-            attempt += 1
-        
-        # Gemini is configured but failed - log warning and fall back to heuristic
-        print(f"[WARNING] Gemini API failed after {max_attempts} attempts, falling back to heuristic extraction")
-        # Continue to fallback below
-    
-    # Gemini not configured - use fallback as last resort
+def _generate_insights_with_retry(text: str, max_attempts: int = 3):
+    """
+    Try the LLM helper a few times. If it never produces a payload we trust,
+    return the heuristic fallback so the UI can still render something.
+    """
     fallback_result = _fallback_extract(text)
-    fallback_items = sum(len(v) for v in [
-        fallback_result.get("benefits", []), 
-        fallback_result.get("actives", []), 
-        fallback_result.get("concerns", []), 
-        fallback_result.get("notes", [])
-    ])
-    
-    # Return fallback only if it has at least some useful content
-    if fallback_items >= 2:
-        return {
-            "benefits": fallback_result.get("benefits", []),
-            "actives": fallback_result.get("actives", []),
-            "concerns": fallback_result.get("concerns", []),
-            "notes": fallback_result.get("notes", []),
-        }, float(fallback_result.get("confidence", 0.55))
-    
-    # Only fail if we truly have nothing
-    raise HttpError(503, "Unable to analyze the content. Please check that the text contains ingredient information and try again.")
+    attempt = 0
+    while attempt < max_attempts:
+        primary = _call_primary_model(text)
+        if primary:
+            benefits_primary = primary.get("benefits", [])
+            actives_primary = primary.get("actives", [])
+            concerns_primary = primary.get("concerns", [])
+            notes_primary = primary.get("notes", [])
+            combined = {
+                "benefits": _combine_lists(benefits_primary, fallback_result.get("benefits", []), sort_results=True, prefer_primary=bool(benefits_primary)),
+                "actives": _combine_lists(actives_primary, fallback_result.get("actives", []), sort_results=True, prefer_primary=bool(actives_primary)),
+                "concerns": _combine_lists(concerns_primary, fallback_result.get("concerns", []), sort_results=True, prefer_primary=bool(concerns_primary)),
+                "notes": _combine_lists(notes_primary, fallback_result.get("notes", []), prefer_primary=bool(notes_primary)),
+            }
+            confidence = float(primary.get("confidence", fallback_result.get("confidence", 0.55)))
+            if sum(len(values) for values in combined.values()) >= 3:
+                return combined, confidence, False
+        else:
+            # Primary helper returned nothing — no reason to keep retrying.
+            break
+        attempt += 1
+
+    combined_fallback = {
+        "benefits": list(fallback_result.get("benefits", [])),
+        "actives": list(fallback_result.get("actives", [])),
+        "concerns": list(fallback_result.get("concerns", [])),
+        "notes": list(fallback_result.get("notes", [])),
+    }
+    confidence = float(fallback_result.get("confidence", 0.55))
+    return combined_fallback, confidence, True
 
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
     text = _ocr_text_from_file(file)
-    combined, confidence = _generate_insights_with_retry(text)
+    combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(
         raw_text=text,
@@ -536,7 +561,7 @@ def analyze_label_text(request, payload: LabelTextIn):
     if not text:
         raise HttpError(400, "Please provide ingredient text to analyze.")
 
-    combined, confidence = _generate_insights_with_retry(text)
+    combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(
         raw_text=text,
@@ -546,3 +571,15 @@ def analyze_label_text(request, payload: LabelTextIn):
         notes=combined["notes"][:6],
         confidence=float(confidence),
     )
+
+
+@_legacy_scan_router.post("/label/analyze-llm", response=LabelLLMOut)
+def analyze_label_llm_scan_namespace(request, file: UploadedFile = File(...)):
+    """Expose the label analyzer under /api/scan/... for backward compatibility."""
+    return analyze_label_llm(request, file)
+
+
+@_legacy_scan_router.post("/label/analyze-text", response=LabelLLMOut)
+def analyze_label_text_scan_namespace(request, payload: LabelTextIn):
+    """Expose the text analyzer under /api/scan/... for backward compatibility."""
+    return analyze_label_text(request, payload)

@@ -23,14 +23,14 @@ export default function Navbar() {
 
   const activeStyles: Record<string, string> = {
     orange: "bg-[#f4bc78] text-black",
-    green:  "bg-[#acdb93] text-black",
+    green:  "bg-[#afe3a3] text-black",
     blue:   "bg-[#94c6ef] text-black",
   };
 
   // Hover styles for each color
   const hoverStyles: Record<string, string> = {
     orange: "hover:bg-[#f4bc78] hover:text-black",
-    green:  "hover:bg-[#acdb93] hover:text-black",
+    green:  "hover:bg-[#afe3a3] hover:text-black",
     blue:   "hover:bg-[#94c6ef] hover:text-black",
   };
 

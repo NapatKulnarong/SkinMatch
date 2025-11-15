@@ -121,7 +121,9 @@ function QuizCtaButton() {
     <Link
       href="/quiz"
       onClick={handleClick}
-      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-4 sm:px-8 py-2 sm:py-4 text-xs sm:text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
+      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-4 sm:px-8 py-2 sm:py-4 text-xs sm:text-base font-semibold text-black 
+                shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:bg-[#ffe9a5] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] 
+                active:translate-y-[2px] active:bg-[#ffe2a6] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
     >
       <span className="truncate">{buttonLabel}</span>
       <ArrowRightIcon className="hidden md:block h-4 w-4 sm:h-6 sm:w-6 flex-shrink-0" />
@@ -498,12 +500,12 @@ export default function HomePage() {
                 width={360}
                 height={270}
                 priority
-                className="h-auto w-full max-w-sm"
+                className="h-auto w-full max-w-xs"
               />
             </div>
 
             <div className="space-y-6 text-left">
-              <div className="space-y-3 lg:space-y-8 lg:pt-3">
+              <div className="space-y-2 lg:space-y-4 lg:pt-3">
                 <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
                   Personalized skincare insights
                 </p>
@@ -637,13 +639,13 @@ export default function HomePage() {
             </form>
 
           <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:overflow-visible sm:gap-2">
-            <span className="hidden md:block text-xs font-semibold text-[#2d4a2b]/60">Trending:</span>
             {TRENDING_INGREDIENTS.map((ingredient) => (
               <button
                 key={ingredient.name}
                 type="button"
                 onClick={() => handleTrendingSelect(ingredient.name)}
-                className="flex-none rounded-full border border-black/20 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
+                className="flex-none rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
+                          hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
               >
                 {ingredient.name}
               </button>
@@ -656,7 +658,7 @@ export default function HomePage() {
         <ProductScanner />
 
         {/* Environment Alerts */}
-        <EnvironmentAlertPanel className="mt-8" />
+        <EnvironmentAlertPanel />
 
         {/* Testimonials */}
         <section className="space-y-4 sm:space-y-6">
