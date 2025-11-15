@@ -198,7 +198,7 @@ function IngredientResultSection({ item }: SectionProps) {
 
       <div className="mt-4 sm:mt-6">
         <MobileProductGrid products={products} />
-        <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-3 sm:gap-5">
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
           {products.slice(0, DESKTOP_PRODUCT_LIMIT).map((product) => (
             <ProductCard key={product.productId} product={product} />
           ))}

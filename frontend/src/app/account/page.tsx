@@ -946,9 +946,16 @@ function WishlistPanel({ token }: { token: string | null }) {
       <div className="h-full flex flex-col rounded-2xl border-2 border-black/80 sm:border-black/80 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
             <div className="flex sm:block h-36 sm:h-auto relative">
               <div className="w-32 h-full sm:w-auto sm:h-auto sm:aspect-[4/3] bg-[#f7f5ff] border-r-2 border-black/80 sm:border-r-0 sm:border-b-2 z-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {p.image ? (
-                  <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                  <Image
+                    src={p.image}
+                    alt={p.name}
+                    width={320}
+                    height={320}
+                    className="h-full w-full object-cover"
+                    sizes="(max-width: 640px) 50vw, 33vw"
+                    unoptimized
+                  />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
                 )}

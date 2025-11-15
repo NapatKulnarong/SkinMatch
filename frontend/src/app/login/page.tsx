@@ -209,8 +209,6 @@ function LoginContent() {
     syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
 
-  const searchParamsKey = searchParams.toString();
-
   useEffect(() => {
     const nextMode = searchParams.get("mode");
     setMode((prev) => {
@@ -222,7 +220,7 @@ function LoginContent() {
       }
       return prev;
     });
-  }, [searchParamsKey]);
+  }, [searchParams]);
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;

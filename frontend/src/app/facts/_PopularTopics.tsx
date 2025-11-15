@@ -70,12 +70,6 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
 
   const heroImage = current.heroImageUrl ?? FALLBACK_IMAGE;
   const blurb = current.subtitle || current.excerpt || "Discover the full story.";
-  const goToOffset = (delta: number) => {
-    setIdx((prev) => {
-      const next = (prev + delta + topics.length) % topics.length;
-      return next;
-    });
-  };
 
   return (
     <PageContainer as="section" id={sectionId} className="pt-12 sm:pt-16 lg:pt-20">
