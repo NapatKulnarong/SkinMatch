@@ -23,6 +23,7 @@ export default function NewsletterSignup({
   variant = "full",
   inputProps,
 }: NewsletterSignupProps) {
+  const { className: inputClassName, ...restInputProps } = inputProps ?? {};
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -62,8 +63,15 @@ export default function NewsletterSignup({
       ? "flex flex-col gap-3"
       : "flex flex-col sm:flex-row gap-3";
 
-  const inputClass =
-    "flex-1 rounded-[5px] lg:rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]";
+  const inputClass = [
+    "flex-1 rounded-[5px] lg:rounded-full border-2 border-black",
+    "bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm",
+    "text-[#102030] placeholder:text-[#8C9AAE]",
+    "shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]",
+    inputClassName ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const buttonClass =
     "rounded-[5px] lg:rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
@@ -97,7 +105,7 @@ export default function NewsletterSignup({
           placeholder="your.email@example.com"
           aria-invalid={status === "error"}
           className={inputClass}
-          {...inputProps}
+          {...restInputProps}
         />
         <button type="submit" disabled={status === "loading"} className={buttonClass}>
           {status === "loading" ? "Subscribing…" : buttonLabel}
