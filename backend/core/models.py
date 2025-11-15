@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import hmac
 
 from datetime import date
 from typing import Optional, Any
@@ -393,3 +395,48 @@ class WishlistItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} - {getattr(self.product, 'name', 'product')}"
+
+
+class APIClient(models.Model):
+    """
+    Represents an external integration authenticated via API key.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=120)
+    contact_email = models.EmailField(blank=True)
+    key_prefix = models.CharField(max_length=12, db_index=True)
+    key_hash = models.CharField(max_length=128, unique=True)
+    allowed_ips = models.JSONField(default=list, blank=True, help_text="Optional list of IPs or CIDR ranges.")
+    rate_limit_per_minute = models.PositiveIntegerField(
+        default=120,
+        help_text="Maximum requests per minute for this key. Set to 0 for unlimited.",
+    )
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+        indexes = [
+            models.Index(fields=["key_prefix"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.key_prefix}…)"
+
+    def set_key(self, raw_key: str) -> None:
+        if not raw_key:
+            raise ValueError("raw_key is required")
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        self.key_hash = digest
+        self.key_prefix = raw_key[:8]
+
+    def check_key(self, raw_key: str) -> bool:
+        if not raw_key or not self.key_hash:
+            return False
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return hmac.compare_digest(digest, self.key_hash)

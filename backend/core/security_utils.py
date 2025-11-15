@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 from typing import Iterable
 
 from django.conf import settings
@@ -34,3 +35,35 @@ def bump_counter(key: str, window_seconds: int) -> int:
         current = cache.get(key, 0) + 1
         cache.set(key, current, window_seconds)
         return current
+
+
+def parse_ip_networks(entries: Iterable[str]) -> list[ipaddress._BaseNetwork]:
+    networks: list[ipaddress._BaseNetwork] = []
+    for raw in entries:
+        value = (raw or "").strip()
+        if not value:
+            continue
+        try:
+            if "/" in value:
+                network = ipaddress.ip_network(value, strict=False)
+            else:
+                ip_obj = ipaddress.ip_address(value)
+                mask = 32 if ip_obj.version == 4 else 128
+                network = ipaddress.ip_network(f"{ip_obj}/{mask}", strict=False)
+            networks.append(network)
+        except ValueError:
+            continue
+    return networks
+
+
+def ip_in_networks(ip: str | ipaddress._BaseAddress | None, networks: Iterable[ipaddress._BaseNetwork]) -> bool:
+    if not ip:
+        return False
+    try:
+        ip_obj = ipaddress.ip_address(ip) if not isinstance(ip, ipaddress._BaseAddress) else ip
+    except ValueError:
+        return False
+    for network in networks:
+        if ip_obj in network:
+            return True
+    return False

@@ -65,10 +65,11 @@ from .api_scan_text import scan_text_router
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-api = NinjaAPI()
+api = NinjaAPI(version=getattr(settings, "API_VERSION_DEFAULT", "v1"), title="SkinMatch API")
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
 api.add_router("/scan-text", scan_text_router)
+api_urlpatterns = api.urls
 User = get_user_model()
 
 if genai:
@@ -1410,4 +1411,3 @@ def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
         keywords = ["hyaluronic", "niacinamide", "vitamin c", "ceramide"]
     # dedupe, keep order
     return list(dict.fromkeys([kw.lower() for kw in keywords]))
-

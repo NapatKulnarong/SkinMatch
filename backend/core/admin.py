@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView, NewsletterSubscriber
+from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView, NewsletterSubscriber, APIClient
 
 
 class SkinFactContentBlockForm(forms.ModelForm):
@@ -144,3 +144,17 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     search_fields = ("email", "source")
     list_filter = ("source", "subscribed_at")
     ordering = ("-subscribed_at",)
+
+
+@admin.register(APIClient)
+class APIClientAdmin(admin.ModelAdmin):
+    list_display = ("name", "key_prefix", "contact_email", "is_active", "rate_limit_per_minute", "last_used_at")
+    search_fields = ("name", "contact_email", "key_prefix")
+    list_filter = ("is_active",)
+    readonly_fields = ("key_prefix", "last_used_at", "created_at", "updated_at")
+    fieldsets = (
+        ("Identity", {"fields": ("name", "contact_email", "notes")}),
+        ("Credentials", {"fields": ("key_prefix", "key_hash", "allowed_ips")}),
+        ("Controls", {"fields": ("rate_limit_per_minute", "is_active")}),
+        ("Audit", {"fields": ("last_used_at", "created_at", "updated_at")}),
+    )

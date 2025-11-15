@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import ipaddress
 import logging
+import math
+import re
 from typing import Iterable
 
 from django.conf import settings
@@ -11,8 +13,9 @@ from django.contrib.auth import logout
 from django.http import HttpResponseForbidden, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 
+from .api_keys import allowed_networks_for, get_api_client_from_key, touch_api_client_usage
 from .security_events import record_security_event
-from .security_utils import bump_counter, get_client_ip
+from .security_utils import bump_counter, get_client_ip, ip_in_networks
 
 
 logger = logging.getLogger(__name__)
@@ -346,3 +349,208 @@ class SecurityMonitoringMiddleware:
                 metadata={"ip": ip, "status": status, "path": request.path},
                 force_alert=True,
             )
+
+
+class APIInputValidationMiddleware:
+    """
+    Performs basic payload validation (size limits, blocklist scanning) before hitting views.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.max_body_bytes = int(getattr(settings, "API_MAX_BODY_KB", 0)) * 1024
+        patterns = getattr(settings, "API_INPUT_BLOCKLIST", [])
+        self.blocklist = [re.compile(pattern, re.IGNORECASE) for pattern in patterns if pattern]
+        self.enabled = bool(self.max_body_bytes or self.blocklist)
+        self.protected_prefixes = tuple(getattr(settings, "API_PROTECTED_PATH_PREFIXES", ["/api/"]))
+
+    def __call__(self, request):
+        if not self.enabled or not self._is_api_request(request.path):
+            return self.get_response(request)
+
+        if not self._inspect_request(request):
+            return JsonResponse({"detail": "Payload rejected"}, status=400)
+
+        return self.get_response(request)
+
+    def _is_api_request(self, path: str | None) -> bool:
+        target = path or ""
+        return any(target.startswith(prefix) for prefix in self.protected_prefixes)
+
+    def _inspect_request(self, request) -> bool:
+        method = (request.method or "").upper()
+        if method not in {"POST", "PUT", "PATCH"}:
+            return True
+
+        content_length = request.META.get("CONTENT_LENGTH")
+        if content_length and self.max_body_bytes and int(content_length) > self.max_body_bytes:
+            record_security_event(
+                "api.payload_rejected",
+                "warning",
+                "Payload exceeds allowed size",
+                metadata={"path": request.path, "length": content_length},
+                force_alert=True,
+            )
+            return False
+
+        if not self.blocklist:
+            return True
+
+        try:
+            body = request.body.decode("utf-8", errors="ignore")
+        except Exception:
+            return True
+        for pattern in self.blocklist:
+            if pattern.search(body):
+                record_security_event(
+                    "api.payload_rejected",
+                    "warning",
+                    f"Blocked payload pattern '{pattern.pattern}'",
+                    metadata={"path": request.path},
+                    force_alert=True,
+                )
+                return False
+        return True
+
+
+class APIKeyMiddleware:
+    """
+    Enforces API key authentication for anonymous requests and rate limits per IP/key.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.require_for_anon = getattr(settings, "API_REQUIRE_KEY_FOR_ANONYMOUS", False)
+        self.protected_prefixes = tuple(getattr(settings, "API_PROTECTED_PATH_PREFIXES", ["/api/"]))
+        self.header_name = getattr(settings, "API_KEY_HEADER", "X-API-Key")
+        self.query_param = getattr(settings, "API_KEY_QUERY_PARAM", "api_key")
+        self._header_meta_name = f"HTTP_{self.header_name.upper().replace('-', '_')}"
+        self.default_rate = int(getattr(settings, "API_RATE_LIMIT_DEFAULT_PER_MIN", 120))
+        self.window_seconds = int(getattr(settings, "API_RATE_LIMIT_WINDOW_SECONDS", 60))
+        self.ip_rate = int(getattr(settings, "API_RATE_LIMIT_PER_IP_PER_MIN", 300))
+
+    def __call__(self, request):
+        if not self._is_api_request(request.path):
+            return self.get_response(request)
+
+        request.api_client = None  # type: ignore[attr-defined]
+        api_key = self._extract_key(request)
+        client = None
+
+        if api_key:
+            client = get_api_client_from_key(api_key)
+            if not client:
+                record_security_event(
+                    "api.key_invalid",
+                    "warning",
+                    "Invalid API key",
+                    metadata={"path": request.path},
+                )
+                return JsonResponse({"detail": "Invalid API key"}, status=401)
+            if not client.is_active:
+                return JsonResponse({"detail": "API key disabled"}, status=403)
+            if not self._is_ip_allowed(client, request):
+                record_security_event(
+                    "api.key_ip_block",
+                    "warning",
+                    "API key blocked due to IP restriction",
+                    metadata={"path": request.path, "ip": get_client_ip(request)},
+                    force_alert=True,
+                )
+                return JsonResponse({"detail": "IP not allowed for this key"}, status=403)
+            request.api_client = client
+            if not self._enforce_key_rate_limit(client):
+                return JsonResponse({"detail": "Rate limit exceeded"}, status=429)
+            touch_api_client_usage(client)
+        elif self._should_require_key(request):
+            return JsonResponse({"detail": "API key required"}, status=401)
+
+        if not self._enforce_ip_rate_limit(request):
+            return JsonResponse({"detail": "Too many requests"}, status=429)
+
+        response = self.get_response(request)
+        if client:
+            record_security_event(
+                "api.request",
+                "info",
+                "API request via key",
+                metadata={
+                    "client": client.name,
+                    "path": request.path,
+                    "ip": get_client_ip(request),
+                    "method": request.method,
+                },
+            )
+        return response
+
+    def _is_api_request(self, path: str | None) -> bool:
+        target = path or ""
+        return any(target.startswith(prefix) for prefix in self.protected_prefixes)
+
+    def _extract_key(self, request) -> str | None:
+        header_value = request.META.get(self._header_meta_name, "").strip()
+        if header_value:
+            return header_value
+        param_value = request.GET.get(self.query_param, "").strip()
+        return param_value or None
+
+    def _should_require_key(self, request) -> bool:
+        if not self.require_for_anon:
+            return False
+        user = getattr(request, "user", None)
+        if user and getattr(user, "is_authenticated", False):
+            return False
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        return not auth_header
+
+    def _is_ip_allowed(self, client, request) -> bool:
+        if not client.allowed_ips:
+            return True
+        ip = get_client_ip(request)
+        networks = allowed_networks_for(client)
+        return ip_in_networks(ip, networks)
+
+    def _window_allowance(self, per_minute: int) -> int:
+        if per_minute <= 0:
+            return 0
+        per_window = per_minute * self.window_seconds / 60
+        return max(1, math.ceil(per_window))
+
+    def _enforce_key_rate_limit(self, client) -> bool:
+        limit = client.rate_limit_per_minute or self.default_rate
+        if limit <= 0:
+            return True
+        allowance = self._window_allowance(limit)
+        cache_key = f"api:rate:key:{client.pk}"
+        count = bump_counter(cache_key, self.window_seconds)
+        if count > allowance:
+            record_security_event(
+                "api.rate_limited",
+                "warning",
+                f"API key {client.key_prefix} exceeded rate limit",
+                metadata={"client": client.name},
+                force_alert=True,
+            )
+            return False
+        return True
+
+    def _enforce_ip_rate_limit(self, request) -> bool:
+        limit = self.ip_rate
+        if limit <= 0:
+            return True
+        ip = get_client_ip(request)
+        if not ip:
+            return True
+        allowance = self._window_allowance(limit)
+        cache_key = f"api:rate:ip:{ip}"
+        count = bump_counter(cache_key, self.window_seconds)
+        if count > allowance:
+            record_security_event(
+                "api.ip_rate_limited",
+                "warning",
+                f"IP {ip} exceeded anonymous rate limit",
+                metadata={"ip": ip},
+                force_alert=True,
+            )
+            return False
+        return True

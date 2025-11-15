@@ -75,6 +75,20 @@ SESSION_IDLE_TIMEOUT_EXEMPT_PATHS = env_csv(
 SESSION_TIMEOUT_API_PREFIXES = env_csv("DJANGO_SESSION_TIMEOUT_API_PREFIXES", "/api/")
 SESSION_TIMEOUT_REDIRECT_URL = os.getenv("DJANGO_SESSION_TIMEOUT_REDIRECT_URL", "")
 
+API_REQUIRE_KEY_FOR_ANONYMOUS = env_bool("API_REQUIRE_KEY_FOR_ANONYMOUS", not DEBUG)
+API_PROTECTED_PATH_PREFIXES = env_csv("API_PROTECTED_PATH_PREFIXES", "/api/")
+API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")
+API_KEY_QUERY_PARAM = os.getenv("API_KEY_QUERY_PARAM", "api_key")
+API_RATE_LIMIT_DEFAULT_PER_MIN = int(os.getenv("API_RATE_LIMIT_DEFAULT_PER_MIN", "120"))
+API_RATE_LIMIT_PER_IP_PER_MIN = int(os.getenv("API_RATE_LIMIT_PER_IP_PER_MIN", "300"))
+API_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("API_RATE_LIMIT_WINDOW_SECONDS", "60"))
+API_MAX_BODY_KB = int(os.getenv("API_MAX_BODY_KB", "512"))
+API_INPUT_BLOCKLIST = env_csv(
+    "API_INPUT_BLOCKLIST",
+    "<script,</script>,union select,drop table,insert into",
+)
+API_VERSION_DEFAULT = os.getenv("API_VERSION_DEFAULT", "v1")
+
 SECURITY_ALERT_EMAILS = env_csv("SECURITY_ALERT_EMAILS", "")
 SECURITY_ALERT_MIN_LEVEL = os.getenv("SECURITY_ALERT_MIN_LEVEL", "ERROR").upper()
 SECURITY_LOG_FILE = os.getenv("SECURITY_LOG_FILE", "")
@@ -186,6 +200,8 @@ MIDDLEWARE = [
     "core.middleware.SessionIdleTimeoutMiddleware",
     "core.middleware.AdminAccessControlMiddleware",
     "core.middleware.SecurityMonitoringMiddleware",
+    "core.middleware.APIInputValidationMiddleware",
+    "core.middleware.APIKeyMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

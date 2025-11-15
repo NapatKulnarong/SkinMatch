@@ -139,3 +139,19 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
   - Every `user_login_failed` produces a `auth.login_failed` event containing IP, UA, and the attempted identifier. Once an IP generates `SECURITY_FAILED_LOGIN_THRESHOLD` failures inside `SECURITY_FAILED_LOGIN_WINDOW_SECONDS`, the system raises a `auth.bruteforce_detected` alert.
   - Successful logins emit `auth.login_success` events so SOC tools can correlate who is active.
 - Django admin changes trigger `admin.action` events via the `LogEntry` signal hook, so there is an immutable audit trail beyond the built-in admin history. Tail `/var/log/skinmatch/security.log` (or your configured log destination) to verify entries whenever staff edit production data.
+
+### API Security Controls
+- API consumers must now present either a JWT/OAuth token **or** a dedicated API key. Anonymous requests can be blocked entirely by setting `API_REQUIRE_KEY_FOR_ANONYMOUS=True`. Configure header/query expectations via `API_KEY_HEADER` (defaults to `X-API-Key`) and `API_KEY_QUERY_PARAM`.
+- Issue and rotate API keys via the new **API Clients** admin section. Keys are stored hashed (`APIClient.key_hash`), with optional CIDR allow lists and per-key throttles. Store the raw key in your secret manager; Django only persists the hash. Example provisioning flow:
+  ```python
+  from core.models import APIClient
+  client = APIClient(name="Zapier", contact_email="automation@skinmatch.com")
+  client.set_key("sm_live_xxxxxxxx")  # generate a strong random token first
+  client.allowed_ips = ["203.0.113.17", "10.10.0.0/16"]
+  client.rate_limit_per_minute = 60
+  client.save()
+  ```
+- `core.middleware.APIKeyMiddleware` enforces API key requirements, applies per-IP and per-key throttles (`API_RATE_LIMIT_*` env vars), and logs usage via the `security` logger (`event_type=api.request`). Exceeding limits generates `429` responses and fires `api.rate_limited` / `api.ip_rate_limited` events.
+- `APIInputValidationMiddleware` performs coarse payload validation before requests hit the app: configure maximum payload size with `API_MAX_BODY_KB` and sanitize high-risk patterns via `API_INPUT_BLOCKLIST` (comma-separated regex fragments). Offending requests are rejected with `400`/`413` plus alerting through `security` logs.
+- Versioned routing is now available at `/api/v1/` (see `API_VERSION_DEFAULT`). Keep `/api/` wired during migration, but plan to deprecate it once clients move to versioned endpoints.
+- API usage is continuously monitored through the same security logging pipeline and can be forwarded to your SIEM. Combine the structured logs with upstream metrics (e.g., load balancer stats) for anomaly detection and alerting.
