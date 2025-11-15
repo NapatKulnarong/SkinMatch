@@ -366,7 +366,6 @@ def _call_one_model(model_name: str, user_prompt: str, sys_msg: str, gen_cfg: di
     if not raw:
         return None
 
-    # --- 4 Try to parse JSON, with debug help ---
     try:
         data = json.loads(raw)
     except Exception as e:

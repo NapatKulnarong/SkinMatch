@@ -162,3 +162,10 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - Run `./scripts/harden_permissions.sh /var/www/skinmatch` (or omit the argument to target the repo root) after each deploy. It sets directories to `0755`, files to `0644`, and tightens `.env*` files to `0600`. Execute it as the deploy user or via CI/CD before reloading services.
 - If you front Django with Nginx/Apache, ensure directory indexing is disabled (`autoindex off;` for Nginx, `Options -Indexes` for Apache) and block direct access to `/media/.git`, `/media/.env*`, etc. The middleware covers Django-served paths, but the web server must also enforce these rules for static/media assets.
 - We do not rely on XML-RPC; the middleware now responds with `404` for `/xmlrpc.php` probes to reduce noise. Apply equivalent deny rules at the load balancer or CDN to drop traffic earlier.
+
+### Dependency & Code Security
+- The CI workflow (`.github/workflows/ci.yml`) already installs `bandit` and `pip-audit` to flag insecure Python code and vulnerable dependencies on every PR. Keep the jobs in place and fail the build once you are ready to block on findings (remove the `|| true` guards).
+- Add GitHub-native dependency watchers: enable Dependabot (GitHub → Settings → Code security and analysis → Dependabot alerts/updates) or Snyk if you prefer their dashboard. Configure weekly update PRs for `backend/requirements.txt` and `frontend/package.json` so outdated packages are surfaced quickly.
+- Schedule a monthly `pip-audit -r backend/requirements.txt` + `npm audit` run outside CI (e.g., via cron or GitHub Actions `workflow_dispatch`) to catch issues even if CI isn't executed for long stretches.
+- The `secret-scan.yml` workflow runs `gitguardian/ggshield` against pushes. Extend it with Trivy or Grype if you want container/Docker image scanning as part of the same pipeline.
+- Remove dead/commented-out code, debugging helpers, or `print` statements before merging. Rely on structured logging (`logging.debug/info/...`) that can be filtered per environment. Periodically run `rg -n "print(" backend frontend` to make sure stray debug prints don't sneak into prod.
