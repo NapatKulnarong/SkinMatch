@@ -5,20 +5,20 @@ import type { ComponentProps } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { WishlistPanel } from "../page";
 
-const MockImage = (props: ComponentProps<"img">) => {
-  const { unoptimized, priority, fill, ...rest } = props;
-  void unoptimized;
-  void priority;
-  void fill;
-  // eslint-disable-next-line jsx-a11y/alt-text
-  return <img {...rest} />;
-};
-MockImage.displayName = "MockNextImage";
-
 // Mock next/image as a normal <img> so it doesn't break in Jest
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: MockImage,
+  default: (() => {
+    const Mock = (props: ComponentProps<"img">) => {
+      const { unoptimized, priority, fill, ...rest } = props;
+      void unoptimized;
+      void priority;
+      void fill;
+      return <img alt={props.alt ?? ""} {...rest} />;
+    };
+    Mock.displayName = "MockNextImage";
+    return Mock;
+  })(),
 }));
 
 // Mock the wishlist API module that the component dynamically imports
