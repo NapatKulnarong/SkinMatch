@@ -24,7 +24,7 @@ import {
   type QuizHistoryItem,
   type ProductDetail,
 } from "@/lib/api.quiz";
-import { clearQuizCompletionFlag } from "@/app/quiz/_QuizContext";
+import { clearQuizCompletionFlag, emitQuizRecommendationsRefresh } from "@/app/quiz/_QuizContext";
 
 export default function AccountPage() {
   return (
@@ -394,11 +394,13 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
     setDeletingKeys(prev => new Set(prev).add(key));
 
     try {
-      await deleteQuizHistory(identifier, token);
+      const deletion = await deleteQuizHistory(identifier, token);
       const refreshed = await fetchQuizHistory(token);
       setHistory(refreshed);
       if (!refreshed.length) {
         clearQuizCompletionFlag();
+      } else if (deletion.wasLatest) {
+        emitQuizRecommendationsRefresh();
       }
     } catch (err) {
       console.error("Failed to delete quiz history item", err);

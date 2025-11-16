@@ -29,6 +29,7 @@ export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
 export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
 export const QUIZ_COMPLETED_FLAG_STORAGE_KEY = COMPLETED_STORAGE_KEY;
 export const QUIZ_COMPLETION_RESET_EVENT = "skinmatch-quiz-completion-reset";
+export const QUIZ_RECOMMENDATIONS_REFRESH_EVENT = "skinmatch-quiz-refresh";
 
 export function clearQuizCompletionFlag() {
   if (typeof window === "undefined") return;
@@ -42,6 +43,15 @@ export function clearQuizCompletionFlag() {
     window.dispatchEvent(event);
   } catch {
     window.dispatchEvent(new Event(QUIZ_COMPLETION_RESET_EVENT));
+  }
+}
+
+export function emitQuizRecommendationsRefresh() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
   }
 }
 
