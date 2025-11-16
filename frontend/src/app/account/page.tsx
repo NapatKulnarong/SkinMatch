@@ -24,6 +24,7 @@ import {
   type QuizHistoryItem,
   type ProductDetail,
 } from "@/lib/api.quiz";
+import { clearQuizCompletionFlag } from "@/app/quiz/_QuizContext";
 
 export default function AccountPage() {
   return (
@@ -356,6 +357,9 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
         setHistory(items);
         setError(null);
         setActionError(null);
+        if (!items.length) {
+          clearQuizCompletionFlag();
+        }
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to load quiz history", err);
@@ -393,6 +397,9 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
       await deleteQuizHistory(identifier, token);
       const refreshed = await fetchQuizHistory(token);
       setHistory(refreshed);
+      if (!refreshed.length) {
+        clearQuizCompletionFlag();
+      }
     } catch (err) {
       console.error("Failed to delete quiz history item", err);
       const message = err instanceof Error ? err.message : "Failed to delete match";

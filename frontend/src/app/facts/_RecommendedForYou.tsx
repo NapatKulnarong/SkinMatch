@@ -12,7 +12,7 @@ import { PROFILE_EVENT, getAuthToken } from "@/lib/auth-storage";
 import {
   QUIZ_COMPLETED_EVENT,
   QUIZ_COMPLETED_FLAG_STORAGE_KEY,
-  QUIZ_SESSION_STORAGE_KEY,
+  QUIZ_COMPLETION_RESET_EVENT,
 } from "@/app/quiz/_QuizContext";
 
 type RecommendedForYouProps = {
@@ -24,7 +24,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
-  const [needsQuizPrompt, setNeedsQuizPrompt] = useState(false);
+  const [promptType, setPromptType] = useState<"quiz" | "auth" | null>(null);
   const pathname = usePathname();
   const activeRef = useRef(true);
 
@@ -37,7 +37,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       }
     }
     setHasCompletedQuiz(true);
-    setNeedsQuizPrompt(false);
+    setPromptType(null);
   }, []);
 
   const syncQuizCompletionFromStorage = useCallback(() => {
@@ -57,11 +57,11 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
     }
   }, []);
 
-  const loadRecommendations = useCallback((providedSessionId?: string | null) => {
+  const loadRecommendations = useCallback(() => {
     activeRef.current = true;
     setLoading(true);
     setError(null);
-    setNeedsQuizPrompt(false);
+    setPromptType(null);
 
     const loadCuratedFallback = () =>
       Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
@@ -73,7 +73,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
           setTopics(combined.slice(0, 4));
           setError(null);
-          setNeedsQuizPrompt(false);
+          setPromptType(null);
           setLoading(false);
         }
       );
@@ -84,31 +84,22 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
     // 3. For logged-in users, don't pass session_id (backend will get latest automatically)
     const token = getAuthToken();
     const isLoggedIn = Boolean(token);
-    
-    let sessionId: string | null | undefined = providedSessionId;
-    
-    // If not provided and user is anonymous, try to get from localStorage
-    if (!sessionId && !isLoggedIn && typeof window !== "undefined") {
-      try {
-        sessionId = window.localStorage.getItem(QUIZ_SESSION_STORAGE_KEY);
-      } catch (err) {
-        console.warn("Failed to read quiz session from localStorage", err);
-      }
+
+    if (!isLoggedIn) {
+      setTopics([]);
+      setError(null);
+      setLoading(false);
+      setHasCompletedQuiz(false);
+      setPromptType("auth");
+      return;
     }
-    
-    // For logged-in users, don't pass session_id so backend gets their latest session
-    // For anonymous users, pass session_id if available
-    const sessionIdToUse = isLoggedIn ? undefined : sessionId;
     
     console.log("[RecommendedForYou] Loading recommendations:", {
       isLoggedIn,
-      sessionId,
-      sessionIdToUse,
-      providedSessionId,
     });
     
     // Try personalized endpoint first; fall back to blended list on failure
-    fetchRecommendedTopics(4, sessionIdToUse)
+    fetchRecommendedTopics(4)
       .then((personalised) => {
         if (!activeRef.current) return;
         if (personalised.length) {
@@ -120,7 +111,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
         }
         if (!hasCompletedQuiz) {
           setTopics([]);
-          setNeedsQuizPrompt(true);
+          setPromptType("quiz");
           setError(null);
           setLoading(false);
           return;
@@ -135,7 +126,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
             console.error("Failed to load recommended topics", err);
             setError("We couldn't load recommended topics right now. Please try again later.");
             setTopics([]);
-            setNeedsQuizPrompt(false);
+            setPromptType(null);
             setLoading(false);
           });
       });
@@ -173,7 +164,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
         console.log("[RecommendedForYou] Quiz completed event received without detail");
       }
       persistQuizCompletion();
-      loadRecommendations(sessionId);
+      loadRecommendations();
     };
 
     const handleStorageUpdate = (event: StorageEvent) => {
@@ -185,18 +176,28 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
         const completed = event.newValue === "1";
         setHasCompletedQuiz(Boolean(completed));
         if (completed) {
-          setNeedsQuizPrompt(false);
+          setPromptType(null);
         }
       }
     };
 
+    const handleQuizReset = () => {
+      setHasCompletedQuiz(false);
+      setPromptType("quiz");
+      setTopics([]);
+      setError(null);
+      setLoading(false);
+    };
+
     window.addEventListener(PROFILE_EVENT, handleProfileUpdate);
     window.addEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+    window.addEventListener(QUIZ_COMPLETION_RESET_EVENT, handleQuizReset);
     window.addEventListener("storage", handleStorageUpdate);
 
     return () => {
       window.removeEventListener(PROFILE_EVENT, handleProfileUpdate);
       window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
+      window.removeEventListener(QUIZ_COMPLETION_RESET_EVENT, handleQuizReset);
       window.removeEventListener("storage", handleStorageUpdate);
     };
   }, [loadRecommendations, persistQuizCompletion]);
@@ -224,18 +225,6 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
             <span aria-hidden>→</span>
           </Link>
         </div>
-
-        {/* Quiz prompt - reduced padding for compact look */}
-        {needsQuizPrompt && (
-          <div className="px-6 py-10 text-sm text-[#11224a]/70">
-            <div className="mx-auto max-w-xl rounded-[18px] border-2 border-[#11224a]/20 bg-white/80 p-5 text-center shadow-[3px_3px_0_rgba(0,0,0,0.25)]">
-              <p className="text-base font-semibold text-[#11224a]">Take the SkinMatch quiz</p>
-              <p className="mt-2 text-sm text-[#11224a]/80">
-                Update your preferences to unlock personalised ingredients, routines, and insights curated just for you.
-              </p>
-            </div>
-          </div>
-        )}
 
         <div className="px-3 lg:px-3 pb-1 lg:pb-5 pt-4 sm:px-6">
           <div className="flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 sm:grid sm:auto-rows-[1fr] sm:grid-cols-2 sm:gap-4 sm:overflow-visible xl:grid-cols-4">
@@ -297,14 +286,30 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           </div>
         </div>
 
-        {/* Error message only */}
-        {!loading && !recommendations.length && !needsQuizPrompt && error && (
+        {promptType ? (
           <div className="px-6 py-6 text-sm text-[#11224a]/70">
-            <div className="rounded-[16px] border-2 border-[#B6771D]/30 bg-[#FFF1CA]/60 p-4 text-center">
-              <p className="font-semibold text-[#11224a]">{error}</p>
+            <div className="mx-auto max-w-xl rounded-[18px] border-2 border-[#11224a]/20 bg-white/80 p-5 text-center shadow-[3px_3px_0_rgba(0,0,0,0.25)]">
+              <p className="text-base font-semibold text-[#11224a]">
+                {promptType === "auth" ? "Log in & take the SkinMatch quiz" : "Take the SkinMatch quiz"}
+              </p>
+              <p className="mt-2 text-sm text-[#11224a]/80">
+                {promptType === "auth"
+                  ? "Sign in and complete the quiz to unlock personalised ingredients, routines, and insights tailored to your profile."
+                  : "Update your preferences to unlock personalised ingredients, routines, and insights curated just for you."}
+              </p>
             </div>
           </div>
-        )}
+        ) : !loading && !recommendations.length ? (
+          <div className="px-6 py-6 text-sm text-[#11224a]/70">
+            {error ? (
+              <div className="rounded-[16px] border-2 border-[#B6771D]/30 bg-[#FFF1CA]/60 p-4 text-center">
+                <p className="font-semibold text-[#11224a]">{error}</p>
+              </div>
+            ) : (
+              "We'll personalise this space once you explore a few more topics."
+            )}
+          </div>
+        ) : null}
       </div>
     </PageContainer>
   );

@@ -28,6 +28,22 @@ export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
 export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
 export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
 export const QUIZ_COMPLETED_FLAG_STORAGE_KEY = COMPLETED_STORAGE_KEY;
+export const QUIZ_COMPLETION_RESET_EVENT = "skinmatch-quiz-completion-reset";
+
+export function clearQuizCompletionFlag() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY);
+  } catch (err) {
+    console.warn("Failed to clear quiz completion flag", err);
+  }
+  try {
+    const event = new CustomEvent(QUIZ_COMPLETION_RESET_EVENT);
+    window.dispatchEvent(event);
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_COMPLETION_RESET_EVENT));
+  }
+}
 
 type QuizAnswerKey =
   | "primaryConcern"
