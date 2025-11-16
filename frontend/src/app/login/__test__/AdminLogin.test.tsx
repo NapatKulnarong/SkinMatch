@@ -148,6 +148,8 @@ describe("Admin Login Flow", () => {
 
     // ensure login form is visible
     await screen.findByTestId("login-form");
+    mockPush.mockClear();
+    mockReplace.mockClear();
   };
 
   // fill form + click Login

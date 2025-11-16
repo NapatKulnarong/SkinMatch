@@ -329,10 +329,10 @@ export default function QuizResultPage() {
         <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
           <section className="space-y-8">
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <span className="inline-flex gap-2 text-2xl text-[#35574a]">
-                <span><UserIcon className="w-8 h-8"/></span>
-                <span className="text-2xl font-bold text-[#3C3D37] mb-4">Your SkinProfile</span>
-              </span>
+              <div className="inline-flex gap-2 text-2xl text-[#35574a] items-center">
+                <UserIcon className="w-8 h-8" aria-hidden />
+                <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your Skin Profile</h2>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {profileItems.map((item) => (
                   <div key={item.label} className="rounded-2xl border border-black/60 bg-white/80 px-4 py-3">
@@ -346,10 +346,10 @@ export default function QuizResultPage() {
             </div>
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-            <span className="inline-flex gap-2 text-2xl text-[#33574a] font-bold">
-              <span><BeakerIcon className="relative w-8 h-8" /></span>
-              <span className="text-2xl ">Ingredients to prioritise</span>
-            </span>
+            <div className="inline-flex gap-2 text-2xl text-[#33574a] font-bold items-center">
+              <BeakerIcon className="relative w-8 h-8" aria-hidden />
+              <h2 className="text-2xl">Ingredients to prioritise</h2>
+            </div>
               <ul className="space-y-4">
                 {ingredientHighlights.map((item) => (
                   <li key={item.ingredient} className="flex items-start gap-3">

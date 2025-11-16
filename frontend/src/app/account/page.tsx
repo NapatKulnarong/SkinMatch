@@ -736,7 +736,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
   );
 }
 
-function WishlistPanel({ token }: { token: string | null }) {
+export function WishlistPanel({ token }: { token: string | null }) {
   const [items, setItems] = useState<import("@/lib/api.wishlist").WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

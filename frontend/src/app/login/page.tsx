@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchProfile,
@@ -180,6 +180,16 @@ function LoginContent() {
     }
   }, [searchParams, router]);
 
+  useEffect(() => {
+    const fromParam = searchParams.get("from");
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (fromParam) {
+      sessionStorage.setItem("login_from", fromParam);
+    }
+  }, [searchParams]);
+
   const syncModeInQuery = (next: Mode, { replace = false }: { replace?: boolean } = {}) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "intro") {
@@ -209,7 +219,15 @@ function LoginContent() {
     syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
 
+  const lastSearchQueryRef = useRef<string | null>(null);
+
   useEffect(() => {
+    const currentQuery =
+      typeof searchParams?.toString === "function" ? searchParams.toString() : "";
+    if (currentQuery === lastSearchQueryRef.current) {
+      return;
+    }
+    lastSearchQueryRef.current = currentQuery;
     const nextMode = searchParams.get("mode");
     setMode((prev) => {
       if (isModeValue(nextMode) && nextMode !== prev) {
