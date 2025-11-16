@@ -22,10 +22,12 @@ import {
 
 const ANSWERS_STORAGE_KEY = "skinmatch.quizAnswers";
 const SESSION_STORAGE_KEY = "skinmatch.quizSession";
+const COMPLETED_STORAGE_KEY = "skinmatch.quizCompleted";
 
 export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
 export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
 export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
+export const QUIZ_COMPLETED_FLAG_STORAGE_KEY = COMPLETED_STORAGE_KEY;
 
 type QuizAnswerKey =
   | "primaryConcern"
@@ -325,6 +327,13 @@ export function QuizProvider({ children }: PropsWithChildren) {
         finalizedSessionRef.current = payload.sessionId;
         setResult(payload);
         setError(null);
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY, "1");
+          } catch (err) {
+            console.warn("Failed to persist quiz completion flag", err);
+          }
+        }
         
         // Dispatch event to notify other components that quiz was completed
         if (typeof window !== "undefined") {

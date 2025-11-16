@@ -9,7 +9,11 @@ import PageContainer from "@/components/PageContainer";
 import { fetchPopularTopics, fetchTopicsBySection, fetchRecommendedTopics } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 import { PROFILE_EVENT, getAuthToken } from "@/lib/auth-storage";
-import { QUIZ_COMPLETED_EVENT, QUIZ_SESSION_STORAGE_KEY } from "@/app/quiz/_QuizContext";
+import {
+  QUIZ_COMPLETED_EVENT,
+  QUIZ_COMPLETED_FLAG_STORAGE_KEY,
+  QUIZ_SESSION_STORAGE_KEY,
+} from "@/app/quiz/_QuizContext";
 
 type RecommendedForYouProps = {
   sectionId?: string;
@@ -19,14 +23,61 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
   const [topics, setTopics] = useState<FactTopicSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
+  const [needsQuizPrompt, setNeedsQuizPrompt] = useState(false);
   const pathname = usePathname();
   const activeRef = useRef(true);
+
+  const persistQuizCompletion = useCallback(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY, "1");
+      } catch (err) {
+        console.warn("Failed to persist quiz completion flag", err);
+      }
+    }
+    setHasCompletedQuiz(true);
+    setNeedsQuizPrompt(false);
+  }, []);
+
+  const syncQuizCompletionFromStorage = useCallback(() => {
+    if (typeof window === "undefined") {
+      setHasCompletedQuiz(false);
+      return false;
+    }
+    try {
+      const stored = window.localStorage.getItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY);
+      const completed = stored === "1";
+      setHasCompletedQuiz(completed);
+      return completed;
+    } catch (err) {
+      console.warn("Failed to read quiz completion flag", err);
+      setHasCompletedQuiz(false);
+      return false;
+    }
+  }, []);
 
   const loadRecommendations = useCallback((providedSessionId?: string | null) => {
     activeRef.current = true;
     setLoading(true);
     setError(null);
-    
+    setNeedsQuizPrompt(false);
+
+    const loadCuratedFallback = () =>
+      Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
+        ([knowledge, popular]) => {
+          if (!activeRef.current) return;
+          const combined = [...knowledge, ...popular].filter(
+            (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
+          );
+          combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
+          setTopics(combined.slice(0, 4));
+          setError(null);
+          setNeedsQuizPrompt(false);
+          setLoading(false);
+        }
+      );
+
     // Determine session_id to use:
     // 1. If provided (from event), use that
     // 2. For anonymous users, get from localStorage
@@ -61,46 +112,38 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       .then((personalised) => {
         if (!activeRef.current) return;
         if (personalised.length) {
+          persistQuizCompletion();
           setTopics(personalised);
           setError(null);
           setLoading(false);
           return;
         }
-        return Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)]).then(
-          ([knowledge, popular]) => {
-            if (!activeRef.current) return;
-            const combined = [...knowledge, ...popular].filter(
-              (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
-            );
-            combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-            setTopics(combined.slice(0, 4));
-            setError(null);
-            setLoading(false);
-          }
-        );
+        if (!hasCompletedQuiz) {
+          setTopics([]);
+          setNeedsQuizPrompt(true);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+        return loadCuratedFallback();
       })
       .catch(() => {
         if (!activeRef.current) return;
-        Promise.all([fetchTopicsBySection("knowledge", 6), fetchPopularTopics(4)])
-          .then(([knowledge, popular]) => {
-            if (!activeRef.current) return;
-            const combined = [...knowledge, ...popular].filter(
-              (topic, index, arr) => arr.findIndex((t) => t.id === topic.id) === index
-            );
-            combined.sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-            setTopics(combined.slice(0, 4));
-            setError(null);
-            setLoading(false);
-          })
+        loadCuratedFallback()
           .catch((err) => {
             if (!activeRef.current) return;
             console.error("Failed to load recommended topics", err);
             setError("We couldn't load recommended topics right now. Please try again later.");
             setTopics([]);
+            setNeedsQuizPrompt(false);
             setLoading(false);
           });
       });
-  }, []);
+  }, [hasCompletedQuiz, persistQuizCompletion]);
+
+  useEffect(() => {
+    syncQuizCompletionFromStorage();
+  }, [syncQuizCompletionFromStorage]);
 
   // Load recommendations on mount and when pathname changes (user navigates back from quiz)
   useEffect(() => {
@@ -129,6 +172,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       } else {
         console.log("[RecommendedForYou] Quiz completed event received without detail");
       }
+      persistQuizCompletion();
       loadRecommendations(sessionId);
     };
 
@@ -136,6 +180,13 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       // Refresh when profile or token changes in localStorage
       if (event.key === "sm_profile" || event.key === "sm_token") {
         loadRecommendations();
+      }
+      if (event.key === QUIZ_COMPLETED_FLAG_STORAGE_KEY) {
+        const completed = event.newValue === "1";
+        setHasCompletedQuiz(Boolean(completed));
+        if (completed) {
+          setNeedsQuizPrompt(false);
+        }
       }
     };
 
@@ -148,7 +199,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       window.removeEventListener(QUIZ_COMPLETED_EVENT, handleQuizCompleted);
       window.removeEventListener("storage", handleStorageUpdate);
     };
-  }, [loadRecommendations]);
+  }, [loadRecommendations, persistQuizCompletion]);
 
   const recommendations = useMemo(() => topics, [topics]);
 
@@ -165,7 +216,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
               Recommended for your routine
             </h2>
             <p className="mt-2 text-sm text-[#11224a]/70 sm:text-base">
-              Curated from your most-viewed concerns and the community’s current favourites.
+              Curated from your most-viewed concerns and the community&apos;s current favourites.
             </p>
           </div>
           <Link
@@ -176,6 +227,18 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
             <span aria-hidden>→</span>
           </Link>
         </div>
+
+        {/* Quiz prompt - reduced padding for compact look */}
+        {needsQuizPrompt && (
+          <div className="px-6 py-10 text-sm text-[#11224a]/70">
+            <div className="mx-auto max-w-xl rounded-[18px] border-2 border-[#11224a]/20 bg-white/80 p-5 text-center shadow-[3px_3px_0_rgba(0,0,0,0.25)]">
+              <p className="text-base font-semibold text-[#11224a]">Take the SkinMatch quiz</p>
+              <p className="mt-2 text-sm text-[#11224a]/80">
+                Update your preferences to unlock personalised ingredients, routines, and insights curated just for you.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="px-3 lg:px-3 pb-1 lg:pb-5 pt-4 sm:px-6">
           <div className="flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 sm:grid sm:auto-rows-[1fr] sm:grid-cols-2 sm:gap-4 sm:overflow-visible xl:grid-cols-4">
@@ -205,49 +268,46 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                     {topic.subtitle || topic.excerpt || "Tap to see why this ingredient belongs in your lineup."}
                   </p>
                   <div className="relative mt-auto flex items-center justify-between text-xs uppercase tracking-[0.28em] text-[#11224a]/50">
-  {/* Hide on mobile */}
-  <span className="hidden sm:inline">
-    {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
-  </span>
+                    {/* Hide on mobile */}
+                    <span className="hidden sm:inline">
+                      {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
+                    </span>
 
-  {/* “View guide” button pinned bottom-right on mobile */}
-  <span
-  className="
-    absolute bottom-2 right-2 
-    sm:static 
-    inline-flex items-center gap-1 
-    text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.25em] 
-    text-[#11224a] transition hover:-translate-y-[1px]
-    
-    /* Mobile (default): show oval button */
-    rounded-full border border-[#11224a] bg-[#FAEAB1] px-4 py-1.5 
-    
-    /* Hide oval on sm and up */
-    sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0
-  "
->
-  Read
-  <span aria-hidden className="hidden sm:inline">
-    ↗
-  </span>
-</span>
-</div>
+                    {/* "View guide" button pinned bottom-right on mobile */}
+                    <span
+                      className="
+                        absolute bottom-2 right-2 
+                        sm:static 
+                        inline-flex items-center gap-1 
+                        text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.25em] 
+                        text-[#11224a] transition hover:-translate-y-[1px]
+                        
+                        /* Mobile (default): show oval button */
+                        rounded-full border border-[#11224a] bg-[#FAEAB1] px-4 py-1.5 
+                        
+                        /* Hide oval on sm and up */
+                        sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0
+                      "
+                    >
+                      Read
+                      <span aria-hidden className="hidden sm:inline">
+                        ↗
+                      </span>
+                    </span>
+                  </div>
                 </Link>
               ))}
           </div>
         </div>
 
-        {!loading && !recommendations.length ? (
-          <div className="border-t border-dashed border-[#11224a]/20 px-6 py-6 text-sm text-[#11224a]/70">
-            {error ? (
-              <div className="rounded-[16px] border-2 border-[#B6771D]/30 bg-[#FFF1CA]/60 p-4 text-center">
-                <p className="font-semibold text-[#11224a]">{error}</p>
-              </div>
-            ) : (
-              "We'll personalise this space once you explore a few more topics."
-            )}
+        {/* Error message only */}
+        {!loading && !recommendations.length && !needsQuizPrompt && error && (
+          <div className="px-6 py-6 text-sm text-[#11224a]/70">
+            <div className="rounded-[16px] border-2 border-[#B6771D]/30 bg-[#FFF1CA]/60 p-4 text-center">
+              <p className="font-semibold text-[#11224a]">{error}</p>
+            </div>
           </div>
-        ) : null}
+        )}
       </div>
     </PageContainer>
   );
