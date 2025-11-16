@@ -507,7 +507,17 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
     Try the LLM helper a few times. If it never produces a payload we trust,
     return the heuristic fallback so the UI can still render something.
     """
-    fallback_result = _fallback_extract(text)
+    fallback_result: dict | None = None
+
+    def _fallback_list(key: str) -> list[str]:
+        nonlocal fallback_result
+        if fallback_result is None:
+            fallback_result = _fallback_extract(text)
+        return list(fallback_result.get(key, []))
+
+    def _fallback_confidence() -> float:
+        return float(fallback_result.get("confidence", 0.55)) if fallback_result else 0.55
+
     attempt = 0
     while attempt < max_attempts:
         primary = _call_primary_model(text)
@@ -517,12 +527,13 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
             concerns_primary = primary.get("concerns", [])
             notes_primary = primary.get("notes", [])
             combined = {
-                "benefits": _combine_lists(benefits_primary, fallback_result.get("benefits", []), sort_results=True, prefer_primary=bool(benefits_primary)),
-                "actives": _combine_lists(actives_primary, fallback_result.get("actives", []), sort_results=True, prefer_primary=bool(actives_primary)),
-                "concerns": _combine_lists(concerns_primary, fallback_result.get("concerns", []), sort_results=True, prefer_primary=bool(concerns_primary)),
-                "notes": _combine_lists(notes_primary, fallback_result.get("notes", []), prefer_primary=bool(notes_primary)),
+                "benefits": _combine_lists(benefits_primary, [] if benefits_primary else _fallback_list("benefits"), sort_results=True, prefer_primary=bool(benefits_primary)),
+                "actives": _combine_lists(actives_primary, [] if actives_primary else _fallback_list("actives"), sort_results=True, prefer_primary=bool(actives_primary)),
+                "concerns": _combine_lists(concerns_primary, [] if concerns_primary else _fallback_list("concerns"), sort_results=True, prefer_primary=bool(concerns_primary)),
+                "notes": _combine_lists(notes_primary, [] if notes_primary else _fallback_list("notes"), prefer_primary=bool(notes_primary)),
             }
-            confidence = float(primary.get("confidence", fallback_result.get("confidence", 0.55)))
+            fallback_conf = _fallback_confidence()
+            confidence = float(primary.get("confidence", fallback_conf))
             if sum(len(values) for values in combined.values()) >= 3:
                 return combined, confidence, False
         else:
@@ -530,13 +541,16 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
             break
         attempt += 1
 
+    if fallback_result is None:
+        fallback_result = _fallback_extract(text)
+
     combined_fallback = {
         "benefits": list(fallback_result.get("benefits", [])),
         "actives": list(fallback_result.get("actives", [])),
         "concerns": list(fallback_result.get("concerns", [])),
         "notes": list(fallback_result.get("notes", [])),
     }
-    confidence = float(fallback_result.get("confidence", 0.55))
+    confidence = _fallback_confidence()
     return combined_fallback, confidence, True
 
 # ---------------- Endpoint ----------------
