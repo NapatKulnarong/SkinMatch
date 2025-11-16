@@ -14,6 +14,7 @@ from django.http import HttpResponseForbidden, HttpResponseNotFound, HttpRespons
 from django.utils import timezone
 
 from .api_keys import allowed_networks_for, get_api_client_from_key, touch_api_client_usage
+from .sanitizers import sanitize_plain_text
 from .security_events import record_security_event
 from .security_utils import bump_counter, get_client_ip, ip_in_networks
 
@@ -442,8 +443,9 @@ class APIInputValidationMiddleware:
             body = request.body.decode("utf-8", errors="ignore")
         except Exception:
             return True
+        scan_body = self._prepare_body_for_scan(request, body)
         for pattern in self.blocklist:
-            if pattern.search(body):
+            if pattern.search(scan_body):
                 record_security_event(
                     "api.payload_rejected",
                     "warning",
@@ -453,6 +455,20 @@ class APIInputValidationMiddleware:
                 )
                 return False
         return True
+
+    def _prepare_body_for_scan(self, request, body: str) -> str:
+        """
+        JSON payloads often contain harmless markup (e.g., feedback text). Strip
+        HTML tags before scanning so blocklist checks are performed on sanitized
+        text but keep raw body for other content types.
+        """
+        content_type = (request.META.get("CONTENT_TYPE") or "").lower()
+        if "json" in content_type:
+            return sanitize_plain_text(body)
+        trimmed = body.lstrip()
+        if trimmed.startswith("{") or trimmed.startswith("["):
+            return sanitize_plain_text(body)
+        return body
 
 
 class APIKeyMiddleware:

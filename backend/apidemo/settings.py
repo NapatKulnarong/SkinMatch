@@ -97,7 +97,10 @@ API_KEY_QUERY_PARAM = os.getenv("API_KEY_QUERY_PARAM", "api_key")
 API_RATE_LIMIT_DEFAULT_PER_MIN = int(os.getenv("API_RATE_LIMIT_DEFAULT_PER_MIN", "120"))
 API_RATE_LIMIT_PER_IP_PER_MIN = int(os.getenv("API_RATE_LIMIT_PER_IP_PER_MIN", "300"))
 API_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("API_RATE_LIMIT_WINDOW_SECONDS", "60"))
-API_MAX_BODY_KB = int(os.getenv("API_MAX_BODY_KB", "512"))
+API_MAX_BODY_KB = int(os.getenv("API_MAX_BODY_KB", "10240"))  # 10 MB default
+_default_upload_bytes = 10 * 1024 * 1024  # 10 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(_default_upload_bytes)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(_default_upload_bytes)))
 API_INPUT_BLOCKLIST = env_csv(
     "API_INPUT_BLOCKLIST",
     "<script,</script>,union select,drop table,insert into",

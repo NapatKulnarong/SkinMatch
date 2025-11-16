@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CameraIcon,
@@ -138,35 +139,39 @@ export function ProductScanner() {
 
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-      <div className="hidden lg:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
-        <img
+      <div className="hidden md:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
+        <Image
           src="/img/mascot/matchy_scan.png"
           alt="Matchy with camera"
+          width={320}
+          height={320}
           className="h-auto w-[190px] sm:w-[220px] md:w-[280px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
+          priority
         />
       </div>
 
-      <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-6 sm:pt-10">
-        <div className="mx-auto w-full max-w-7xl lg:text-center space-y-4">
+      <div className="relative px-6 py-5 sm:px-10 sm:py-6 pt-6 sm:pt-10">
+        <div className="mx-auto w-full max-w-7xl space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center lg:justify-center gap-2 lg:gap-3">
-              <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8C1007]" />
-              <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007]">
+            <div className="flex items-center gap-2 lg:justify-start lg:gap-3">
+              <CameraIcon className="h-7 w-7 md:h-10 md:w-10 sm:h-10 sm:w-10 text-[#8C1007]" />
+              <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007] text-left">
                 Instant Product Scanner
               </h2>  
             </div>
-            <p className="text-sm sm:text-base text-[#6b3e3e]/90 max-w-2xl mx-auto">
-            Please upload a clear photo of the ingredient list. We will read the label, identify key active ingredients, 
-            flag concerns, and provide a brief overview of the product’s use.
+            <p className="text-left text-sm sm:text-base text-[#6b3e3e]/90 mx-auto lg:mx-0">
+            Upload a clear photo of the ingredient list. We will identify key active ingredients, 
+            flag concerns, and provide a brief overview of the product.
             </p>
-          </div>
+         </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2 w-full">
             <label
               htmlFor="scan-upload"
               onDragOver={(event) => event.preventDefault()}
               onDrop={handleDrop}
-              className="flex lg:min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-[5px] lg:rounded-[24px] border-2 border-black bg-white/80 px-6 py-6 text-center shadow-[0_6px_0_rgba(0,0,0,0.2)] cursor-pointer"
+              className="flex lg:min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-[5px] border-2 border-black bg-white/70 px-6 py-6 
+                        text-center shadow-[0_6px_0_rgba(0,0,0,0.2)] cursor-pointer"
             >
               <input
                 ref={inputRef}
@@ -177,21 +182,24 @@ export function ProductScanner() {
                 onChange={handleInputChange}
               />
               {previewUrl ? (
-                <img
+                <Image
                   src={previewUrl}
                   alt="Uploaded label preview"
-                  className="max-h-48 rounded-2xl border border-black/10 object-contain"
+                  width={320}
+                  height={320}
+                  className="max-h-48 rounded-2xl border border-black/10 object-contain w-auto h-auto"
+                  unoptimized
                 />
               ) : (
                 <div className="space-y-2">
-                  <SparklesIcon className="mx-auto h-7 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
+                  <SparklesIcon className="mx-auto h-6 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
                   <p className="text-sm font-semibold text-[#5a4230]">Drop a photo or tap to browse</p>
                   <p className="text-xs text-[#5a4230]/70">PNG / JPG up to 10MB</p>
                 </div>
               )}
             </label>
 
-            <div className="rounded-[5px] lg:rounded-[24px] border-2 border-black bg-white/90 p-4 text-left shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col">
+            <div className="rounded-[5px] border-2 border-black  bg-white/70  p-4 text-left shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col">
               <label htmlFor="manual-ingredients" className="block text-sm font-bold text-[#6b3e3e] mb-2">
                 Or paste the ingredient list directly
               </label>
@@ -201,7 +209,7 @@ export function ProductScanner() {
                 onChange={(event) => setManualText(event.target.value)}
                 placeholder="Deionized Water, Garcinia Mangostana Peel Extract, Glyceryl Glucoside, ..."
                 rows={6}
-                className="h-full min-h-[150px] lg:min-h-[240px] w-full lg:rounded-2xl border-2 border-black/50 bg-white px-3 py-2 text-sm text-[#5a4230] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f2c9b5]/60"
+                className="h-full min-h-[150px] lg:min-h-[200px] w-full border border-dashed border-black/50 bg-white/60 px-3 py-2 text-sm text-[#5a4230] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f2c9b5]/60"
               />
             </div>
           </div>
@@ -210,7 +218,7 @@ export function ProductScanner() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center justify-center gap-2 rounded-[5px] lg:rounded-full border-2 border-black bg-[#ffbd95] px-5 py-2 lg:py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1 min-w-[140px]"
+              className="inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[#FFFCFB] px-5 py-2 lg:py-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)]  hover:bg-white/50  flex-1 min-w-[140px]"
             >
               Reset
             </button>
@@ -218,19 +226,19 @@ export function ProductScanner() {
               type="button"
               onClick={handleScan}
               disabled={isUploading}
-              className="inline-flex items-center justify-center gap-2 rounded-[5px] lg:rounded-full border-2 border-black bg-[#FFFCFB] px-6 py-2 lgpy-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-70 flex-1 min-w-[140px]"
+              className="inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[#FFFCFB] px-6 py-2 lgpy-2.5 text-sm font-semibold text-black shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-white/50 disabled:cursor-not-allowed disabled:opacity-70 flex-1 min-w-[140px]"
             >
               Scan Product
             </button>
             
           </div>
           {error && (
-            <div className="rounded-2xl border-2 border-black bg-[#fff4f2] px-4 py-3 text-sm font-semibold text-[#7c2b2b]">
+            <div className="rounded-[5px] border-2 border-black bg-[#fff4f2] px-4 py-3 text-sm font-semibold text-[#7c2b2b]">
               {error}
             </div>
           )}
           {isUploading && (
-            <div className="flex flex-col items-center gap-2 rounded-[5px] lg:rounded-2xl border-2 border-black bg-white/80 px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
+            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[white/80] px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
               <SparklesIcon className="h-6 w-6 animate-bounce text-[#a85b5b]" />
               <p>Analyzing ingredients… sit tight!</p>
             </div>
@@ -241,7 +249,7 @@ export function ProductScanner() {
               {infoLists.map(({ key, title, icon: Icon, accent, badge, items }) => (
                 <div
                   key={key}
-                  className="rounded-[5px] lg:rounded-2xl border-2 border-black bg-gradient-to-b from-[#fff6f4] to-[#ffe7e2] p-4 text-left shadow-[0_5px_0_rgba(0,0,0,0.15)]"
+                  className="rounded-[5px] border-2 border-black bg-gradient-to-b from-[#fff1ee] to-[#ffcdc7] p-4 text-left shadow-[0_5px_0_rgba(0,0,0,0.15)]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
@@ -253,7 +261,7 @@ export function ProductScanner() {
                   {items.length ? (
                     <ul className="mt-3 space-y-2 text-sm text-[#46342b]">
                       {items.map(({ headline, body }, idx) => (
-                        <li key={`${key}-${headline}-${idx}`} className="lg:rounded-xl bg-white/60 px-3 py-2 border border-[#f4d5d0] shadow-inner">
+                        <li key={`${key}-${headline}-${idx}`} className=" bg-white/60 px-3 py-2 border border-dashed border-black/50 shadow-inner">
                           <span className="font-semibold text-[#4a2b2b]">{headline}</span>
                           {body && <p className="text-xs text-[#6b4c43] mt-0.5">{body}</p>}
                         </li>
@@ -266,6 +274,10 @@ export function ProductScanner() {
               ))}
             </div>
           )}
+
+          <p className="w-full text-center text-xs lg:text-sm font-semibold text-[#6b3e3e]/70">
+            powered by Gemini AI
+          </p>
         </div>
       </div>
     </section>

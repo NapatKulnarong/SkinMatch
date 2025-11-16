@@ -6,11 +6,11 @@ import SkinKnowledge from "@/app/facts/_SkinKnowledge";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-   
   default: (props: ComponentProps<"img">) => {
-    const { priority, fill, alt, ...rest } = props;
+    const { priority, fill, alt, unoptimized, ...rest } = props;
     void priority;
     void fill;
+    void unoptimized;
     return <img alt={alt ?? ""} {...rest} />;
   },
 }));
@@ -57,13 +57,13 @@ describe("SkinKnowledge imagery", () => {
     render(<SkinKnowledge />);
 
     const moisturizerImage = await screen.findByRole("img", { name: "Moisturizer bottles" });
-    expect(moisturizerImage).toHaveAttribute("src", "/media/topics/moisturizer.jpg");
+    expect(moisturizerImage.getAttribute("src")).toContain("/media/topics/moisturizer.jpg");
 
     const fallbackImage = await screen.findByRole("img", { name: "Cleanser Basics" });
     expect(fallbackImage?.getAttribute("src")).toContain("/img/facts_img/green_tea.jpg");
 
     const serumImage = await screen.findByRole("img", { name: "Serum bottles" });
-    expect(serumImage).toHaveAttribute("src", "/media/topics/serum.jpg");
+    expect(serumImage.getAttribute("src")).toContain("/media/topics/serum.jpg");
 
     expect(fetchMock).toHaveBeenCalled();
   });

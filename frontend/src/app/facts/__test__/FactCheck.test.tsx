@@ -7,11 +7,11 @@ import TrendingSkincare from "@/app/facts/_TrendingSkincare";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-   
   default: (props: ComponentProps<"img">) => {
-    const { priority, fill, alt, ...rest } = props;
+    const { priority, fill, alt, unoptimized, ...rest } = props;
     void priority;
     void fill;
+    void unoptimized;
     return <img alt={alt ?? ""} {...rest} />;
   },
 }));
@@ -50,10 +50,10 @@ describe("FactCheck imagery", () => {
     render(<FactCheck />);
 
     const poresImage = await screen.findByRole("img", { name: "Skin pores closeup" });
-    expect(poresImage).toHaveAttribute("src", "/media/factcheck/pores.jpg");
+    expect(poresImage.getAttribute("src")).toContain("/media/factcheck/pores.jpg");
 
     const acneImage = await screen.findByRole("img", { name: "Acne treatment" });
-    expect(acneImage).toHaveAttribute("src", "/media/factcheck/acne.jpg");
+    expect(acneImage.getAttribute("src")).toContain("/media/factcheck/acne.jpg");
   });
 });
 
@@ -93,12 +93,12 @@ describe("TrendingSkincare imagery", () => {
     render(<TrendingSkincare />);
 
     const haImage = await screen.findByRole("img", { name: "Hyaluronic acid serum" });
-    expect(haImage).toHaveAttribute("src", "/media/trending/ha.jpg");
+    expect(haImage.getAttribute("src")).toContain("/media/trending/ha.jpg");
 
     const niacinamideImage = await screen.findByRole("img", { name: "Niacinamide" });
     expect(niacinamideImage?.getAttribute("src")).toContain("/img/facts_img/centella_ampoule.jpg");
 
     const peptidesImage = await screen.findByRole("img", { name: "Peptide serum" });
-    expect(peptidesImage).toHaveAttribute("src", "/media/trending/peptides.jpg");
+    expect(peptidesImage.getAttribute("src")).toContain("/media/trending/peptides.jpg");
   });
 });

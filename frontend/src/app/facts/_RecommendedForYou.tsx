@@ -208,12 +208,9 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
       <div className="rounded-[22px] lg:rounded-[32px] border-2 border-black bg-gradient-to-br from-[#FFF1CA] via-[#F9D689] to-[#FFF1CA] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[10px_12px_0_rgba(0,0,0,0.18)]">
         <div className="relative flex flex-col gap-4 border-b border-black/10 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-8 sm:pb-5">
           <div>
-            <p className="hidden sm:block text-xs font-semibold uppercase tracking-[0.32em] text-[#11224a]/60">
-              Tailored insights
-            </p>
             <h2 className="lg:mt-2 flex items-center gap-2 text-xl lg:text-3xl font-extrabold text-[#11224a]">
               <SparklesIcon className="hidden sm:block h-6 w-6 text-[#B6771D]" aria-hidden />
-              Recommended for your routine
+              Personal Picks
             </h2>
             <p className="mt-2 text-sm text-[#11224a]/70 sm:text-base">
               Curated from your most-viewed concerns and the community&apos;s current favourites.
