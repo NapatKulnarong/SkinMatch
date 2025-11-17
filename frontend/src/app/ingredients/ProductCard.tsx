@@ -33,14 +33,21 @@ const formatPrice = (price: number | null, currency: string) => {
 export type ProductCardProps = {
   product: IngredientSearchProduct;
   compact?: boolean;
+  onShowDetails?: (product: IngredientSearchProduct) => void;
 };
 
-export function ProductCard({ product, compact = false }: ProductCardProps) {
+export function ProductCard({ product, compact = false, onShowDetails }: ProductCardProps) {
   const imageSrc = product.imageUrl ?? product.image ?? null;
   const priceLabel = formatPrice(product.price, product.currency);
   const ratingLabel =
     product.averageRating !== null ? `${product.averageRating.toFixed(1)} / 5` : null;
   const categoryLabel = toTitleCase(product.category);
+  const detailButtonClasses = compact
+    ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-2.5 py-1 text-[9px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+    : "inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]";
+  const shopButtonClasses = compact
+    ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-2.5 py-1 text-[9px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+    : "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]";
 
   return (
     <article
@@ -116,30 +123,51 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
         ) : null}
       </div>
 
-      <footer className="mt-auto flex items-center justify-between gap-2 border-t border-dashed border-[#1f2d26]/15 pt-3 text-[11px] text-[#1f2d26]/70">
-        {ratingLabel ? (
-          <span className="inline-flex items-center gap-1">
-            <StarIcon className="h-4 w-4 text-[#fbbf24]" />
-            {ratingLabel}
-            {product.reviewCount ? (
-              <span className="text-[10px] text-[#1f2d26]/50">({product.reviewCount} reviews)</span>
-            ) : null}
-          </span>
-        ) : (
-          <span className="text-[10px] text-[#1f2d26]/50">Rating coming soon</span>
-        )}
-        {product.productUrl ? (
-          <Link
-            href={product.productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-black/20 bg-[#3f6b3a] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.18)]"
-          >
-            View
-          </Link>
-        ) : (
-          <span className="text-[10px] text-[#1f2d26]/40">No shop link</span>
-        )}
+      <footer
+        className={`mt-auto flex flex-col gap-2 border-t border-dashed border-[#1f2d26]/15 ${
+          compact ? "pt-2 text-[10px]" : "pt-3 text-[11px]"
+        } text-[#1f2d26]/70`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          {ratingLabel ? (
+            <span className="inline-flex items-center gap-1">
+              <StarIcon className="h-4 w-4 text-[#fbbf24]" />
+              {ratingLabel}
+              {product.reviewCount ? (
+                <span className="text-[10px] text-[#1f2d26]/50">
+                  ({product.reviewCount} reviews)
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            <span className="text-[10px] text-[#1f2d26]/50">Rating coming soon</span>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          {onShowDetails ? (
+            <button
+              type="button"
+              onClick={() => onShowDetails(product)}
+              className={detailButtonClasses}
+            >
+              Details
+            </button>
+          ) : (
+            <span className="text-[10px] text-[#1f2d26]/40">Details unavailable</span>
+          )}
+          {product.productUrl ? (
+            <Link
+              href={product.productUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={shopButtonClasses}
+            >
+              Shop
+            </Link>
+          ) : (
+            <span className="text-[10px] text-[#1f2d26]/40">No shop link</span>
+          )}
+        </div>
       </footer>
     </article>
   );
