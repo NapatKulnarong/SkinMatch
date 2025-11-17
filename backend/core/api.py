@@ -992,8 +992,20 @@ def get_environment_alerts(
     longitude: float | None = None,
 ):
     lat, lon, inferred_label = _normalize_coordinates(latitude, longitude)
-    user = _resolve_request_user_object(request)
-    keywords = _keywords_for_user(user)
+
+    user = None
+    try:
+        user = _resolve_request_user_object(request)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("[environment] Failed to resolve request user: %s", exc)
+
+    keywords: list[str] = []
+    if user:
+        try:
+            keywords = _keywords_for_user(user)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("[environment] Failed to build keywords for user %s: %s", getattr(user, "id", None), exc)
+
     try:
         payload = fetch_environment_alerts(
             latitude=lat,
