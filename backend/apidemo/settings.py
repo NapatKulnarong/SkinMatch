@@ -168,11 +168,11 @@ CONTENT_SECURITY_POLICY = os.getenv(
     "DJANGO_CONTENT_SECURITY_POLICY",
     (
         "default-src 'self'; "
-        "img-src 'self' data: blob:; "
+        "img-src 'self' data: blob: https: django-ninja.dev cdn.jsdelivr.net; "
         "media-src 'self' data: blob:; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "font-src 'self' data:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.jsdelivr.net django-ninja.dev; "
+        "style-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net django-ninja.dev; "
+        "font-src 'self' data: https: cdn.jsdelivr.net; "
         "connect-src 'self'; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "

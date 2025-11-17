@@ -22,10 +22,38 @@ import {
 
 const ANSWERS_STORAGE_KEY = "skinmatch.quizAnswers";
 const SESSION_STORAGE_KEY = "skinmatch.quizSession";
+const COMPLETED_STORAGE_KEY = "skinmatch.quizCompleted";
 
 export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
 export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
 export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
+export const QUIZ_COMPLETED_FLAG_STORAGE_KEY = COMPLETED_STORAGE_KEY;
+export const QUIZ_COMPLETION_RESET_EVENT = "skinmatch-quiz-completion-reset";
+export const QUIZ_RECOMMENDATIONS_REFRESH_EVENT = "skinmatch-quiz-refresh";
+
+export function clearQuizCompletionFlag() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY);
+  } catch (err) {
+    console.warn("Failed to clear quiz completion flag", err);
+  }
+  try {
+    const event = new CustomEvent(QUIZ_COMPLETION_RESET_EVENT);
+    window.dispatchEvent(event);
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_COMPLETION_RESET_EVENT));
+  }
+}
+
+export function emitQuizRecommendationsRefresh() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
+  }
+}
 
 type QuizAnswerKey =
   | "primaryConcern"
@@ -325,6 +353,13 @@ export function QuizProvider({ children }: PropsWithChildren) {
         finalizedSessionRef.current = payload.sessionId;
         setResult(payload);
         setError(null);
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY, "1");
+          } catch (err) {
+            console.warn("Failed to persist quiz completion flag", err);
+          }
+        }
         
         // Dispatch event to notify other components that quiz was completed
         if (typeof window !== "undefined") {

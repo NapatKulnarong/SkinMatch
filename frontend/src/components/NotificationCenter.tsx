@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { QUIZ_COMPLETED_EVENT } from "@/app/quiz/_QuizContext";
+import { getAuthToken } from "@/lib/auth-storage";
 
 export type NotificationLink = {
   label: string;
@@ -90,6 +91,11 @@ export function NotificationCenterProvider({ children }: PropsWithChildren) {
     }
 
     const handleQuizCompleted = () => {
+      const token = getAuthToken();
+      if (!token) {
+        return;
+      }
+
       addNotification({
         type: "personal_picks",
         title: "Personal Picks refreshed",
