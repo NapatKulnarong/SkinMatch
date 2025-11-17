@@ -6,11 +6,11 @@ export default function SiteFooter() {
   return (
     <footer className="border-t-2 border-black bg-[#3C3D37] text-white">
       <PageContainer className="py-8 sm:py-12">
-        <div className="grid gap-6 sm:gap-8 grid-cols-2 lg:grid-cols-4">
-          <div className="col-span-2 lg:col-span-1 space-y-3 sm:space-y-4">
+        <div className="grid gap-6 sm:gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="col-span-2 md:col-span-3 lg:col-span-1 space-y-3 sm:space-y-4">
             <h3 className="text-xl sm:text-2xl font-bold">SkinMatch</h3>
             <p className="text-xs sm:text-sm text-white/70">
-              “Your skin, Your match, Your best care!”
+              "Your skin, Your match, Your best care!"
             </p>
           </div>
 
@@ -51,27 +51,9 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          <div className="col-span-2 lg:col-span-1 space-y-3 sm:space-y-4">
-            <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider">Connect</h4>
-            <div className="flex gap-2 sm:gap-3">
-              {[
-                { href: "https://facebook.com", label: "Facebook", icon: facebookIcon },
-                { href: "https://instagram.com", label: "Instagram", icon: instagramIcon },
-                { href: "https://twitter.com", label: "Twitter", icon: twitterIcon },
-              ].map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border-2 border-white/20 bg-white/10 transition hover:bg-white/20"
-                >
-                  <span className="sr-only">{item.label}</span>
-                  {item.icon()}
-                </a>
-              ))}
-            </div>
-            <ul className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs text-white/60">
+          <div className="col-span-2 md:col-span-1 lg:col-span-1 space-y-3 sm:space-y-4">
+            <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider">Legal</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-sm text-white/60">
               <li>
                 <Link href="/privacy" className="hover:text-white transition">
                   Privacy Policy
