@@ -8,11 +8,12 @@ import { useRouter } from "next/navigation";
 import { useNavWidth } from "@/components/NavWidthContext";
 import type { ProductDetail, QuizProfile, QuizRecommendation, QuizResultSummary } from "@/lib/api.quiz";
 import { emailQuizSummary, fetchProductDetail, submitQuizFeedback } from "@/lib/api.quiz";
-import { getStoredProfile } from "@/lib/auth-storage";
+import { getStoredProfile, getAuthToken } from "@/lib/auth-storage";
 import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
+import { BeakerIcon, UserIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -40,12 +41,28 @@ export default function QuizResultPage() {
   const [productDetailError, setProductDetailError] = useState<string | null>(null);
   const detailCacheRef = useRef<Record<string, ProductDetail>>({});
   const currentDetailRequestRef = useRef<string | null>(null);
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isComplete && hasPrimary && !result) {
       finalize().catch(() => null);
     }
   }, [finalize, hasPrimary, isComplete, result]);
+
+  useEffect(() => {
+    const loadWishlist = async () => {
+      const token = getAuthToken();
+      if (!token) return;
+      try {
+        const { fetchWishlist } = await import("@/lib/api.wishlist");
+        const items = await fetchWishlist(token);
+        setWishlistedIds(new Set(items.map(item => item.id)));
+      } catch (err) {
+        console.error("Failed to load wishlist", err);
+      }
+    };
+    loadWishlist();
+  }, []);
 
   const sectionMaxWidth = navWidth ? `${navWidth}px` : "1200px";
   const fallbackWidth = navWidth ? `${navWidth}px` : "720px";
@@ -109,8 +126,9 @@ export default function QuizResultPage() {
     return insights;
   }, [guidance.insights, result?.summary]);
 
-  const aiStrategyNotes = result?.strategyNotes ?? [];
-  const strategyNotes = aiStrategyNotes.length ? aiStrategyNotes : fallbackStrategyNotes;
+  // Ensure strategyNotes is always an array, even if result is undefined or strategyNotes is missing
+  const aiStrategyNotes = Array.isArray(result?.strategyNotes) ? result.strategyNotes : [];
+  const strategyNotes = aiStrategyNotes.length > 0 ? aiStrategyNotes : fallbackStrategyNotes;
 
   const profileItems = useMemo(() => {
     return buildProfileItems(result?.profile ?? null, answerLabels);
@@ -292,17 +310,14 @@ export default function QuizResultPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FFF6E9] flex items-start justify-center pt-36 pb-20">
-      <section className="mx-auto w-full px-32 space-y-12" style={{ maxWidth: sectionMaxWidth }}>
-        <header className="text-center space-y-4">
-          <p className="uppercase tracking-[0.3em] text-xs font-semibold text-[#B9375D]">
-            Your Skin Match Snapshot
-          </p>
+    <main className="min-h-screen bg-[#F5EFE6] flex items-start justify-center pt-36 pb-20">
+      <section className="mx-auto lg:w-[85rem] px-32 space-y-12" style={{ maxWidth: sectionMaxWidth }}>
+        <header className="text-left space-y-4">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#3C3D37] drop-shadow-[0_2px_0_rgba(0,0,0,0.15)]">
-            Personalised routine roadmap
+            Personalised Routine Roadmap
           </h1>
-          <p className="text-base sm:text-lg text-[#3C3D37]/80 max-w-2xl mx-auto">
-            Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
+          <p className="text-base sm:text-lg text-[#3C3D37]/80">
+            Here&apos;s a snapshot of your SkinProfile—plus the ingredient insights surfaced by our matcher.
           </p>
           {error && (
             <p className="text-sm text-[#B9375D]">
@@ -313,12 +328,15 @@ export default function QuizResultPage() {
 
         <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
           <section className="space-y-8">
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f0f5ff] to-[#F5BABB] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your skin profile</h2>
+            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+              <div className="inline-flex gap-2 text-2xl text-[#35574a] items-center">
+                <UserIcon className="w-8 h-8" aria-hidden />
+                <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your Skin Profile</h2>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {profileItems.map((item) => (
                   <div key={item.label} className="rounded-2xl border border-black/60 bg-white/80 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#B95E82]/80 font-semibold">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#767394]/80 font-semibold">
                       {item.label}
                     </p>
                     <p className="mt-1 text-base font-semibold text-[#3C3D37]">{item.value}</p>
@@ -328,7 +346,10 @@ export default function QuizResultPage() {
             </div>
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-              <h2 className="text-2xl font-bold text-[#33574a]">Ingredients to prioritise</h2>
+            <div className="inline-flex gap-2 text-2xl text-[#33574a] font-bold items-center">
+              <BeakerIcon className="relative w-8 h-8" aria-hidden />
+              <h2 className="text-2xl">Ingredients to prioritise</h2>
+            </div>
               <ul className="space-y-4">
                 {ingredientHighlights.map((item) => (
                   <li key={item.ingredient} className="flex items-start gap-3">
@@ -345,20 +366,27 @@ export default function QuizResultPage() {
 
           <aside className="space-y-8">
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
-              <ul className="mt-4 space-y-4">
-                {strategyNotes.map((insight) => (
-                  <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
-                    {insight}
-                  </li>
-                ))}
-              </ul>
+              <span className="inline-flex gap-2 text-2xl text-[#33574a]">
+              <span><BookOpenIcon className="w-8 h-8" /></span>
+              <span className="text-2xl font-bold">Strategy Notes</span>
+              </span>
+              <div className="mt-2 rounded-2xl border-2 border-black/40 border-dashed bg-white/40 p-4">
+                <ul className="space-y-4">
+                  {strategyNotes.map((insight) => (
+                    <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
+                      {insight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
               {!strategyNotes.length && (
                 <p className="text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>
               )}
+              <p className="mt-3 mr-1 text-sm text-[#1b2a50] text-right">powered by Gemini AI</p>
             </div>
+            
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
               <h2 className="text-2xl font-bold text-[#70410f]">Use with caution</h2>
@@ -384,9 +412,9 @@ export default function QuizResultPage() {
           </aside>
 
           {/* PRODUCT MATCHES SECTION - MOVED UP */}
-          <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
+            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
             <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Product matches</h2>
-            {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails)}
+            {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails, wishlistedIds, setWishlistedIds)}
           </div>
 
           {/* EMAIL & RETAKE QUIZ ROW */}
@@ -621,10 +649,17 @@ function formatPriceLabel(price: number | null, currency?: string) {
   }
 }
 
+function formatProfileValue(value: string | null) {
+  if (!value) return "Not provided";
+  const trimmed = value.trim();
+  if (!trimmed) return "Not provided";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 function buildProfileItems(profile: QuizProfile | null, answers: Record<QuizAnswerKey, string | null>) {
   const items: { label: string; value: string }[] = [];
   const append = (label: string, value: string | null) => {
-    items.push({ label, value: value && value.trim() ? value : "Not provided" });
+    items.push({ label, value: formatProfileValue(value) });
   };
 
   if (profile) {
@@ -677,8 +712,35 @@ function buildSummaryInsights(summary: QuizResultSummary | undefined) {
 function renderRecommendations(
   recommendations: QuizRecommendation[],
   requiresAuth: boolean,
-  onShowDetails: (item: QuizRecommendation) => void | Promise<void>
+  onShowDetails: (item: QuizRecommendation) => void | Promise<void>,
+  wishlistedIds: Set<string>,
+  setWishlistedIds: React.Dispatch<React.SetStateAction<Set<string>>>
 ) {
+  const handleFav = async (item: QuizRecommendation) => {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!item.productId) return;
+      const isWishlisted = wishlistedIds.has(item.productId);
+      const { addToWishlist, removeFromWishlist } = await import("@/lib/api.wishlist");
+      if (isWishlisted) {
+        await removeFromWishlist(item.productId, token);
+        setWishlistedIds(prev => {
+          const next = new Set(prev);
+          next.delete(item.productId);
+          return next;
+        });
+      } else {
+        await addToWishlist(item.productId, token);
+        setWishlistedIds(prev => new Set(prev).add(item.productId));
+      }
+    } catch (err) {
+      console.error("Failed to update wishlist", err);
+    }
+  };
   if (recommendations.length) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -759,10 +821,11 @@ function renderRecommendations(
                   {/* Wishlist Heart Button */}
                   <button
                     type="button"
-                    aria-label="Add to wishlist"
+                    aria-label={wishlistedIds.has(item.productId) ? "Remove from wishlist" : "Add to wishlist"}
+                    onClick={() => { void handleFav(item); }}
                     className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
-                    <svg className="h-3.5 w-3.5 text-[#B9375D]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`h-3.5 w-3.5 ${wishlistedIds.has(item.productId) ? "text-pink-500" : "text-[#B9375D]"}`} fill={wishlistedIds.has(item.productId) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>

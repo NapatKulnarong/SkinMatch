@@ -91,10 +91,10 @@ const SECTIONS: PolicySection[] = [
         Questions or requests about your privacy are always welcome. Reach our
         data protection team at{" "}
         <Link
-          href="mailto:privacy@skinmatch.app"
+          href="mailto:skinmatch.contact@gmail.com"
           className="font-semibold text-[#2563eb] underline decoration-[#2563eb]/40 underline-offset-4 transition hover:text-[#1d4ed8]"
         >
-          privacy@skinmatch.app
+          skinmatch.contact@gmail.com
         </Link>
         .
       </>,
@@ -106,49 +106,63 @@ const POLICY_LAST_UPDATED = "April 15, 2024";
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-[#f4f8fb] text-[#1f2d26]">
-      <section className="border-b border-[#1f2d26]/10 bg-[#e0f1ff] py-24">
-        <PageContainer className="space-y-6">
-          <p className="inline-flex items-center rounded-full border-2 border-black/10 bg-white px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#1f2d26]/70 shadow-[4px_4px_0_rgba(31,45,38,0.18)]">
-            Privacy First
-          </p>
-          <h1 className="max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl">
+    <main className="min-h-screen bg-gradient-to-br from-[#eef5ff] via-white to-[#eef5ff] text-[#0f1f2b]">
+      <section className="relative overflow-hidden border-b border-[#0f1f2b]/10 bg-gradient-to-br from-[#cfe8ff] via-[#d9f0ff] to-[#edf6ff] px-4 py-12 sm:px-6 sm:py-20 lg:py-28">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-8 right-10 h-32 w-32 rounded-full bg-white/50 blur-3xl" />
+          <div className="absolute bottom-12 left-8 h-36 w-36 rounded-full bg-[#6fc3ff]/30 blur-3xl" />
+        </div>
+        <div className="relative mx-auto mt-28 lg:mt-16 max-w-4xl space-y-4 sm:space-y-6">
+          <div className="hidden md:block flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f1f2b]/70 sm:gap-3 sm:text-xs">
+            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
+              Privacy First
+            </span>
+            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
+              Updated {POLICY_LAST_UPDATED}
+            </span>
+          </div>
+          <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0d1b2a] sm:text-4xl lg:text-5xl">
             Privacy Policy
           </h1>
-          <p className="max-w-3xl text-lg leading-relaxed text-[#1f2d26]/80 sm:text-xl">
-            Your trust matters. This policy explains how SkinMatch collects,
-            protects, and uses your personal information so you can feel confident
-            every time you explore new skincare matches.
+          <p className="mt-4 text-sm leading-relaxed text-[#0f1f2b]/75 sm:text-lg">
+            Your trust matters. This policy explains how SkinMatch collects, protects, and uses your personal information so you can feel confident every time you explore new skincare matches.
           </p>
-          <p className="text-sm font-semibold text-[#1f2d26]/60">
-            Effective date: {POLICY_LAST_UPDATED}
-          </p>
-        </PageContainer>
+        </div>
       </section>
 
-      <PageContainer as="section" className="py-20">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <article className="space-y-10 rounded-3xl border-2 border-black bg-white p-8 shadow-[8px_10px_0_rgba(31,45,38,0.15)] lg:p-10">
-            {SECTIONS.map((section) => (
-              <section key={section.title} className="space-y-4">
-                <h2 className="text-2xl font-bold text-[#0f172a]">
-                  {section.title}
-                </h2>
-                {section.paragraphs.map((text, index) => (
-                  <p key={index} className="text-base leading-relaxed text-[#1f2d26]/80">
+      <PageContainer as="section" className="py-10 sm:py-16 lg:py-20">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+          <article className="space-y-8 overflow-hidden rounded-[24px] border-2 border-black/80 bg-white/95 p-6 shadow-[6px_8px_0_rgba(31,45,38,0.12)] sm:rounded-[32px] sm:p-8 lg:space-y-10 lg:p-10">
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 bg-gradient-to-b from-white via-white to-white/0 px-6 pb-4 pt-6 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pb-6 sm:pt-8 lg:hidden">
+              <div className="flex items-center gap-3 rounded-xl border border-[#0f1f2b]/15 bg-[#eef5ff] px-4 py-2 text-xs font-medium text-[#0f1f2b]/70">
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Scroll to review all {SECTIONS.length} sections
+              </div>
+            </div>
+
+            {SECTIONS.map((section, idx) => (
+              <section key={section.title} className="space-y-4 rounded-2xl border border-[#0f1f2b]/10 bg-[#f9fbff] p-5 sm:p-6">
+                <div className="flex items-center gap-3 text-[#0f172a]">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-white text-base font-black shadow-[3px_3px_0_rgba(0,0,0,0.15)] sm:text-lg">
+                    {idx + 1}
+                  </span>
+                  <h2 className="text-lg font-bold sm:text-2xl">{section.title}</h2>
+                </div>
+                {section.paragraphs.map((text, i) => (
+                  <p key={i} className="text-sm leading-relaxed text-[#0f1f2b]/80 sm:text-base">
                     {text}
                   </p>
                 ))}
                 {section.bullets ? (
-                  <ul className="space-y-3 rounded-2xl border border-[#1f2d26]/10 bg-[#f7fbff] p-5">
+                  <ul className="space-y-3 rounded-xl border border-[#0f1f2b]/10 bg-white/60 p-4 text-sm text-[#0f1f2b]/80 sm:text-base">
                     {section.bullets.map((item) => (
                       <li key={item.label} className="space-y-1">
-                        <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#1f2d26]/70">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0f1f2b]/65 sm:text-sm">
                           {item.label}
                         </p>
-                        <p className="text-base leading-relaxed text-[#1f2d26]/80">
-                          {item.description}
-                        </p>
+                        <p>{item.description}</p>
                       </li>
                     ))}
                   </ul>
@@ -157,35 +171,21 @@ export default function PrivacyPolicyPage() {
             ))}
           </article>
 
-          <aside className="flex flex-col gap-6 rounded-3xl border-2 border-black bg-[#1f2d26] p-8 text-white shadow-[8px_10px_0_rgba(31,45,38,0.3)]">
-            <h2 className="text-2xl font-bold">Key Takeaways</h2>
-            <ul className="space-y-4 text-sm leading-relaxed">
-              <li>
-                We only collect data that helps personalise skincare guidance and
-                improve SkinMatch.
-              </li>
-              <li>
-                Your information is never sold; sharing is limited to essential
-                service providers.
-              </li>
-              <li>
-                You control your profile and can request updates, exports, or deletions
-                any time.
-              </li>
-              <li>
-                Contact us if you have questions or suspect unauthorised access—we are
-                here to help.
-              </li>
+          <aside className="space-y-4 rounded-[24px] border-2 border-black bg-[#1d3349] p-6 text-white shadow-[6px_8px_0_rgba(15,31,43,0.2)] sm:rounded-[32px] sm:p-8 lg:sticky lg:top-24 lg:self-start">
+            <h2 className="text-xl font-bold sm:text-2xl">Key Takeaways</h2>
+            <ul className="space-y-3 text-sm leading-relaxed sm:text-base">
+              <li>We only collect data that helps personalise skincare guidance and improve SkinMatch.</li>
+              <li>Your information is never sold; sharing is limited to essential service providers.</li>
+              <li>You control your profile and can request updates, exports, or deletions any time.</li>
+              <li>Contact us if you have questions or suspect unauthorised access—we are here to help.</li>
             </ul>
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-relaxed">
-              <p className="font-semibold uppercase tracking-[0.25em] text-white/70">
-                Need more details?
-              </p>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm leading-relaxed sm:p-5">
+              <p className="font-semibold uppercase tracking-[0.25em] text-white/70">Need more details?</p>
               <p className="mt-2">
                 Email us at{" "}
                 <Link
                   href="mailto:privacy@skinmatch.app"
-                  className="font-semibold text-[#a5d8ff] underline decoration-[#a5d8ff]/50 underline-offset-4 transition hover:text-white"
+                  className="font-semibold text-[#9cd7ff] underline decoration-[#9cd7ff]/50 underline-offset-4 transition hover:text-white"
                 >
                   privacy@skinmatch.app
                 </Link>{" "}

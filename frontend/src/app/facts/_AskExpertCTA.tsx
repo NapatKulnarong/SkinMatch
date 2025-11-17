@@ -32,36 +32,49 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
   };
 
   return (
-    <PageContainer as="section" id={sectionId} className="pt-14 pb-16">
+    <PageContainer as="section" id={sectionId} className="pt-6 pb-12 lg:pt-3 lg:pb-0">
       <div className="flex w-full flex-col gap-6">
-        <div className="rounded-3xl border-2 border-black bg-white p-8 shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
-          <div className="space-y-5 text-center">
-            <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-[#f3ecff] px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#48307b]">
-              Skincare Myth
-            </p>
-            <h2 className="text-3xl font-extrabold text-[#101b27] md:text-[2.1rem]">
-              Need a skincare myth debunked?
+        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#84AE92] to-[#D6F4ED] p-4 py-6 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
+          <div className="space-y-3 lg:text-center">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-[#101b27] md:text-[2.1rem]">
+              Debunk a skincare myth!
             </h2>
-            <p className="text-sm leading-relaxed text-[#101b27]/70 md:text-base">
-              Tell Matchy the rumor, ingredient combo, or claim you keep seeing. We&apos;ll route it to our expert panel for a future Fact Check feature.
+            <p className="text-sm font-medium leading-relaxed text-black/70 md:text-lg">
+              Heard any skincare rumors or claims? Tell Matchy, our experts might fact-check it next!
             </p>
           </div>
 
-          <ul className="mt-6 grid gap-3 text-sm text-[#101b27]/75 sm:grid-cols-3">
-            {[
-              "Dermatologist-backed answers",
-              "Ingredient pairings that work",
-              "Myths decoded before they trend",
-            ].map((item) => (
-              <li
-                key={item}
-                className="flex items-center justify-center gap-2 rounded-full bg-[#f7f8ff] px-4 py-2 text-center"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#48307b]" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-6 text-sm text-black">
+            <div className="rounded-[5px] lg:rounded-[20px] border-2 border-dashed border-gray-600 bg-white/50 px-4 py-3 sm:hidden">
+              <ul className="space-y-3">
+                {[
+                  "Dermatologist-backed answers",
+                  "Ingredient pairings that work",
+                  "Myths decoded before they trend",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-black" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <ul className="hidden gap-3 text-sm text-black sm:grid sm:grid-cols-3">
+              {[
+                "Dermatologist-backed answers",
+                "Ingredient pairings that work",
+                "Myths decoded before they trend",
+              ].map((item) => (
+                <li
+                  key={item}
+                  className="flex items-center justify-center gap-2 rounded-full border-2 border-dashed border-gray-500 bg-white/80 px-4 py-2 text-center"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-black" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
             <label className="block text-left text-sm font-semibold text-[#101b27]/80">
@@ -76,18 +89,22 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
                   }
                 }}
                 placeholder="e.g. Is slugging safe if I'm already using retinaldehyde?"
-                className="mt-2 w-full min-h-[120px] rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm leading-relaxed text-[#101b27] shadow-sm transition focus:border-[#48307b] focus:outline-none focus:ring-2 focus:ring-[#48307b]/20"
+                className="mt-2 w-full min-h-[120px] rounded-[5px] lg:rounded-[20px]rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm leading-relaxed text-[#101b27] shadow-sm 
+                          transition focus:border-[#48307b] focus:outline-none focus:ring-2 focus:ring-[#48307b]/20"
                 aria-invalid={status === "error"}
               />
             </label>
 
-            <button
-              type="submit"
-              className="inline-flex items-center gap-3 rounded-full bg-[#48307b] px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:shadow-lg hover:bg-[#5a3a8f] active:shadow-sm"
-            >
-              Suggest a myth
-              <span aria-hidden className="text-base">✶</span>
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#E7EFC7] px-6 py-2.5 text-sm font-semibold text-black 
+                          shadow-md transition hover:shadow-lg active:shadow-sm"
+              >
+                Suggest a myth
+                <span aria-hidden className="text-base">✶</span>
+              </button>
+            </div>
           </form>
 
           {message && (
@@ -101,27 +118,15 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
           )}
         </div>
 
-          <div className="rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
-          <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-[#e4f3eb] px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#1f3a29]">
-            Weekly Ritual
-          </p>
-          <h3 className="mt-4 text-3xl font-extrabold text-[#1f3a29]">
-            Get weekly skincare tips
-          </h3>
-          <p className="mt-3 text-sm leading-relaxed text-[#1f3a29]/70 md:text-base">
-            Join 1,000+ readers for ingredient insights, routine blueprints, and myth-busting science.
-          </p>
-
-          <div className="mt-6">
-            <NewsletterSignup
-              title=""
-              subtitle=""
-              buttonLabel="Subscribe"
-              variant="compact"
-              source="facts-newsletter"
-              inputProps={{ "aria-label": "Email for skincare newsletter updates" }}
-            />
-          </div>
+        <div className="lg:mt-3 rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+          <NewsletterSignup
+            title="Get Weekly Skincare Tips"
+            subtitle="Join 1,000+ readers for ingredient insights, routine blueprints, and myth-busting science."
+            buttonLabel="Subscribe"
+            variant="full"
+            source="facts-newsletter"
+            inputProps={{ "aria-label": "Email for skincare newsletter updates" }}
+          />
         </div>
       </div>
     </PageContainer>

@@ -30,11 +30,20 @@ const buildTopic = (overrides: Partial<FactTopicSummary> = {}): FactTopicSummary
   subtitle: "Subtitle",
   excerpt: "Excerpt",
   section: "knowledge",
-  heroImageUrl: "http://backend:8000/media/topics/sample.jpg",
+  heroImageUrl: "/media/topics/sample.jpg",
   heroImageAlt: "Sample hero",
   viewCount: 10,
   ...overrides,
 });
+
+const findHeroImageByAlt = async (altText: string) => {
+  const matches = await screen.findAllByRole("img", { name: altText });
+  const heroImage = matches.find((img) => img.hasAttribute("sizes"));
+  if (!heroImage) {
+    throw new Error(`Expected hero image with alt "${altText}" to have responsive sizes attribute`);
+  }
+  return heroImage;
+};
 
 describe("PopularTopics hero image rendering", () => {
   afterEach(() => {
@@ -56,7 +65,7 @@ describe("PopularTopics hero image rendering", () => {
         id: "3",
         slug: "anti-aging",
         title: "Anti-Aging",
-        heroImageUrl: "http://backend:8000/media/topics/anti-aging.jpg",
+        heroImageUrl: "/media/topics/anti-aging.jpg",
         heroImageAlt: "Anti aging hero",
       }),
     ];
@@ -65,17 +74,27 @@ describe("PopularTopics hero image rendering", () => {
     render(<PopularTopics />);
 
     // initial slide
-    const initialHero = await screen.findByRole("img", { name: topics[0].heroImageAlt! });
+    const initialHero = await findHeroImageByAlt(topics[0].heroImageAlt!);
     expect(initialHero).toHaveAttribute("src", topics[0].heroImageUrl!);
 
-    const slideButtons = screen.getAllByRole("button", { name: /Show slide/i });
+    const goToSecond = await screen.findByText(topics[1].title);
+    const secondButton = goToSecond.closest("button");
+    if (!secondButton) {
+      throw new Error(`Expected a button wrapper for topic "${topics[1].title}"`);
+    }
+    await userEvent.click(secondButton);
 
-    await userEvent.click(slideButtons[1]);
-    const secondHero = await screen.findByRole("img", { name: topics[1].heroImageAlt! });
+    const secondHero = await findHeroImageByAlt(topics[1].heroImageAlt!);
     expect(secondHero).toHaveAttribute("src", topics[1].heroImageUrl!);
 
-    await userEvent.click(slideButtons[2]);
-    const thirdHero = await screen.findByRole("img", { name: topics[2].heroImageAlt! });
+    const goToThird = await screen.findByText(topics[2].title);
+    const thirdButton = goToThird.closest("button");
+    if (!thirdButton) {
+      throw new Error(`Expected a button wrapper for topic "${topics[2].title}"`);
+    }
+    await userEvent.click(thirdButton);
+
+    const thirdHero = await findHeroImageByAlt(topics[2].heroImageAlt!);
     expect(thirdHero).toHaveAttribute("src", topics[2].heroImageUrl!);
   });
 
@@ -93,7 +112,7 @@ describe("PopularTopics hero image rendering", () => {
 
     render(<PopularTopics />);
 
-    const heroImage = await screen.findByRole("img", { name: topics[0].title });
+    const heroImage = await findHeroImageByAlt(topics[0].title);
 
     expect(heroImage.getAttribute("src")).toContain("/img/facts_img/sheet_mask.jpg");
   });

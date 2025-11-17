@@ -20,6 +20,7 @@ from django.http import Http404
 
 from core.models import SkinProfile
 from core.auth import decode_token
+from core.sanitizers import sanitize_plain_text, sanitize_metadata_dict
 from .models import (
     Answer,
     Choice,
@@ -497,20 +498,7 @@ def submit_feedback(request, payload: FeedbackIn):
 
 
 def _sanitize_feedback_metadata(metadata: dict | None) -> dict[str, str]:
-    if not isinstance(metadata, dict):
-        return {}
-    sanitized: dict[str, str] = {}
-    for key, value in metadata.items():
-        if value is None:
-            continue
-        key_str = str(key)
-        if isinstance(value, str):
-            cleaned = value.strip()
-            if cleaned:
-                sanitized[key_str] = cleaned
-        elif isinstance(value, (int, float)):
-            sanitized[key_str] = str(value)
-    return sanitized
+    return sanitize_metadata_dict(metadata)
 
 
 def _compose_feedback_message(raw_message: str | None, rating: int | None) -> str:
@@ -538,24 +526,50 @@ def _initials_from_name(name: str) -> str:
 
 @router.get("/feedback/highlights", response=list[FeedbackOut])
 def list_feedback_highlights(request, limit: int = 6):
+    """Return up to `limit` feedback entries, deduplicated per user by rating/newness."""
+
     capped_limit = max(1, min(limit, 12))
+    fetch_ceiling = capped_limit * 6  # pull extra rows to allow deduplication
+
     try:
         queryset = (
             QuizFeedback.objects.select_related("session__user")
             .filter(rating__isnull=False)
             .exclude(message__isnull=True)
             .exclude(message__exact="")
-            .order_by("-created_at")[:capped_limit]
+            .order_by("-rating", "-created_at")
         )
-        return [_serialize_feedback(feedback) for feedback in queryset]
+
+        highlights: list[QuizFeedback] = []
+        seen_user_ids: set[int] = set()
+
+        for feedback in queryset[:fetch_ceiling]:
+            user_id = None
+            if feedback.session_id and feedback.session and feedback.session.user_id:
+                user_id = feedback.session.user_id
+
+            if user_id is not None:
+                if user_id in seen_user_ids:
+                    continue
+                seen_user_ids.add(user_id)
+
+            highlights.append(feedback)
+            if len(highlights) >= capped_limit:
+                break
+
+        return [_serialize_feedback(feedback) for feedback in highlights]
     except Exception as error:
         logger.warning("Unable to load feedback highlights: %s", error)
         return []
 
 
 def _serialize_feedback(feedback: QuizFeedback) -> dict:
-    metadata = _sanitize_feedback_metadata(feedback.metadata if isinstance(feedback.metadata, dict) else {})
-    display_name = (metadata.get("display_name") or metadata.get("name") or "").strip()
+    metadata = _sanitize_feedback_metadata(
+        feedback.metadata if isinstance(feedback.metadata, dict) else {}
+    )
+    display_name = sanitize_plain_text(
+        metadata.get("display_name") or metadata.get("name") or ""
+    )
 
     user = None
     if feedback.session_id:
@@ -573,14 +587,17 @@ def _serialize_feedback(feedback: QuizFeedback) -> dict:
         else:
             display_name = getattr(user, "username", "") or getattr(user, "email", "")
 
+    display_name = sanitize_plain_text(display_name)
     if not display_name:
         display_name = "SkinMatch member"
 
-    initials = (metadata.get("initials") or "").strip() or _initials_from_name(display_name)
-    location = (metadata.get("location") or "").strip() or None
-    badge = (metadata.get("badge") or "").strip() or None
+    initials = sanitize_plain_text(
+        metadata.get("initials") or ""
+    ) or _initials_from_name(display_name)
+    location = sanitize_plain_text(metadata.get("location") or "") or None
+    badge = sanitize_plain_text(metadata.get("badge") or "") or None
 
-    anonymous_flag = (metadata.get("anonymous") or "").strip().lower()
+    anonymous_flag = sanitize_plain_text(metadata.get("anonymous") or "").lower()
     is_anonymous = anonymous_flag in {"1", "true", "yes", "anon"}
 
     if is_anonymous:
@@ -595,7 +612,7 @@ def _serialize_feedback(feedback: QuizFeedback) -> dict:
             if isinstance(primary, list) and primary:
                 badge = str(primary[0])
 
-    message = feedback.message.strip()
+    message = sanitize_plain_text(feedback.message)
 
     return {
         "id": feedback.id,
@@ -1573,10 +1590,10 @@ def _serialize_review(review: ProductReview, current_user) -> ReviewOut:
         id=review.id,
         product_id=review.product_id,
         user_id=str(user.id),
-        user_display_name=display_name,
+        user_display_name=sanitize_plain_text(display_name),
         avatar_url=getattr(profile, "avatar_url", None),
         rating=review.rating,
-        comment=review.comment,
+        comment=sanitize_plain_text(review.comment),
         is_public=review.is_public,
         is_owner=is_owner,
         created_at=review.created_at,

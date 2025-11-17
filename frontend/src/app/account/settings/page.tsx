@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 import {
   fetchProfile,
   updateProfile,
@@ -129,6 +130,8 @@ export default function AccountSettingsPage() {
   }, [fieldState, profile]);
 
   const canSave = Boolean(profile) && (hasFormChanges || Boolean(avatarFile));
+  const isSavingInProgress = saving || avatarUploading;
+  const allChangesSaved = !canSave && !isSavingInProgress;
 
   const handleFieldChange = (key: keyof FieldState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { value } = event.target;
@@ -242,12 +245,6 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    if (next.length < 8) {
-      setPasswordError("New password must be at least 8 characters long.");
-      setPasswordSaving(false);
-      return;
-    }
-
     if (next !== confirm) {
       setPasswordError("New password confirmation does not match.");
       setPasswordSaving(false);
@@ -259,6 +256,13 @@ export default function AccountSettingsPage() {
       setPasswordSaving(false);
       return;
     }
+    
+    // Backend will validate password policy
+    if (!next) {
+      setPasswordError("Please enter a new password.");
+      setPasswordSaving(false);
+      return;
+    }
 
     try {
       await changePassword(tokenRef.current, {
@@ -267,6 +271,7 @@ export default function AccountSettingsPage() {
       });
       setPasswordMessage("Password updated successfully.");
       setPasswordState({ current: "", next: "", confirm: "" });
+      setTimeout(() => setPasswordMessage(null), 3000);
     } catch (err) {
       console.error("Failed to change password", err);
       setPasswordError(
@@ -302,18 +307,17 @@ export default function AccountSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#8B8F93]">
-      <PageContainer className="pt-32 pb-16 lg:px-8 xl:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-extrabold text-gray-900">Profile settings</h1>
-            
+    <main className="min-h-screen bg-[#a7acb1]">
+      <PageContainer className="pt-41 pb-12 sm:pt-28 lg:pt-32 lg:pb-16 lg:px-8 xl:px-10">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1 sm:space-y-2">
+            <h1 className="hidden sm:block text-3xl font-bold text-black sm:text-4xl">Profile settings</h1>
           </div>
           <Link
             href="/account"
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2.5 text-sm font-bold text-gray-900 
+            className="inline-flex w-fit items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2.5 text-sm font-bold text-gray-900 
                       shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] 
-                      active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
+                      active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] sm:w-auto"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -325,9 +329,9 @@ export default function AccountSettingsPage() {
         {(message || error) && (
           <div
             className={[
-              "mb-6 rounded-xl border-2 px-5 py-4 text-sm font-semibold shadow-[0_4px_0_rgba(0,0,0,0.15)]",
+              "hidden sm:block mb-6 rounded-full border-3 border-dashed px-5 py-4 text-lg font-semibold ",
               message
-                ? "border-green-300 bg-green-50 text-green-800"
+                ? "border-green-800 bg-[#cdeebc]/85 text-green-800"
                 : "border-red-300 bg-red-50 text-red-800",
             ].join(" ")}
           >
@@ -335,15 +339,15 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        <section className="relative rounded-[32px] border-2 border-black bg-[#D8D9DA] p-8 shadow-[8px_10px_0_rgba(0,0,0,0.25)] lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr]">
+        <section className="relative rounded-[24px] border-0 bg-transparent p-0 shadow-none sm:rounded-[24px] sm:border-2 sm:border-black sm:bg-[#D8D9DA] sm:p-6 sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] lg:rounded-[32px] lg:p-10">
+          <div className="grid gap-6 md:gap-8 lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr]">
             {/* Left Column - Avatar */}
             <div className="flex flex-col gap-6">
-              <div className="rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
-                <h2 className="text-xl font-bold text-gray-900">Profile picture</h2>
-                <div className="mt-6 space-y-5">
+              <div className="rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-6">
+                <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Profile picture</h2>
+                <div className="mt-5 space-y-5">
                   {/* Circular Avatar */}
-                  <div className="relative mx-auto h-64 w-64 overflow-hidden rounded-full border-2 border-black bg-[#f0e7ff]">
+                  <div className="relative mx-auto h-48 w-48 overflow-hidden rounded-full border-2 border-black bg-[#f0e7ff] sm:h-56 sm:w-56 lg:h-64 lg:w-64">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={currentAvatar}
@@ -366,10 +370,10 @@ export default function AccountSettingsPage() {
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-3">
+                  <div className="mt-2 flex flex-wrap gap-3">
                     <label className="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-[#94c6ef] 
-                                      px-5 py-3 mt-2 text-sm font-bold text-black shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]
-                                      hover:bg-[#6d5da0] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]">
+                                      px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-black shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]
+                                      hover:bg-[#6d5da0] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3">
                       <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -386,7 +390,7 @@ export default function AccountSettingsPage() {
                       type="button"
                       disabled={avatarUploading || (!profile?.avatar_url && !avatarPreview)}
                       onClick={handleRemoveAvatar}
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f57371] px-5 py-3 text-sm font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f57371] px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -415,7 +419,7 @@ export default function AccountSettingsPage() {
 
             {/* Right Column - Form */}
             <form
-              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-8 shadow-[4px_6px_0_rgba(0,0,0,0.18)]"
+              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-6 lg:p-8"
               onSubmit={handleProfileSubmit}
             >
               <div>
@@ -433,7 +437,7 @@ export default function AccountSettingsPage() {
                       type="text"
                       value={fieldState.first_name}
                       onChange={handleFieldChange("first_name")}
-                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                       placeholder="Taylor"
                     />
                   </label>
@@ -443,7 +447,7 @@ export default function AccountSettingsPage() {
                       type="text"
                       value={fieldState.last_name}
                       onChange={handleFieldChange("last_name")}
-                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                       placeholder="Swift"
                     />
                   </label>
@@ -457,7 +461,7 @@ export default function AccountSettingsPage() {
                     value={fieldState.username}
                     onChange={handleFieldChange("username")}
                     required
-                    className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                    className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                     placeholder="your_username"
                   />
                 </label>
@@ -470,7 +474,7 @@ export default function AccountSettingsPage() {
                       value={fieldState.date_of_birth}
                       onChange={handleFieldChange("date_of_birth")}
                       max={new Date().toISOString().split("T")[0]}
-                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                     />
                   </label>
 
@@ -479,7 +483,7 @@ export default function AccountSettingsPage() {
                     <select
                       value={fieldState.gender}
                       onChange={handleFieldChange("gender")}
-                      className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                      className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                     >
                       {GENDER_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -491,19 +495,29 @@ export default function AccountSettingsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2 pt-4 border-t-2 border-gray-100">
+              <div className="flex flex-col gap-2 pt-4 border-t-2 border-gray-100 items-end sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                 <button
                   type="submit"
-                  disabled={!canSave || saving || avatarUploading}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#94c6ef] px-8 py-3.5 
-                            text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] 
-                            hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] 
-                            disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]"
+                  disabled={!canSave || isSavingInProgress}
+                  className={`inline-flex w-fit max-w-[240px] items-center justify-center rounded-full border-2 border-black px-4 lg:px-8 py-2 lg:py-3.5 
+                            text-[11px] lg:text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition 
+                            ${allChangesSaved ? "bg-[#dbe9d7]" : "bg-[#94c6ef]"} 
+                            ${allChangesSaved ? "text-[#2d5f4d]" : "text-gray-900"} 
+                            hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] 
+                            active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] 
+                            disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:max-w-none`}
                 >
-                  {saving || avatarUploading ? (
+                  {isSavingInProgress ? (
                     <>
                       <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
-                      Saving changes...
+                      Saving…
+                    </>
+                  ) : allChangesSaved ? (
+                    <>
+                      <svg className="w-5 h-5 mr-2 text-[#2d5f4d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      All changes saved
                     </>
                   ) : (
                     <>
@@ -514,23 +528,13 @@ export default function AccountSettingsPage() {
                     </>
                   )}
                 </button>
-                {!canSave && !saving && !avatarUploading && (
-                  <div className="flex items-center gap-2 text-gray-500 self-end mt-3 mr-3">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-bold">
-                      All changes saved
-                    </span>
-                  </div>
-                )}
               </div>
             </form>
           </div>
           
           {/* Second Row - set new password */}
           <form
-            className="mt-8 flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-8 shadow-[4px_6px_0_rgba(0,0,0,0.18)] w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl"
+            className="mt-8 flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl sm:p-6 lg:p-8"
             onSubmit={handlePasswordSubmit}
           >
             <div>
@@ -561,7 +565,7 @@ export default function AccountSettingsPage() {
                   value={passwordState.current}
                   onChange={handlePasswordFieldChange("current")}
                   autoComplete="current-password"
-                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                   placeholder="••••••••"
                   disabled={passwordSaving}
                 />
@@ -574,10 +578,13 @@ export default function AccountSettingsPage() {
                   value={passwordState.next}
                   onChange={handlePasswordFieldChange("next")}
                   autoComplete="new-password"
-                  minLength={8}
-                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
-                  placeholder="At least 8 characters"
+                  className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  placeholder="••••••••"
                   disabled={passwordSaving}
+                />
+                <PasswordRequirements
+                  password={passwordState.next}
+                  className="mt-2"
                 />
               </label>
 
@@ -588,23 +595,30 @@ export default function AccountSettingsPage() {
                   value={passwordState.confirm}
                   onChange={handlePasswordFieldChange("confirm")}
                   autoComplete="new-password"
-                  className="rounded-xl border-2 border-black px-4 py-3 text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
+                  className="rounded-xl border-2 border-black px-4 py-2 lg:py-3 text-xs lg:text-sm font-medium shadow-[0_4px_0_rgba(0,0,0,0.2)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C6DB1] focus-visible:ring-offset-2"
                   placeholder="Re-enter new password"
                   disabled={passwordSaving}
                 />
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col gap-3 pt-2 items-end sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="submit"
                 disabled={passwordSaving}
-                className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#94c6ef] px-8 py-3.5 text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]"
+                className={`inline-flex w-fit items-center justify-center rounded-full border-2 border-black px-4 lg:px-8 py-2 lg:py-3.5 text-xs lg:text-base font-bold shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:w-auto ${passwordMessage ? "bg-[#dbe9d7] text-[#2d5f4d]" : "bg-[#94c6ef] text-gray-900"}`}
               >
                 {passwordSaving ? (
                   <>
                     <div className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
                     Updating…
+                  </>
+                ) : passwordMessage ? (
+                  <>
+                    <svg className="w-5 h-5 mr-2 text-[#2d5f4d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Password updated
                   </>
                 ) : (
                   <>

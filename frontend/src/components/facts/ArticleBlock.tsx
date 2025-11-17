@@ -13,13 +13,7 @@ export default function ArticleBlock({
 }) {
   return (
     <section className={isLast ? "" : "mb-10"}>
-      {block.heading ? (
-        <h2 className="text-base md:text-lg font-extrabold text-gray-900 mb-3">
-          {block.heading}
-        </h2>
-      ) : null}
-
-      {block.text ? <FactRichText text={block.text} /> : null}
+      {block.content ? <FactRichText text={block.content} /> : null}
 
       {block.imageUrl ? (
         <figure className="my-6">
@@ -35,7 +29,7 @@ export default function ArticleBlock({
           >
             <Image
               src={block.imageUrl}
-              alt={block.imageAlt ?? block.heading ?? "Content image"}
+              alt={block.imageAlt ?? "Content image"}
               width={800}
               height={600}
               className="

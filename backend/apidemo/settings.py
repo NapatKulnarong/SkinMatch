@@ -11,7 +11,27 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
+
+# Allow env files to live outside the web root by pointing DJANGO_ENV_FILE to an absolute path
+ENV_FILE_OVERRIDE = os.getenv("DJANGO_ENV_FILE")
+if ENV_FILE_OVERRIDE:
+    env_path = Path(ENV_FILE_OVERRIDE)
+    if env_path.exists():
+        load_dotenv(env_path)
+else:
+    load_dotenv(BASE_DIR / ".env")
+
+DJANGO_ENV = os.getenv("DJANGO_ENV", "development").lower()
+if not ENV_FILE_OVERRIDE:
+    env_specific_path = BASE_DIR / f".env.{DJANGO_ENV}"
+    if env_specific_path.exists():
+        load_dotenv(env_specific_path, override=True)
+
+BACKEND_URL = (
+    os.getenv("BACKEND_URL")
+    or os.getenv("INTERNAL_BACKEND_URL")
+    or "http://localhost:8000"
+)
 
 # Utility helpers
 def env_bool(name: str, default: bool = False) -> bool:
@@ -20,6 +40,15 @@ def env_bool(name: str, default: bool = False) -> bool:
 def env_csv(name: str, default: str = "") -> list[str]:
     raw = os.getenv(name, default)
     return [item.strip().strip('"').strip("'") for item in raw.split(",") if item.strip()]
+
+def env_int_list(name: str, default: str = "") -> list[int]:
+    values: list[int] = []
+    for item in env_csv(name, default):
+        try:
+            values.append(int(item))
+        except ValueError:
+            continue
+    return values
 
 # SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-unsafe")
@@ -40,6 +69,110 @@ CORS_ALLOWED_ORIGINS = [
     "http://frontend:3000",  # Docker service name
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# HTTPS / Cookie security
+if env_bool("DJANGO_USE_PROXY_SSL_HEADER", True):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+USE_X_FORWARDED_HOST = env_bool("DJANGO_USE_X_FORWARDED_HOST", True)
+
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
+SESSION_COOKIE_HTTPONLY = env_bool("DJANGO_SESSION_COOKIE_HTTPONLY", True)
+SESSION_COOKIE_SAMESITE = os.getenv("DJANGO_SESSION_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_AGE = int(os.getenv("DJANGO_SESSION_COOKIE_AGE", "14400"))  # 4 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_bool("DJANGO_SESSION_EXPIRE_AT_BROWSER_CLOSE", True)
+SESSION_IDLE_TIMEOUT_SECONDS = int(os.getenv("DJANGO_SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
+SESSION_IDLE_TIMEOUT_EXEMPT_PATHS = env_csv(
+    "DJANGO_SESSION_IDLE_TIMEOUT_EXEMPT_PATHS",
+    "/healthz/,/accounts/login/",
+)
+SESSION_TIMEOUT_API_PREFIXES = env_csv("DJANGO_SESSION_TIMEOUT_API_PREFIXES", "/api/")
+SESSION_TIMEOUT_REDIRECT_URL = os.getenv("DJANGO_SESSION_TIMEOUT_REDIRECT_URL", "")
+
+API_REQUIRE_KEY_FOR_ANONYMOUS = env_bool("API_REQUIRE_KEY_FOR_ANONYMOUS", not DEBUG)
+API_PROTECTED_PATH_PREFIXES = env_csv("API_PROTECTED_PATH_PREFIXES", "/api/")
+API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")
+API_KEY_QUERY_PARAM = os.getenv("API_KEY_QUERY_PARAM", "api_key")
+API_RATE_LIMIT_DEFAULT_PER_MIN = int(os.getenv("API_RATE_LIMIT_DEFAULT_PER_MIN", "120"))
+API_RATE_LIMIT_PER_IP_PER_MIN = int(os.getenv("API_RATE_LIMIT_PER_IP_PER_MIN", "300"))
+API_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("API_RATE_LIMIT_WINDOW_SECONDS", "60"))
+API_MAX_BODY_KB = int(os.getenv("API_MAX_BODY_KB", "10240"))  # 10 MB default
+_default_upload_bytes = 10 * 1024 * 1024  # 10 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(_default_upload_bytes)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(_default_upload_bytes)))
+API_INPUT_BLOCKLIST = env_csv(
+    "API_INPUT_BLOCKLIST",
+    "<script,</script>,union select,drop table,insert into",
+)
+API_VERSION_DEFAULT = os.getenv("API_VERSION_DEFAULT", "v1")
+SENSITIVE_PATH_PATTERNS = env_csv(
+    "SENSITIVE_PATH_PATTERNS",
+    ".env,.env.,/.git,/.git/,/config/,/docker-compose.yaml,/docker-compose.yml,/package-lock.json,/yarn.lock,/xmlrpc.php",
+)
+
+SECURITY_ALERT_EMAILS = env_csv("SECURITY_ALERT_EMAILS", "")
+SECURITY_ALERT_MIN_LEVEL = os.getenv("SECURITY_ALERT_MIN_LEVEL", "ERROR").upper()
+SECURITY_LOG_FILE = os.getenv("SECURITY_LOG_FILE", "")
+SECURITY_LOG_LEVEL = os.getenv("SECURITY_LOG_LEVEL", "INFO").upper()
+SECURITY_FAILED_LOGIN_THRESHOLD = int(os.getenv("SECURITY_FAILED_LOGIN_THRESHOLD", "5"))
+SECURITY_FAILED_LOGIN_WINDOW_SECONDS = int(os.getenv("SECURITY_FAILED_LOGIN_WINDOW_SECONDS", "900"))
+SECURITY_SUSPICIOUS_PATH_KEYWORDS = env_csv(
+    "SECURITY_SUSPICIOUS_PATH_KEYWORDS",
+    "wp-login,wp-admin,phpmyadmin,.git/,server-status,.env",
+)
+SECURITY_MONITOR_STATUS_CODES = env_int_list("SECURITY_MONITOR_STATUS_CODES", "401,403,404,405")
+SECURITY_MONITOR_RATE_THRESHOLD = int(os.getenv("SECURITY_MONITOR_RATE_THRESHOLD", "25"))
+SECURITY_MONITOR_RATE_WINDOW_SECONDS = int(os.getenv("SECURITY_MONITOR_RATE_WINDOW_SECONDS", "300"))
+
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_HTTPONLY = env_bool("DJANGO_CSRF_COOKIE_HTTPONLY", True)
+CSRF_COOKIE_SAMESITE = os.getenv("DJANGO_CSRF_COOKIE_SAMESITE", "Lax")
+
+SECURE_HSTS_SECONDS = int(
+    os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG
+)
+SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+SECURE_REFERRER_POLICY = os.getenv(
+    "DJANGO_SECURE_REFERRER_POLICY", "strict-origin-when-cross-origin"
+)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = os.getenv("DJANGO_X_FRAME_OPTIONS", "DENY")
+
+ADMIN_PROTECTED_PATH_PREFIXES = env_csv("ADMIN_PROTECTED_PATH_PREFIXES", "/admin/")
+ADMIN_ALLOWED_ROLES = [role.lower() for role in env_csv("ADMIN_ALLOWED_ROLES", "admin,staff")]
+ADMIN_ALLOWED_IPS = env_csv("ADMIN_ALLOWED_IPS", "127.0.0.1,::1")
+ADMIN_TRUSTED_IP_HEADERS = env_csv(
+    "ADMIN_TRUSTED_IP_HEADERS",
+    "HTTP_X_FORWARDED_FOR,REMOTE_ADDR",
+)
+ADMIN_COUNTRY_HEADERS = env_csv(
+    "ADMIN_COUNTRY_HEADERS",
+    "HTTP_CF_IPCOUNTRY,HTTP_X_APPENGINE_COUNTRY,GEOIP_COUNTRY_CODE",
+)
+ADMIN_ALLOWED_COUNTRIES = [
+    code.upper() for code in env_csv("ADMIN_ALLOWED_COUNTRIES", "")
+]
+
+CONTENT_SECURITY_POLICY = os.getenv(
+    "DJANGO_CONTENT_SECURITY_POLICY",
+    (
+        "default-src 'self'; "
+        "img-src 'self' data: blob: https: django-ninja.dev cdn.jsdelivr.net; "
+        "media-src 'self' data: blob:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: cdn.jsdelivr.net django-ninja.dev; "
+        "style-src 'self' 'unsafe-inline' https: cdn.jsdelivr.net django-ninja.dev; "
+        "font-src 'self' data: https: cdn.jsdelivr.net; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    ),
+)
+CONTENT_SECURITY_POLICY_REPORT_ONLY = env_bool("DJANGO_CSP_REPORT_ONLY", False)
 
 _raw_google_ids = env_csv("GOOGLE_OAUTH_CLIENT_IDS", os.getenv("GOOGLE_OAUTH_CLIENT_ID", ""))
 GOOGLE_OAUTH_CLIENT_IDS = [cid for cid in _raw_google_ids if cid]
@@ -81,14 +214,20 @@ SITE_ID = 1
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
+    "core.middleware.SecurityHeadersMiddleware",
+    "core.middleware.SensitiveFileProtectionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.SessionIdleTimeoutMiddleware",
+    "core.middleware.AdminAccessControlMiddleware",
+    "core.middleware.SecurityMonitoringMiddleware",
+    "core.middleware.APIInputValidationMiddleware",
+    "core.middleware.APIKeyMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "apidemo.urls"
@@ -112,7 +251,7 @@ WSGI_APPLICATION = "apidemo.wsgi.application"
 
 # Database
 db_url = os.getenv("DATABASE_URL") 
-conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+conn_max_age = int(os.getenv("DB_CONN_MAX_AGE", "0"))
 ssl_require = env_bool("DB_SSL_REQUIRE", False)
 
 if db_url:
@@ -136,12 +275,30 @@ else:
         }
     }
 
+for cfg in DATABASES.values():
+    cfg.setdefault("CONN_MAX_AGE", conn_max_age)
+    cfg["CONN_HEALTH_CHECKS"] = True
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        },
+    },
+    {
+        "NAME": "core.password_validators.ComplexityPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
 ]
 
 # Internationalization
@@ -158,6 +315,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+FACT_IMAGE_MAX_UPLOAD_MB = int(os.getenv("FACT_IMAGE_MAX_UPLOAD_MB", "5"))
 
 # WhiteNoise staticfiles storage (prod only)
 # STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -227,6 +385,10 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Logging configuration
+security_handlers = ["security_console"]
+if SECURITY_LOG_FILE:
+    security_handlers.append("security_file")
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -239,11 +401,18 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'json': {
+            '()': 'core.logging_utils.JsonLogFormatter',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+        },
+        'security_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
         },
     },
     'loggers': {
@@ -261,9 +430,21 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'security': {
+            'handlers': security_handlers,
+            'level': SECURITY_LOG_LEVEL,
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
 }
+
+if SECURITY_LOG_FILE:
+    LOGGING['handlers']['security_file'] = {
+        'class': 'logging.handlers.WatchedFileHandler',
+        'filename': SECURITY_LOG_FILE,
+        'formatter': 'json',
+    }

@@ -22,9 +22,38 @@ import {
 
 const ANSWERS_STORAGE_KEY = "skinmatch.quizAnswers";
 const SESSION_STORAGE_KEY = "skinmatch.quizSession";
+const COMPLETED_STORAGE_KEY = "skinmatch.quizCompleted";
 
 export const QUIZ_ANSWERS_STORAGE_KEY = ANSWERS_STORAGE_KEY;
 export const QUIZ_SESSION_STORAGE_KEY = SESSION_STORAGE_KEY;
+export const QUIZ_COMPLETED_EVENT = "skinmatch-quiz-completed";
+export const QUIZ_COMPLETED_FLAG_STORAGE_KEY = COMPLETED_STORAGE_KEY;
+export const QUIZ_COMPLETION_RESET_EVENT = "skinmatch-quiz-completion-reset";
+export const QUIZ_RECOMMENDATIONS_REFRESH_EVENT = "skinmatch-quiz-refresh";
+
+export function clearQuizCompletionFlag() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY);
+  } catch (err) {
+    console.warn("Failed to clear quiz completion flag", err);
+  }
+  try {
+    const event = new CustomEvent(QUIZ_COMPLETION_RESET_EVENT);
+    window.dispatchEvent(event);
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_COMPLETION_RESET_EVENT));
+  }
+}
+
+export function emitQuizRecommendationsRefresh() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
+  } catch {
+    window.dispatchEvent(new Event(QUIZ_RECOMMENDATIONS_REFRESH_EVENT));
+  }
+}
 
 type QuizAnswerKey =
   | "primaryConcern"
@@ -99,6 +128,7 @@ export function QuizProvider({ children }: PropsWithChildren) {
   const finalizePromiseRef = useRef<Promise<QuizFinalize | null> | null>(null);
   const finalizedSessionRef = useRef<string | null>(null);
   const previousSessionRef = useRef<string | null>(null);
+  const isStartingFreshRef = useRef<boolean>(false);
 
   const ensureActiveSession = useCallback(async (): Promise<string> => {
     if (sessionId) {
@@ -107,6 +137,19 @@ export function QuizProvider({ children }: PropsWithChildren) {
     if (sessionPromiseRef.current) {
       return sessionPromiseRef.current;
     }
+    // Mark that we're starting fresh to prevent loading old answers from localStorage
+    isStartingFreshRef.current = true;
+    // Clear localStorage and answers when starting a fresh session to prevent loading old answers
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(ANSWERS_STORAGE_KEY);
+        window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to clear stored quiz data before new session", err);
+      }
+    }
+    // Clear answers state when starting a new session
+    setAnswers(createEmptyAnswers());
     const promise = startQuizSession()
       .then((fresh) => {
         setSessionId(fresh.id);
@@ -127,28 +170,28 @@ export function QuizProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(ANSWERS_STORAGE_KEY);
-      if (raw) {
-        const parsed = parseStoredAnswers(JSON.parse(raw));
-        setAnswers(parsed);
-      }
-    } catch (err) {
-      console.warn("Failed to parse stored quiz answers", err);
+    // Don't restore from localStorage if we're intentionally starting fresh
+    if (isStartingFreshRef.current) {
+      return;
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     try {
       const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
       if (storedSession) {
-        setSessionId(storedSession);
+        // Only restore session if we don't already have one
+        if (!sessionId) {
+          setSessionId(storedSession);
+          // Load answers only if we have a matching session
+          const raw = window.localStorage.getItem(ANSWERS_STORAGE_KEY);
+          if (raw) {
+            const parsed = parseStoredAnswers(JSON.parse(raw));
+            setAnswers(parsed);
+          }
+        }
       }
     } catch (err) {
       console.warn("Failed to read stored quiz session", err);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -261,6 +304,8 @@ export function QuizProvider({ children }: PropsWithChildren) {
   );
 
   const resetQuiz = useCallback(async () => {
+    // Mark that we're starting fresh
+    isStartingFreshRef.current = true;
     setAnswers(createEmptyAnswers());
     setResult(null);
     finalizedSessionRef.current = null;
@@ -308,6 +353,26 @@ export function QuizProvider({ children }: PropsWithChildren) {
         finalizedSessionRef.current = payload.sessionId;
         setResult(payload);
         setError(null);
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(QUIZ_COMPLETED_FLAG_STORAGE_KEY, "1");
+          } catch (err) {
+            console.warn("Failed to persist quiz completion flag", err);
+          }
+        }
+        
+        // Dispatch event to notify other components that quiz was completed
+        if (typeof window !== "undefined") {
+          try {
+            const event = new CustomEvent(QUIZ_COMPLETED_EVENT, {
+              detail: { sessionId: payload.sessionId },
+            });
+            window.dispatchEvent(event);
+          } catch (err) {
+            console.warn("Failed to dispatch quiz completed event", err);
+          }
+        }
+        
         return payload;
       })
       .catch((err) => {

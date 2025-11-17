@@ -35,7 +35,7 @@ def recommend_products(
     restrictions: TraitList,
     budget: str | None,
     pregnant_or_breastfeeding: bool | None = None,
-    limit: int = 5,
+    limit: int = 8,
 ) -> tuple[list[Recommendation], dict]:
     """Rank products in the catalog based on quiz traits."""
 
@@ -193,18 +193,29 @@ _CURRENCY_TO_USD: dict[str, Decimal] = {
     Product.Currency.EUR: Decimal("1.08"),
 }
 
+# Conversion rates to Thai Baht (THB)
+_CURRENCY_TO_THB: dict[str, Decimal] = {
+    Product.Currency.USD: Decimal("35.7"),  # ~35.7 THB per USD
+    Product.Currency.THB: Decimal("1"),  # 1 THB = 1 THB
+    Product.Currency.KRW: Decimal("0.026"),  # ~0.026 THB per KRW (1370 KRW = 35.7 THB)
+    Product.Currency.JPY: Decimal("0.238"),  # ~0.238 THB per JPY (150 JPY = 35.7 THB)
+    Product.Currency.EUR: Decimal("38.6"),  # ~38.6 THB per EUR (1.08 USD = 38.6 THB)
+}
+
 
 def _budget_band(product: Product) -> str:
     price = product.price
     if price is None:
         return "mid"
 
-    rate = _CURRENCY_TO_USD.get(product.currency, Decimal("1"))
-    usd_price = price * rate
+    # Convert price to Thai Baht
+    rate = _CURRENCY_TO_THB.get(product.currency, Decimal("35.7"))  # Default to USD rate if unknown
+    thb_price = price * rate
 
-    if usd_price < Decimal("20"):
+    # Categorize based on Thai Baht thresholds
+    if thb_price < Decimal("800"):
         return "affordable"
-    if usd_price < Decimal("45"):
+    if thb_price < Decimal("1500"):
         return "mid"
     return "premium"
 

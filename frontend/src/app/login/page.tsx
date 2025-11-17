@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchProfile,
@@ -17,8 +18,12 @@ import {
   type StoredProfile,
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
+import { PasswordRequirements } from "@/components/PasswordRequirements";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
+
+const isModeValue = (value: string | null): value is Mode =>
+  value === "intro" || value === "signup" || value === "login" || value === "forgot";
 
 type SignupState = {
   name: string;
@@ -29,6 +34,8 @@ type SignupState = {
   confirmPassword: string;
   dob: string;
   gender: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
 };
 
 type LoginState = {
@@ -47,6 +54,8 @@ const initialSignup: SignupState = {
   confirmPassword: "",
   dob: "",
   gender: "",
+  acceptTerms: false,
+  acceptPrivacy: false,
 };
 
 const initialLogin: LoginState = {
@@ -64,8 +73,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#D7CFE6] flex items-center justify-center px-4">
-          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+        <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-start lg:justify-center gap-8 
+                        px-4 pb-10 sm:px-6 pt-[calc(72px+env(safe-area-inset-top))] sm:pt-12 lg:flex-row lg:gap-16">
+          <div className="w-[540px] rounded-3xl border-2 border-black bg-white p-8 text-center shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
             <p className="text-lg font-semibold text-[#3B2F4A]">Loading sign-in…</p>
           </div>
         </main>
@@ -95,7 +105,10 @@ export { redirectTo } from "./redirect";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>("intro");
+  const [mode, setMode] = useState<Mode>(() => {
+    const initialMode = searchParams.get("mode");
+    return isModeValue(initialMode) ? initialMode : "intro";
+  });
   const [signup, setSignup] = useState<SignupState>(initialSignup);
   const [login, setLogin] = useState<LoginState>(initialLogin);
   const [signupError, setSignupError] = useState<string | null>(null);
@@ -167,7 +180,34 @@ function LoginContent() {
     }
   }, [searchParams, router]);
 
+  useEffect(() => {
+    const fromParam = searchParams.get("from");
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (fromParam) {
+      sessionStorage.setItem("login_from", fromParam);
+    }
+  }, [searchParams]);
+
+  const syncModeInQuery = (next: Mode, { replace = false }: { replace?: boolean } = {}) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "intro") {
+      params.delete("mode");
+    } else {
+      params.set("mode", next);
+    }
+    const qs = params.toString();
+    const url = `/login${qs ? `?${qs}` : ""}`;
+    if (replace) {
+      router.replace(url, { scroll: false });
+    } else {
+      router.push(url, { scroll: false });
+    }
+  };
+
   const changeMode = (next: Mode) => {
+    const previousMode = mode;
     setMode(next);
     setSignupError(null);
     setLoginError(null);
@@ -175,7 +215,30 @@ function LoginContent() {
     setForgotEmail("");
     setForgotStatus("idle");
     setForgotError(null);
+    const shouldReplaceHistory = next === previousMode;
+    syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
+
+  const lastSearchQueryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentQuery =
+      typeof searchParams?.toString === "function" ? searchParams.toString() : "";
+    if (currentQuery === lastSearchQueryRef.current) {
+      return;
+    }
+    lastSearchQueryRef.current = currentQuery;
+    const nextMode = searchParams.get("mode");
+    setMode((prev) => {
+      if (isModeValue(nextMode) && nextMode !== prev) {
+        return nextMode;
+      }
+      if (!nextMode && prev !== "intro") {
+        return "intro";
+      }
+      return prev;
+    });
+  }, [searchParams]);
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
@@ -240,6 +303,13 @@ function LoginContent() {
     setSignup((prev) => ({ ...prev, [name]: value }));
   };
 
+  const onSignupCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, checked } = e.target;
+    setSignup((prev) => ({ ...prev, [name]: checked }));
+  };
+
   const onLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setLogin((prev) => ({ ...prev, [name]: value }));
@@ -249,12 +319,15 @@ function LoginContent() {
     event.preventDefault();
     setSignupError(null);
 
-    if (signup.password.length < 8) {
-      setSignupError("Password must be at least 8 characters.");
-      return;
-    }
+    // Basic client-side validation
     if (signup.password !== signup.confirmPassword) {
       setSignupError("Passwords do not match.");
+      return;
+    }
+    
+    // Backend will validate password policy, but we do a basic check for UX
+    if (!signup.password) {
+      setSignupError("Please enter a password.");
       return;
     }
 
@@ -299,6 +372,16 @@ function LoginContent() {
     }
   }
 
+    if (!signup.acceptTerms) {
+      setSignupError("You must agree to the Terms of Service to continue.");
+      return;
+    }
+
+    if (!signup.acceptPrivacy) {
+      setSignupError("You must agree to the Privacy Policy to continue.");
+      return;
+    }
+
     setSignupLoading(true);
     try {
       await signupRequest({
@@ -310,6 +393,8 @@ function LoginContent() {
         confirm_password: signup.confirmPassword,
         date_of_birth: formattedDob,
         gender: signup.gender || undefined,
+        accept_terms_of_service: signup.acceptTerms,
+        accept_privacy_policy: signup.acceptPrivacy,
       });
 
       const loginResponse = await loginRequest({
@@ -383,8 +468,13 @@ function LoginContent() {
         }
       }
 
-      // Regular user - go to account page
-      router.push("/account");
+      // Regular user - check for redirect parameter or go to account page
+      const redirectParam = searchParams.get("redirect");
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else {
+        router.push("/account");
+      }
     } catch (error: unknown) {
       clearSession();
       const message = error instanceof Error ? error.message : "Login failed. Please try again.";
@@ -397,58 +487,62 @@ function LoginContent() {
   const cardBg = mode === "intro" ? "bg-white/95" : "bg-[#B6A6D8]";
 
   return (
-    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:justify-center md:gap-12">
-      <div className="md:mr-6">
+    <main className="min-h-screen bg-[#D7CFE6] flex flex-col items-center justify-center gap-8 px-4 py-10 sm:px-6 lg:flex-row lg:gap-16">
+      <div className="hidden lg:flex justify-end lg:mr-0">
         <Image
           src="/img/mascot/matchy_2.png"
           alt="Matchy mascot waving hello"
-          width={700}
-          height={700}
+          width={520}
+          height={520}
           priority
-          className="drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-6 md:translate-y-8"
+          className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[6px_6px_0_rgba(0,0,0,0.18)] sm:drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>
       <div
-        className={[
-          "w-[540px] rounded-3xl border-2 border-black overflow-hidden",
-          "shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
-          cardBg,
-        ].join(" ")}
-      >
+  className={[
+    "w-full max-w-md sm:max-w-lg lg:w-[540px] rounded-3xl border-2 border-black overflow-hidden",
+    "shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]",
+    "mt-32 sm:mt-20 lg:mt-0", 
+    cardBg,
+  ].join(" ")}
+>
         {mode === "intro" && (
           <>
-            <div className="p-8">
-              <h2 className="text-3xl font-extrabold text-[#3B2F4A]">
-                Join our <span className="text-[#3B2F4A]">MatchClub</span>
+          <div className="p-5 sm:p-7">
+              <h2 className="text-2xl lg:text-3xl font-extrabold text-[#3B2F4A]">
+                Join <span className="text-[#3B2F4A]">MatchClub</span>
               </h2>
 
-              <ul className="mt-6 text-[15.5px] text-gray-700 font-semibold">
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+              <ul className="mt-4 text-gray-700 font-semibold text-sm sm:text-base">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
                   <span>Save your match result</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Read &amp; write reviews on your product matches</span>
+                  <span>Save your skincare wish lists</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start border-b border-black/10 whitespace-nowrap">
+                <li className="py-2.5 lg:py-3 flex gap-3 items-start border-b border-black/10">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Be the first to get updates about the skincare industry</span>
+                  <span>Read &amp; write reviews on your matches</span>
                 </li>
-                <li className="py-3.5 flex gap-3 items-start whitespace-nowrap">
+                <li className="py-2.5 lg:pt-3 pb-1 flex gap-3 items-start">
                   <span className="mt-2 h-2 w-2 rounded-full bg-[#7C6DB1]" />
-                  <span>Product discount alerts</span>
+                  <span>Get the latest updates on the skincare industry.</span>
                 </li>
               </ul>
             </div>
 
-            <div className="bg-[#B6A6D8] p-6">
+            <div className="bg-[#B6A6D8] p-4 sm:p-6">
               <button
                 data-testid="signup-google"
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-2.5 lg:py-4 text-sm lg:text-base 
+                          font-bold lg:font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <GoogleIcon className="block h-5 w-5 flex-shrink-0" />
                 <span className="leading-none">
@@ -470,13 +564,16 @@ function LoginContent() {
                 data-testid="signup-email"
                 type="button"
                 onClick={() => changeMode("signup")}
-                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-4 text-lg font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
+                className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-[10px] border-2 border-black bg-white px-6 py-2 lg:py-4 text-sm lg:text-base 
+                          font-bold lg:font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:translate-y-[-1px] 
+                          hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] 
+                          focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10"
               >
                 <MailIcon className="block h-6 w-6 flex-shrink-0" />
                 <span className="leading-none">Sign up with Email</span>
               </button>
 
-              <p className="mt-6 text-center text-sm text-gray-800">
+              <p className="mt-5 lg:mt-6 text-center text-sm text-gray-800">
                 Already have an account?{" "}
                 <button
                   data-testid="go-login"
@@ -492,20 +589,20 @@ function LoginContent() {
         )}
 
         {mode === "signup" && (
-          <div className="p-8" data-testid="signup-form">
-            <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
+          <div className="p-6 sm:p-8" data-testid="signup-form">
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-[#2C2533] mb-2">
               Create your account
             </h2>
 
             <form onSubmit={handleSignup} className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-4">
                 <Field label="Name">
                   <input
                     name="name"
                     value={signup.name}
                     onChange={onSignupChange}
                     max={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Your name"
                   />
                 </Field>
@@ -515,7 +612,7 @@ function LoginContent() {
                     name="surname"
                     value={signup.surname}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Your surname"
                   />
                 </Field>
@@ -528,7 +625,7 @@ function LoginContent() {
                     onChange={onSignupChange}
                     min={minDate}
                     max={maxDate}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                   />
                 </Field>
 
@@ -537,7 +634,7 @@ function LoginContent() {
                     name="gender"
                     value={signup.gender}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 focus:outline-none text-gray-800"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-xs lg:text-base focus:outline-none text-gray-800"
                   >
                     <option value="" disabled>
                       Click to select
@@ -553,7 +650,7 @@ function LoginContent() {
                     name="username"
                     value={signup.username}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Pick a username"
                   />
                 </Field>
@@ -564,19 +661,23 @@ function LoginContent() {
                     name="email"
                     value={signup.email}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none placeholder:text-gray-600"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="you@example.com"
                   />
                 </Field>
 
-                <Field label="Password" hint="(at least 8 characters)" colSpan={2}>
+                <Field label="Password" colSpan={2}>
                   <input
                     type="password"
                     name="password"
                     value={signup.password}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none"
                     placeholder="••••••••"
+                  />
+                  <PasswordRequirements
+                    password={signup.password}
+                    className="mt-2"
                   />
                 </Field>
 
@@ -586,10 +687,48 @@ function LoginContent() {
                     name="confirmPassword"
                     value={signup.confirmPassword}
                     onChange={onSignupChange}
-                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
+                    className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none"
                     placeholder="Re-enter password"
                   />
                 </Field>
+              </div>
+
+              <div className="mt-4 space-y-3 rounded-2xl border-2 border-black bg-white/90 p-4">
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptTerms"
+                    checked={signup.acceptTerms}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-terms"
+                  />
+                  <span>
+                    I agree to the{" "}
+                    <Link href="/terms" className="underline">
+                      Terms of Service
+                    </Link>
+                    {" "}and understand that violating the terms may lead to account suspension.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptPrivacy"
+                    checked={signup.acceptPrivacy}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-privacy"
+                  />
+                  <span>
+                    I acknowledge the{" "}
+                    <Link href="/privacy" className="underline">
+                      Privacy Policy
+                    </Link>
+                    {" "}and consent to SkinMatch processing my data to provide personalized skincare guidance.
+                  </span>
+                </label>
               </div>
 
               {signupError && (
@@ -608,7 +747,7 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={signupLoading}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-7 py-3 text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#BFD9EA] px-4 lg:px-7 py-1 lg:py-3 text-sm lg:text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 hover:-translate-y-[-1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {signupLoading ? "Creating account..." : "Confirm"}
                 </button>
@@ -618,7 +757,7 @@ function LoginContent() {
         )}
 
         {mode === "login" && (
-          <div className="p-8" data-testid="login-form">
+          <div className="p-6 sm:p-8" data-testid="login-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">Welcome back</h2>
 
             <form onSubmit={handleLogin} className="mt-4 space-y-6">
@@ -680,7 +819,7 @@ function LoginContent() {
         )}
 
         {mode === "forgot" && (
-          <div className="p-8" data-testid="forgot-form">
+          <div className="p-6 sm:p-8" data-testid="forgot-form">
             <h2 className="text-3xl font-extrabold text-[#2C2533] mb-2">
               Reset your password
             </h2>

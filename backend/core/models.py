@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import hmac
 
 from datetime import date
 from typing import Optional, Any
@@ -8,6 +10,7 @@ from django.core.validators import FileExtensionValidator, validate_email
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from .validators import validate_fact_image_size, validate_image_mime_type
 
 # Create your models here.
 class UserProfile(models.Model):
@@ -19,6 +22,12 @@ class UserProfile(models.Model):
         FEMALE = "female", "Female"
         MALE = "male", "Male"
         PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class Role(models.TextChoices):
+        ADMIN = "admin", "Administrator"
+        STAFF = "staff", "Staff"
+        READ_ONLY = "read_only", "Read-only"
+        MEMBER = "member", "Member"
     
     u_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, 
@@ -30,8 +39,25 @@ class UserProfile(models.Model):
     avatar_url = models.URLField(blank=True) # optional profile pic
     date_of_birth = models.DateField(null=True, blank=True) # dd/mm/yyyy
     gender = models.CharField(max_length=20, choices=Gender.choices, null=True, blank=True)
+    role = models.CharField(
+        max_length=32,
+        choices=Role.choices,
+        default=Role.MEMBER,
+        db_index=True,
+        help_text="RBAC role used for staff/admin protections."
+    )
     is_verified = models.BooleanField(default=False)
     google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Terms of Service."
+    )
+    privacy_policy_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Privacy Policy."
+    )
 
     #audit
     created_at = models.DateTimeField(auto_now_add=True)
@@ -63,6 +89,18 @@ class UserProfile(models.Model):
     def full_name(self):
         n = f"{self.user.first_name} {self.user.last_name}".strip()
         return n or self.user.username
+
+    def has_role(self, *roles: str) -> bool:
+        """
+        Convenience helper for RBAC checks.
+        """
+        if not roles:
+            return False
+        try:
+            current = (self.role or "").lower()
+        except AttributeError:
+            return False
+        return current in {r.lower() for r in roles}
     
 
 class SkinProfile(models.Model):
@@ -158,8 +196,13 @@ class SkinFactTopic(models.Model):
     section = models.CharField(max_length=20, choices=Section.choices)
     hero_image = models.ImageField(
         upload_to="facts/hero/",
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
         blank=True,
+        help_text="Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
     hero_image_alt = models.CharField(max_length=160, blank=True)
     is_published = models.BooleanField(default=True, db_index=True)
@@ -189,19 +232,13 @@ class SkinFactTopic(models.Model):
 
 class SkinFactContentBlock(models.Model):
     """
-    Ordered content blocks that make up the body of a SkinFactTopic.
-    Each block can be:
-    - a section heading like "What Is Hyaluronic Acid?"
-    - a normal text paragraph
-    - a text section with an accompanying image
-    do NOT force it to be only-image or only-text. The editor can mix.
+    Simplified content blocks for SkinFactTopic.
+    Each block is EITHER:
+    - A markdown text block (content field)
+    - OR an image block (image + image_alt fields)
+    
+    Blocks are ordered to create the article structure.
     """
-
-    class BlockType(models.TextChoices):
-        HEADING = "heading", "Heading / Section Title"
-        TEXT = "text", "Text Section"
-        PARAGRAPH = "paragraph", "Paragraph"
-        IMAGE = "image", "Image + Text"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -217,69 +254,59 @@ class SkinFactContentBlock(models.Model):
         help_text="Display order, starting from 0. Lower = appears earlier."
     )
 
-    # heading vs text
-    block_type = models.CharField(
-        max_length=20,
-        choices=BlockType.choices,
-        help_text="Use 'heading' for section headers, 'text' for normal explanatory content."
-    )
-
-    # Shown as block title in UI
-    heading = models.CharField(
-        max_length=180,
+    # Content field: markdown text (use this OR image, not both)
+    content = models.TextField(
         blank=True,
-        help_text="Small heading/title for this block, e.g. 'How to Use Hyaluronic Acid Effectively'."
+        help_text="Markdown content for text blocks. Supports headings (# ## ###), lists, links, bold (**text**), italic (*text*). Leave empty if this is an image block."
     )
 
-    # The actual paragraph(s)
-    text = models.TextField(
-        blank=True,
-        help_text="Main body text (3–6 sentences)."
-    )
-
-    # Optional supporting image
+    # Image field: use this OR content, not both
     image = models.ImageField(
         upload_to="facts/blocks/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
-        help_text="Optional. Example: serum texture, hydrated skin close-up."
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
+        help_text="Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block."
     )
 
     image_alt = models.CharField(
         max_length=160,
         blank=True,
-        help_text="Describe the image for accessibility. Example: 'Transparent serum drop with bubbles'."
+        help_text="Required if image is provided. Describe the image for accessibility."
     )
 
     class Meta:
         ordering = ("order",)
 
     def __str__(self) -> str:
-        # Helpful in admin list/dropdowns
-        if self.heading:
-            return f"[{self.order}] {self.heading}"
-        return f"[{self.order}] {self.get_block_type_display()} block"
+        if self.content:
+            preview = self.content[:50]
+            if len(self.content) > 50:
+                preview += "..."
+            return f"[{self.order}] Text: {preview}"
+        elif self.image:
+            return f"[{self.order}] Image: {self.image_alt or '(no alt text)'}"
+        return f"[{self.order}] (empty)"
 
     def clean(self):
-        """
-        Custom validation that actually matches what you're doing in admin:
-        - 'heading' blocks MUST have heading, can have optional text/image
-        - 'text' blocks MUST have text; heading/image are optional
-        """
+        """Validate that block has either content OR image, but not both"""
         super().clean()
+        
+        has_content = bool((self.content or "").strip())
+        has_image = bool(self.image)
+        
+        if not has_content and not has_image:
+            raise ValidationError("Block must have either content (text) or an image. Choose one.")
+        
+        if has_content and has_image:
+            raise ValidationError("Block cannot have both content and image. Choose either text OR image.")
 
-        block_type = self.block_type
-        if self.block_type == self.BlockType.HEADING:
-            if not (self.heading or "").strip():
-                raise ValidationError("Heading blocks must have a heading title.")
-
-        if self.block_type == self.BlockType.TEXT:
-            if not (self.text or "").strip():
-                raise ValidationError("Text blocks must include body text.")
-         # image validation (only check file type, not dimensions)
-        if self.image and not (self.image_alt or "").strip():
-            raise ValidationError("Please provide image alt text for accessibility.")
+        if has_image and not (self.image_alt or "").strip():
+            raise ValidationError("Please provide image alt text for accessibility when using an image block.")
 
 
 class SkinFactView(models.Model):
@@ -346,3 +373,80 @@ class NewsletterSubscriber(models.Model):
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.clean()
         super().save(*args, **kwargs)
+
+
+class WishlistItem(models.Model):
+    """User wishlist entry for a quiz.Product."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="wishlist_items",
+        db_index=True,
+    )
+    product = models.ForeignKey(
+        "quiz.Product",
+        on_delete=models.CASCADE,
+        related_name="wishlisted_by",
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="uniq_user_product_wishlist")
+        ]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["product", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} - {getattr(self.product, 'name', 'product')}"
+
+
+class APIClient(models.Model):
+    """
+    Represents an external integration authenticated via API key.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=120)
+    contact_email = models.EmailField(blank=True)
+    key_prefix = models.CharField(max_length=12, db_index=True)
+    key_hash = models.CharField(max_length=128, unique=True)
+    allowed_ips = models.JSONField(default=list, blank=True, help_text="Optional list of IPs or CIDR ranges.")
+    rate_limit_per_minute = models.PositiveIntegerField(
+        default=120,
+        help_text="Maximum requests per minute for this key. Set to 0 for unlimited.",
+    )
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+        indexes = [
+            models.Index(fields=["key_prefix"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.key_prefix}…)"
+
+    def set_key(self, raw_key: str) -> None:
+        if not raw_key:
+            raise ValueError("raw_key is required")
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        self.key_hash = digest
+        self.key_prefix = raw_key[:8]
+
+    def check_key(self, raw_key: str) -> bool:
+        if not raw_key or not self.key_hash:
+            return False
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return hmac.compare_digest(digest, self.key_hash)

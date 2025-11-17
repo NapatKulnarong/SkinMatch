@@ -73,10 +73,11 @@ class EmailAuthTest(TestCase):
         """Signup endpoint creates a new user and EmailAddress record"""
         url = reverse("account_signup")
         new_email = "new@example.com"
+        strong_password = "Strong!Pass123"
         payload = {
             "email": new_email,
-            "password1": "testpass123",
-            "password2": "testpass123",
+            "password1": strong_password,
+            "password2": strong_password,
         }
         # Add username if your project requires it
         if getattr(settings, "ACCOUNT_USERNAME_REQUIRED", True):

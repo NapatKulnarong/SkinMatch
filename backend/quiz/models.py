@@ -6,6 +6,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Avg, Count
 from django.utils import timezone
+from core.sanitizers import sanitize_plain_text, sanitize_metadata_dict
 
 
 class SkinConcern(models.Model):
@@ -114,6 +115,7 @@ class Product(models.Model):
     slug = models.SlugField(max_length=120, unique=True)
     name = models.CharField(max_length=180)
     brand = models.CharField(max_length=120, db_index=True)
+    barcode = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Optional EAN/UPC barcode identifier")
     origin_country = models.CharField(max_length=4, choices=Origin.choices)
     category = models.CharField(max_length=30, choices=Category.choices)
     summary = models.CharField(max_length=300, blank=True)
@@ -199,7 +201,12 @@ class ProductReview(models.Model):
     def __str__(self) -> str:
         return f"Review by {self.user} on {self.product}"
     
+    def clean(self):
+        super().clean()
+        self.comment = sanitize_plain_text(self.comment)
+
     def save(self, *args, **kwargs):
+        self.full_clean()
         super().save(*args, **kwargs)
         self.recompute_product_stats(self.product_id)
 
@@ -413,3 +420,12 @@ class QuizFeedback(models.Model):
         metadata = self.metadata if isinstance(self.metadata, dict) else {}
         display = metadata.get("display_name") or metadata.get("name") or "anonymous"
         return f"Feedback from {display} at {self.created_at:%Y-%m-%d %H:%M}"
+
+    def clean(self):
+        super().clean()
+        self.message = sanitize_plain_text(self.message)
+        self.metadata = sanitize_metadata_dict(self.metadata)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)

@@ -1,0 +1,92 @@
+import Image from "next/image";
+import Link from "next/link";
+import PageContainer from "@/components/PageContainer";
+import { fetchTopicsBySection } from "@/lib/api.facts";
+import type { FactTopicSummary } from "@/lib/types";
+
+export const metadata = {
+  title: "Skin Knowledge Library • SkinMatch",
+  description: "Dive into every Skin Knowledge explainer curated by the SkinMatch editors.",
+};
+
+async function loadTopics(): Promise<FactTopicSummary[]> {
+  try {
+    return await fetchTopicsBySection("knowledge", 60);
+  } catch (error) {
+    console.error("Failed to load skin knowledge archive", error);
+    return [];
+  }
+}
+
+export default async function SkinKnowledgeArchivePage() {
+  const topics = await loadTopics();
+
+  return (
+    <main className="min-h-screen bg-[#eef4ea]">
+      <PageContainer className="pb-16 pt-37 space-y-10">
+        <header className="mt-18 sm:mt-0 flex flex-col gap-4 rounded-[32px] border-2 border-dashed border-black bg-white/70 p-6 sm:p-10 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#3c4c3f]/70">
+              Skin Knowledge
+            </p>
+            <h1 className="mt-2 text-3xl font-extrabold text-[#122016] sm:text-4xl">
+              All ingredient explainers
+            </h1>
+            <p className="mt-3 text-[#1f2d26]/75 sm:text-lg">
+              Every research-backed article about actives, pairing rules, and smarter routines — curated for your shelf.
+            </p>
+          </div>
+
+          <Link
+            href="/facts"
+            className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-black bg-[#f0f6ed] px-5 py-2 font-semibold text-[#1f2d26] 
+                      shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
+          >
+            ← Back to Skin Facts
+          </Link>
+        </header>
+
+        {topics.length ? (
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {topics.map((topic) => {
+              const image = topic.heroImageUrl ?? "/img/facts_img/green_tea.jpg";
+              const description = topic.subtitle || topic.excerpt || "Read the full guide.";
+
+              return (
+                <Link
+                  key={topic.slug}
+                  href={`/facts/${topic.slug}`}
+                  className="group flex flex-col overflow-hidden rounded-[28px] border-2 border-black bg-white transition hover:-translate-y-1.5"
+                >
+                  <div className="relative h-40 w-full overflow-hidden sm:h-56">
+                    <Image
+                      src={image}
+                      alt={topic.heroImageAlt ?? topic.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 320px"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-4 p-4 text-[#0f1f17] sm:p-5">
+                    <div className="space-y-2">
+                      <h2 className="text-base font-bold leading-tight sm:text-xl">{topic.title}</h2>
+                      <p className="text-xs text-[#0f1f17]/75 line-clamp-3 sm:text-sm">{description}</p>
+                    </div>
+                    <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                      Read guide <span aria-hidden>↗</span>
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-[28px] border-2 border-dashed border-black bg-white/70 p-10 text-center text-[#122016] shadow-[4px_4px_0_rgba(0,0,0,0.35)]">
+            We couldn&apos;t load the Skin Knowledge archive right now. Please try again later.
+          </div>
+        )}
+      </PageContainer>
+    </main>
+  );
+}

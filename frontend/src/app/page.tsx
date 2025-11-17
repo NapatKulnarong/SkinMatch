@@ -6,16 +6,17 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
-import { GlobeAltIcon, CameraIcon } from "@heroicons/react/24/outline";
+import { ArrowRightIcon, MagnifyingGlassIcon } from "@heroicons/react/24/solid";
+import { GlobeAltIcon } from "@heroicons/react/24/outline";
 
 import { StarIcon } from "@heroicons/react/24/solid";
-import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
+import NewsletterSignup from "@/components/NewsletterSignup";
+import { ProductScanner } from "@/components/ProductScanner";
+import { EnvironmentAlertPanel } from "@/components/EnvironmentAlertPanel";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
-import { subscribeToNewsletter } from "@/lib/api.newsletter";
 import {
   getAuthToken,
   getStoredProfile,
@@ -102,7 +103,7 @@ function QuizCtaButton() {
   }, [profile]);
 
   const showRetake = Boolean(profile && hasQuizHistory);
-  const buttonLabel = showRetake ? "Retake the quiz" : "Find your match now";
+  const buttonLabel = showRetake ? "Retake the quiz" : "Find your match";
 
   const handleClick = useCallback(() => {
     if (!showRetake || typeof window === "undefined") {
@@ -120,10 +121,12 @@ function QuizCtaButton() {
     <Link
       href="/quiz"
       onClick={handleClick}
-      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
+      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-4 sm:px-8 py-2 sm:py-4 text-xs sm:text-base font-semibold text-black 
+                shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:bg-[#ffe9a5] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] 
+                active:translate-y-[2px] active:bg-[#ffe2a6] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
     >
       <span className="truncate">{buttonLabel}</span>
-      <ArrowRightIcon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+      <ArrowRightIcon className="hidden md:block h-4 w-4 sm:h-6 sm:w-6 flex-shrink-0" />
     </Link>
   );
 }
@@ -403,10 +406,6 @@ export default function HomePage() {
       ? `${SUGGESTION_LIST_ID}-${activeSuggestionIndex}`
       : undefined;
   const [successStories, setSuccessStories] = useState<SuccessStory[]>(DEFAULT_SUCCESS_STORIES);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [newsletterMessage, setNewsletterMessage] = useState<string | null>(null);
-  const newsletterFeedbackId = newsletterMessage ? "newsletter-feedback" : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -454,100 +453,107 @@ export default function HomePage() {
     [closeSuggestions, router]
   );
 
-  const handleNewsletterSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const trimmed = newsletterEmail.trim();
-      if (!trimmed) {
-        setNewsletterStatus("error");
-        setNewsletterMessage("Please enter your email address.");
-        return;
-      }
-
-      setNewsletterStatus("loading");
-      setNewsletterMessage(null);
-
-      try {
-        const response = await subscribeToNewsletter(trimmed, "homepage");
-        setNewsletterStatus("success");
-        setNewsletterMessage(response.message);
-        if (!response.alreadySubscribed) {
-          setNewsletterEmail("");
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "We couldn't add you just now. Please try again in a moment.";
-        setNewsletterStatus("error");
-        setNewsletterMessage(message);
-      }
-    },
-    [newsletterEmail]
-  );
-
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
-      <Navbar />
-      <PageContainer className="relative flex flex-col gap-8 sm:gap-12 pt-24 sm:pt-32 pb-12 sm:pb-16">
+      <PageContainer className="relative flex flex-col gap-6 sm:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
         {/* Hero Section */}
-        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
-          <div className="grid items-center gap-6 sm:gap-8 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[1.05fr_0.95fr]">
-            <div className="order-1 space-y-4 sm:space-y-6 text-center md:order-2 md:text-left">
-              <div className="space-y-2 sm:space-y-3">
-                <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
-                  Personalized skincare insights
-                </p>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold">
-                  SkinMatch
-                </h1>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-700">
-                  &ldquo;Your skin, Your match, Your best care!&rdquo;
-                </p>
-              </div>
-
-              <p className="text-sm sm:text-base md:text-lg text-gray-700 md:max-w-xl mx-auto md:mx-0">
-                Build a routine tailored to your skin goals. Explore ingredients,
-                track sensitivities, and discover matches that love your skin back.
-              </p>
-
-              <div className="flex justify-center md:justify-start">
-                <QuizCtaButton />
-              </div>
-            </div>
-
-            <div className="order-2 flex justify-center md:order-1">
+        <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
+          {/* Mobile Layout: Mascot left, content right */}
+          <div className="flex items-center gap-3 px-4 lg:px-5 py-5 md:hidden">
+            <div className="flex-shrink-0">
               <Image
                 src="/img/mascot/matchy_match.gif"
                 alt="Matchy the SkinMatch mascot giving a friendly wave"
                 width={360}
                 height={270}
                 priority
-                className="h-auto w-full max-w-[200px] sm:max-w-sm"
+                className="h-auto w-37"
               />
+            </div>
+            <div className="flex-1 space-y-2 text-left min-w-0">
+              <div className="space-y-1">
+                <h1 className="text-2xl font-extrabold">
+                  SkinMatch
+                </h1>
+                <p className="hidden md:block text-xs font-semibold text-gray-700">
+                  &ldquo;Your skin, Your match, Your best care!&rdquo;
+                </p>
+              </div>
+
+              <p className="text-xs text-gray-700">
+                Build a routine tailored to your skin goals. Explore ingredients,
+                track sensitivities, and discover matches that love your skin back.
+              </p>
+
+              <div className="flex justify-start pt-1">
+                <QuizCtaButton />
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout: Mascot left, content right (same as image) */}
+          <div className="hidden md:grid md:grid-cols-[0.95fr_1.05fr] items-center gap-8 px-10 py-10">
+            <div className="flex justify-center">
+              <Image
+                src="/img/mascot/matchy_match.gif"
+                alt="Matchy the SkinMatch mascot giving a friendly wave"
+                width={360}
+                height={270}
+                priority
+                className="h-auto w-full max-w-xs"
+              />
+            </div>
+
+            <div className="space-y-6 text-left">
+              <div className="space-y-2 lg:space-y-4 lg:pt-3">
+                <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
+                  Personalized skincare insights
+                </p>
+                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold">
+                  SkinMatch
+                </h1>
+                <p className="text-lg lg:text-xl xl:text-2xl font-semibold text-gray-700">
+                  &ldquo;Your skin, Your match, Your best care!&rdquo;
+                </p>
+              </div>
+
+              <p className="text-base lg:text-lg text-gray-700 max-w-xl">
+                Build a routine tailored to your skin goals. Explore ingredients,
+                track sensitivities, and discover matches that love your skin back.
+              </p>
+
+              <div className="flex justify-start">
+                <QuizCtaButton />
+              </div>
             </div>
           </div>
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e4e5ba] to-[#8ec78d] p-6 sm:p-8 shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
-          <div className="mx-auto max-w-3xl space-y-4">
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-3">
+        <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+          <div className="mx-auto max-w-3xl space-y-5">
+            <div className="sm:hidden space-y-2">
+              <div className="flex items-center gap-2">
+                <GlobeAltIcon className="h-8 w-8 text-[#4a6b47]" />
+                <h2 className="text-xl font-extrabold text-[#2d4a2b] leading-tight">
+                  Ingredient Quick Search
+                </h2>
+              </div>
+              <p className="text-sm text-[#2d4a2b]/70">
+                Swipe through trending actives or enter a hero ingredient to see matching formulas.
+              </p>
+            </div>
+
+            <div className="hidden sm:block lg:text-center space-y-2">
+              <div className="flex items-center lg:justify-center gap-2 lg:gap-3">
                 <GlobeAltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#4a6b47]" />
                 <h2 className="text-xl sm:text-2xl font-bold text-[#2d4a2b]">Ingredient Quick Search</h2>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/30 bg-[#4a6b47]/10 px-3 py-1">
-                <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a6b47]" />
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#4a6b47]">
-                  BETA
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-[#2d4a2b]/70">
+              <p className="text-sm sm:text-base text-[#2d4a2b]/70">
                 Discover what&apos;s inside your favorite products
               </p>
             </div>
-            
+
             <form onSubmit={handleIngredientSearch} className="relative">
               <input
                 type="text"
@@ -564,11 +570,11 @@ export default function HomePage() {
                 aria-expanded={shouldShowSuggestions}
                 aria-controls={SUGGESTION_LIST_ID}
                 aria-activedescendant={activeSuggestionId}
-                className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
+                className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
+                className="absolute right-1 lg:right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
                           sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[21px]  hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
               >
                 <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -577,7 +583,7 @@ export default function HomePage() {
                 <div
                   id={SUGGESTION_LIST_ID}
                   role="listbox"
-                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_8px_0_rgba(0,0,0,0.2)]"
+                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:shadow-[0_8px_0_rgba(0,0,0,0.2)]"
                 >
                   {isSuggestionLoading && !hasSuggestions ? (
                     <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
@@ -632,86 +638,48 @@ export default function HomePage() {
               )}
             </form>
 
-            <div className="flex flex-wrap justify-center gap-2">
-              <span className="text-xs font-semibold text-[#2d4a2b]/60">Trending:</span>
-              {TRENDING_INGREDIENTS.map((ingredient) => (
-                <button
-                  key={ingredient.name}
-                  type="button"
-                  onClick={() => handleTrendingSelect(ingredient.name)}
-                  className="rounded-full border border-black/20 bg-white px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-[#4a6b47] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
-                >
-                  {ingredient.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Product Scanner Teaser */}
-        <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-dashed border-black bg-gradient-to-br from-[#f9e8e8] to-[#f5d4d4] shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-          {/* Mascot Image - positioned absolutely to overflow the box */}
-          <div className="absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-59 md:-right-13 z-10 pointer-events-none">
-            <Image
-              src="/img/mascot/matchy_scan.png"
-              alt="Matchy with scanner"
-              width={180}
-              height={180}
-              className="h-auto w-[100px] sm:w-[140px] md:w-[330px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
-            />
-        </div>
-
-          <div className="relative px-6 py-8 sm:px-10 sm:py-10 pt-8 sm:pt-12">
-            <div className="mx-auto max-w-3xl text-center space-y-4 sm:space-y-">
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-3">
-                  <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#a85b5b]" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#6b3e3e]">
-                    Instant Product Scanner
-                  </h2>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#a85b5b]/30 bg-[#a85b5b]/10 px-3 py-1">
-                  <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#a85b5b]" />
-                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#a85b5b]">
-                    Coming Soon
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base text-[#6b3e3e]/70 max-w-xl mx-auto">
-                  Upload a product photo to analyze ingredients instantly and get personalized safety ratings based on your skin profile.
-                </p>
-              </div>
-
+          <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:overflow-visible sm:gap-2">
+            {TRENDING_INGREDIENTS.map((ingredient) => (
               <button
-                disabled
-                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-[#5a4230] opacity-50 cursor-not-allowed shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+                key={ingredient.name}
+                type="button"
+                onClick={() => handleTrendingSelect(ingredient.name)}
+                className="flex-none rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
+                          hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
               >
-                <CameraIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                Scan Product
+                {ingredient.name}
               </button>
-            </div>
+            ))}
+          </div>
           </div>
         </section>
+
+        {/* Product Scanner */}
+        <ProductScanner />
+
+        {/* Environment Alerts */}
+        <EnvironmentAlertPanel />
 
         {/* Testimonials */}
         <section className="space-y-4 sm:space-y-6">
-          <div className="text-center space-y-2">
+          <div className="lg:text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold text-[#3C3D37]">Success Stories</h2>
             <p className="text-sm sm:text-base text-[#3C3D37]/70">
               Real results from real SkinMatch users
             </p>
           </div>
 
-          <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pt-1 pb-3">
             {successStories.map((story, index) => {
               const ratingValue = Math.max(0, Math.min(5, Math.round(story.rating ?? 5)));
               const key = story.id ?? `${story.name}-${index}`;
               return (
               <article
                 key={key}
-                className="rounded-2xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)]"
+                className="flex-none w-[260px] sm:w-[398px] rounded-[28px] border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)] snap-start overflow-hidden"
               >
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-start justify-between gap-2">
+                <div className="flex h-full flex-col space-y-3 sm:space-y-4">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-black bg-gradient-to-br from-[#f8d1d4] to-[#d8949a] text-sm sm:text-base font-bold text-[#5a2a3a]">
                         {story.initials}
@@ -721,7 +689,7 @@ export default function HomePage() {
                         <p className="text-[10px] sm:text-xs text-[#3C3D37]/60 truncate">{story.location}</p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5 flex-shrink-0">
+                    <div className="flex gap-0.5 ml-12 sm:ml-14">
                       {Array.from({ length: ratingValue }).map((_, i) => (
                         <StarIcon key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-[#f59e0b]" />
                       ))}
@@ -732,7 +700,7 @@ export default function HomePage() {
                     &ldquo;{story.text}&rdquo;
                   </p>
 
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
+                  <div className="mt-auto inline-flex max-w-max items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
                     <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#4a6b47]" />
                     <span className="text-[10px] sm:text-xs font-semibold text-[#4a6b47]">
                       {story.badge}
@@ -746,60 +714,11 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-          <div className="mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#3C5B6F]">
-                Get Weekly Skincare Tips
-              </h2>
-              <p className="text-xs sm:text-sm text-[#4a3a5a]/70">
-                Join 1,000+ skincare enthusiasts receiving expert ingredient insights and routine advice
-              </p>
-            </div>
-
-            <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSubmit} noValidate>
-              <input
-                type="email"
-                value={newsletterEmail}
-                onChange={(event) => {
-                  setNewsletterEmail(event.target.value);
-                  if (newsletterStatus !== "idle") {
-                    setNewsletterStatus("idle");
-                    setNewsletterMessage(null);
-                  }
-                }}
-                placeholder="your.email@example.com"
-                aria-label="Email address"
-                aria-describedby={newsletterFeedbackId}
-                aria-invalid={newsletterStatus === "error"}
-                className="flex-1 rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]"
-              />
-              <button
-                type="submit"
-                disabled={newsletterStatus === "loading"}
-                className="rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {newsletterStatus === "loading" ? "Subscribing…" : "Subscribe"}
-              </button>
-            </form>
-
-            <div className="space-y-1" aria-live="polite" aria-atomic="true">
-              {newsletterMessage && (
-                <p
-                  id="newsletter-feedback"
-                  className={`text-[11px] sm:text-xs font-semibold ${
-                    newsletterStatus === "error" ? "text-[#B9375D]" : "text-[#4a3a5a]"
-                  }`}
-                  role="status"
-                >
-                  {newsletterMessage}
-                </p>
-              )}
-              <p className="text-[10px] sm:text-xs text-[#4a3a5a]/60">
-                No spam, unsubscribe anytime. We respect your privacy.
-              </p>
-            </div>
-          </div>
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+          <NewsletterSignup
+            source="homepage"
+            variant="full"
+          />
         </section>
       </PageContainer>
 

@@ -1,26 +1,53 @@
 from django.contrib import admin
-from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView, NewsletterSubscriber
+from django import forms
+from .models import SkinFactContentBlock, SkinFactTopic, SkinFactView, NewsletterSubscriber, APIClient
 
 
-class SkinFactContentBlockInline(admin.TabularInline):
+class SkinFactContentBlockForm(forms.ModelForm):
+    """Custom form to ensure content field is always visible"""
+    class Meta:
+        model = SkinFactContentBlock
+        fields = '__all__'
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'rows': 12,
+                'cols': 100,
+                'style': 'width: 100%; min-height: 250px; font-family: monospace; font-size: 14px; padding: 10px;',
+                'placeholder': 'OPTION 1: Enter markdown text here...\n\n# Heading\n## Subheading\n\n**Bold text** *italic*\n\n- List item\n- Another item\n\n[Link](url)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make sure content field is clearly labeled
+        if 'content' in self.fields:
+            self.fields['content'].label = "📝 OPTION 1: Text Content (Markdown)"
+            self.fields['content'].help_text = "Write your content in Markdown. Use this OR image below. Leave EMPTY if using image."
+            self.fields['content'].required = False
+        if 'image' in self.fields:
+            self.fields['image'].label = "🖼️ OPTION 2: Image"
+            self.fields['image'].help_text = "Upload an image file. Use this OR text above. Leave EMPTY if using text content."
+        if 'image_alt' in self.fields:
+            self.fields['image_alt'].label = "Image Description (Required if image is used)"
+
+
+class SkinFactContentBlockInline(admin.StackedInline):
     """
-    Inline editor for SkinFactContentBlock inside a SkinFactTopic.
-    Shows each block as a row so editors can see:
-    Order | Block Type | Heading | Text | Image | Image Alt
+    Content blocks - choose EITHER text content OR image for each block
     """
     model = SkinFactContentBlock
-    extra = 0
+    form = SkinFactContentBlockForm
+    extra = 1
     fields = (
         "order",
-        "block_type",
-        "heading",
-        "text",
-        "image",
+        "content",  # TEXT CONTENT FIELD - appears FIRST
+        "image",    # IMAGE FIELD - appears SECOND  
         "image_alt",
     )
     ordering = ("order",)
     show_change_link = False
-    readonly_fields = ()
+    verbose_name = "Content Block"
+    verbose_name_plural = "Content Blocks"
 
 
 @admin.register(SkinFactTopic)
@@ -117,3 +144,17 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     search_fields = ("email", "source")
     list_filter = ("source", "subscribed_at")
     ordering = ("-subscribed_at",)
+
+
+@admin.register(APIClient)
+class APIClientAdmin(admin.ModelAdmin):
+    list_display = ("name", "key_prefix", "contact_email", "is_active", "rate_limit_per_minute", "last_used_at")
+    search_fields = ("name", "contact_email", "key_prefix")
+    list_filter = ("is_active",)
+    readonly_fields = ("key_prefix", "last_used_at", "created_at", "updated_at")
+    fieldsets = (
+        ("Identity", {"fields": ("name", "contact_email", "notes")}),
+        ("Credentials", {"fields": ("key_prefix", "key_hash", "allowed_ips")}),
+        ("Controls", {"fields": ("rate_limit_per_minute", "is_active")}),
+        ("Audit", {"fields": ("last_used_at", "created_at", "updated_at")}),
+    )

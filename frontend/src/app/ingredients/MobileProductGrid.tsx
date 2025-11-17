@@ -9,10 +9,9 @@ const MOBILE_LIMIT = 12;
 
 type MobileProductGridProps = {
   products: IngredientSearchProduct[];
-  onShowDetails?: (product: IngredientSearchProduct) => void;
 };
 
-export function MobileProductGrid({ products, onShowDetails }: MobileProductGridProps) {
+export function MobileProductGrid({ products }: MobileProductGridProps) {
   const [showAll, setShowAll] = useState(false);
   const hasMore = products.length > MOBILE_LIMIT;
   const visibleProducts = showAll || !hasMore ? products : products.slice(0, MOBILE_LIMIT);
@@ -21,12 +20,7 @@ export function MobileProductGrid({ products, onShowDetails }: MobileProductGrid
     <div className="sm:hidden">
       <div className="grid grid-cols-2 gap-3">
         {visibleProducts.map((product) => (
-          <ProductCard
-            key={product.productId}
-            product={product}
-            compact
-            onShowDetails={onShowDetails}
-          />
+          <ProductCard key={product.productId} product={product} compact />
         ))}
       </div>
       {hasMore ? (

@@ -1,25 +1,4 @@
-const getApiBase = () => {
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  return baseFromClient.replace(/\/+$/, "");
-};
+import { resolveApiBase } from "./apiBase";
 
 export type NewsletterSubscribeResponse = {
   ok: boolean;
@@ -40,7 +19,7 @@ export async function subscribeToNewsletter(
     throw new Error("Please enter your email address.");
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/newsletter/subscribe`, {
     method: "POST",
     headers: {

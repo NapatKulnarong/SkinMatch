@@ -1,4 +1,5 @@
 import type { StoredProfile } from "./auth-storage";
+import { resolveApiBase } from "./apiBase";
 
 export type SignupPayload = {
   first_name: string;
@@ -9,6 +10,8 @@ export type SignupPayload = {
   confirm_password: string;
   date_of_birth?: string | null;
   gender?: string | null;
+  accept_terms_of_service: boolean;
+  accept_privacy_policy: boolean;
 };
 
 export type LoginPayload = {
@@ -22,22 +25,41 @@ export type ApiResponse<T> = {
   data?: T;
 };
 
-const API_BASE = "/api";
+const API_BASE = resolveApiBase();
 
 async function handleJson<T>(res: Response): Promise<T> {
   const text = await res.text();
   let json: T;
+  
+  if (!res.ok) {
+    // Try to parse error response
+    try {
+      json = text ? JSON.parse(text) : ({} as T);
+    } catch {
+      // If not JSON, use the text or status text
+      throw new Error(text || res.statusText || "Request failed");
+    }
+    
+    // Django Ninja HttpError returns {detail: "message"}, but some endpoints return {message: "..."}
+    let message = res.statusText || "Request failed";
+    if (typeof json === "object" && json !== null) {
+      if ("detail" in json) {
+        message = String((json as { detail?: unknown }).detail || message);
+      } else if ("message" in json) {
+        message = String((json as { message?: unknown }).message || message);
+      } else if (text && text.length < 200) {
+        // If it's a simple text response, use it
+        message = text;
+      }
+    }
+    throw new Error(message);
+  }
+  
+  // Parse successful response
   try {
     json = text ? JSON.parse(text) : ({} as T);
   } catch {
-    throw new Error("Unexpected server response");
-  }
-  if (!res.ok) {
-    const message =
-      typeof json === "object" && json !== null && "message" in json
-        ? String((json as { message?: unknown }).message ?? res.statusText)
-        : res.statusText;
-    throw new Error(message);
+    throw new Error("Invalid server response");
   }
   return json;
 }

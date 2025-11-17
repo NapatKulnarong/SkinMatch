@@ -6,6 +6,7 @@ import type {
   SkinFactSection,
 } from "@/lib/types";
 import { getAuthToken } from "@/lib/auth-storage";
+import { resolveApiBase, resolveMediaUrl } from "@/lib/apiBase";
 
 type RawFactTopicSummary = {
   id: string;
@@ -21,9 +22,7 @@ type RawFactTopicSummary = {
 
 type RawFactContentBlock = {
   order: number;
-  block_type: "heading" | "text" | "paragraph" | "image";
-  heading?: string | null;
-  text?: string | null;
+  content?: string | null;
   image_url?: string | null;
   image_alt?: string | null;
 };
@@ -35,36 +34,6 @@ type RawFactTopicDetail = RawFactTopicSummary & {
 
 const shouldUseMock = process.env.NEXT_PUBLIC_USE_MOCK === "1";
 
-const getApiBase = () => {
-  // what frontend calls in browser
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-
-  // what server calls (in container vs localhost)
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    // prefer internal URL first if provided
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    // if they gave us just "/api", turn it into http://backend:8000/api
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    // remove trailing slash
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  // client side: just strip trailing slash
-  return baseFromClient.replace(/\/+$/, "");
-};
-
 const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
   id: raw.id,
   slug: raw.slug,
@@ -72,17 +41,15 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
   subtitle: raw.subtitle ?? null,
   excerpt: raw.excerpt ?? null,
   section: raw.section,
-  heroImageUrl: raw.hero_image_url ?? null,
+  heroImageUrl: resolveMediaUrl(raw.hero_image_url, { keepBackendOrigin: true }),
   heroImageAlt: raw.hero_image_alt ?? null,
   viewCount: raw.view_count ?? 0,
 });
 
 const mapBlock = (raw: RawFactContentBlock): FactContentBlock => ({
   order: raw.order,
-  blockType: raw.block_type, // "heading" | "text"
-  heading: raw.heading ?? null,
-  text: raw.text ?? null,
-  imageUrl: raw.image_url ?? null,
+  content: raw.content ?? null,
+  imageUrl: resolveMediaUrl(raw.image_url, { keepBackendOrigin: true }),
   imageAlt: raw.image_alt ?? null,
 });
 
@@ -108,7 +75,7 @@ export async function fetchPopularTopics(
     return popularTopicsMock.slice(0, limit);
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/facts/topics/popular?limit=${limit}`, {
     cache: "no-store",
   });
@@ -122,7 +89,8 @@ export async function fetchPopularTopics(
 export async function fetchTopicsBySection(
   section: SkinFactSection,
   limit = 6,
-  offset = 0
+  offset = 0,
+  sessionId?: string | null
 ): Promise<FactTopicSummary[]> {
   if (shouldUseMock) {
     const { sectionTopicsMock } = await import("@/mocks/facts.mock");
@@ -130,19 +98,24 @@ export async function fetchTopicsBySection(
     return sectionTopicsMock[section]?.slice(offset, offset + limit) ?? [];
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
+  if (sessionId) {
+    params.append("session_id", sessionId);
+  }
+  const token = getAuthToken();
   const res = await fetch(
     `${base}/facts/topics/section/${section}?${params.toString()}`,
     {
       cache: "no-store",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
   if (!res.ok) {
-        throw new Error(`Failed to load topics for section ${section}`);
+    throw new Error(`Failed to load topics for section ${section}`);
   }
   const data: RawFactTopicSummary[] = await res.json();
   return data.map(mapSummary);
@@ -158,7 +131,7 @@ export async function fetchFactTopicDetail(
     return null;
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/facts/topics/${slug}`, {
     cache: "no-store",
   });
@@ -176,7 +149,8 @@ export async function fetchFactTopicDetail(
 }
 
 export async function fetchRecommendedTopics(
-  limit = 4
+  limit = 4,
+  sessionId?: string | null
 ): Promise<FactTopicSummary[]> {
   if (shouldUseMock) {
     // fall back to a blend of knowledge + popular when mocking
@@ -199,19 +173,44 @@ export async function fetchRecommendedTopics(
     return deduped.slice(0, limit);
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const token = getAuthToken();
-  const res = await fetch(`${base}/facts/topics/recommended?limit=${limit}`, {
+  
+  // Build query params
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+  });
+  
+  // Add session_id for anonymous users (only if no token)
+  if (!token && sessionId) {
+    params.append("session_id", sessionId);
+  }
+  
+  const url = `${base}/facts/topics/recommended?${params.toString()}`;
+  console.log("[fetchRecommendedTopics] Requesting:", url, { 
+    sessionId, 
+    hasToken: !!token,
+    isAnonymous: !token 
+  });
+  
+  const res = await fetch(url, {
     cache: "no-store",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+  
   if (res.status === 401) {
-    // not logged in -> graceful fallback to popular
-    return fetchPopularTopics(limit);
+    // Not logged in and no valid session -> return empty array
+    console.log("[fetchRecommendedTopics] 401 Unauthorized, returning empty array");
+    return [];
   }
+  
   if (!res.ok) {
+    console.error("[fetchRecommendedTopics] Failed with status:", res.status);
     throw new Error("Failed to load recommended topics");
   }
+  
   const data: RawFactTopicSummary[] = await res.json();
+  console.log("[fetchRecommendedTopics] Received topics:", data.length);
+  
   return data.map(mapSummary);
 }

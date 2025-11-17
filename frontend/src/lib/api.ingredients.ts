@@ -47,32 +47,11 @@ type RawIngredientSearchResponse = {
   results: RawIngredientResult[];
 };
 
+import { resolveApiBase, resolveMediaUrl } from "./apiBase";
+
 type RawIngredientSuggestionResponse = {
   query: string;
   suggestions: RawIngredientSuggestion[];
-};
-
-const getApiBase = () => {
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  return baseFromClient.replace(/\/+$/, "");
 };
 
 export type IngredientSummary = {
@@ -144,7 +123,7 @@ const mapProduct = (raw: RawIngredientProduct): IngredientSearchProduct => ({
       ? raw.average_rating
       : null,
   reviewCount: raw.review_count ?? 0,
-  imageUrl: raw.image_url ?? null,
+  imageUrl: resolveMediaUrl(raw.image_url),
   image: raw.image ?? null,
   productUrl: raw.product_url ?? null,
 });
@@ -211,7 +190,7 @@ export async function fetchIngredientSearch(
     params.set("ingredient_limit", String(options.ingredientLimit));
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/ingredients/search?${params.toString()}`, {
     cache: "no-store",
     signal: options.signal,
@@ -253,7 +232,7 @@ export async function fetchIngredientSuggestions(
     params.set("limit", String(options.limit));
   }
 
-  const base = getApiBase();
+  const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/ingredients/suggest?${params.toString()}`, {
     cache: "no-store",
     signal: options.signal,

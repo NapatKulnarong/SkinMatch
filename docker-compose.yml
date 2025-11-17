@@ -42,11 +42,13 @@ services:
       context: ./frontend
       args:
         - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
-        - BACKEND_URL=http://backend:8000
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: skinmatch-frontend
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
+      - INTERNAL_BACKEND_URL=http://backend:8000
+      - INTERNAL_API_BASE=http://backend:8000/api
+      - INTERNAL_BACKEND_HOST=backend
       - BACKEND_URL=http://backend:8000
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     ports:
@@ -72,7 +74,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
       interval: 5s
