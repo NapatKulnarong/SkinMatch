@@ -43,16 +43,19 @@ class ScanTextEndpointTests(TestCase):
         self.image_file = _make_image_file()
 
     @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_for_json")
     @patch("core.api_scan_text._call_gemini_ensemble")
     @patch("core.api_scan_text._ocr_text_from_file")
     def test_happy_path_normalizes_gemini_payload(
         self,
         mock_ocr,
-        mock_gemini,
+        mock_gemini_ensemble,
+        mock_gemini_legacy,
         mock_fallback,
     ):
         mock_ocr.return_value = "Ingredients: Retinol, Niacinamide, Hyaluronic Acid"
-        mock_gemini.return_value = {
+        mock_gemini_legacy.return_value = None
+        mock_gemini_ensemble.return_value = {
             "actives": ["Retinol", "Niacinamide", "Retinol"],
             "concerns": ["Fragrance", "Alcohol", "Fragrance"],
             "benefits": ["Anti-aging", "Hydration"],
@@ -87,12 +90,14 @@ class ScanTextEndpointTests(TestCase):
         self.assertEqual(payload["raw_text"], mock_ocr.return_value)
 
     @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_for_json")
     @patch("core.api_scan_text._call_gemini_ensemble")
     @patch("core.api_scan_text._ocr_text_from_file")
     def test_returns_fallback_when_gemini_returns_none(
         self,
         mock_ocr,
-        mock_gemini,
+        mock_gemini_ensemble,
+        mock_gemini_legacy,
         mock_fallback,
     ):
         mock_ocr.return_value = """
@@ -100,7 +105,8 @@ class ScanTextEndpointTests(TestCase):
         Alcohol-Free, Paraben-Free
         ช่วยเติมความชุ่มชื้นให้ผิว
         """
-        mock_gemini.return_value = None
+        mock_gemini_legacy.return_value = None
+        mock_gemini_ensemble.return_value = None
         mock_fallback.return_value = {
             "actives": [
                 "Niacinamide: Vitamin B3",
@@ -135,12 +141,14 @@ class ScanTextEndpointTests(TestCase):
         self.assertGreaterEqual(data["confidence"], 0.55)
 
     @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_for_json")
     @patch("core.api_scan_text._call_gemini_ensemble")
     @patch("core.api_scan_text._ocr_text_from_file")
     def test_gemini_exception_bubbles_through(
         self,
         mock_ocr,
-        mock_gemini,
+        mock_gemini_ensemble,
+        mock_gemini_legacy,
         mock_fallback,
     ):
         mock_ocr.return_value = "Contains niacinamide and fragrance"
@@ -151,7 +159,8 @@ class ScanTextEndpointTests(TestCase):
             "notes": [],
             "confidence": 0.55,
         }
-        mock_gemini.side_effect = RuntimeError("Gemini unhappy")
+        mock_gemini_legacy.return_value = None
+        mock_gemini_ensemble.side_effect = RuntimeError("Gemini unhappy")
 
         with self.assertRaises(RuntimeError):
             self.client.post(
@@ -161,16 +170,19 @@ class ScanTextEndpointTests(TestCase):
             )
 
     @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_for_json")
     @patch("core.api_scan_text._call_gemini_ensemble")
     @patch("core.api_scan_text._ocr_text_from_file")
     def test_response_caps_lists_from_noisy_gemini_output(
         self,
         mock_ocr,
-        mock_gemini,
+        mock_gemini_ensemble,
+        mock_gemini_legacy,
         mock_fallback,
     ):
         mock_ocr.return_value = "Noisy OCR"
-        mock_gemini.return_value = {
+        mock_gemini_legacy.return_value = None
+        mock_gemini_ensemble.return_value = {
             "actives": [f"Ingredient {i}" for i in range(40)],
             "concerns": ["Fragrance"] * 5,
             "benefits": [f"Benefit {i}" for i in range(25)],
