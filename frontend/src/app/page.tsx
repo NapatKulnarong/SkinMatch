@@ -554,7 +554,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <form onSubmit={handleIngredientSearch} className="relative">
+            <form onSubmit={handleIngredientSearch} className="relative mx-auto max-w-2xl w-full">
               <input
                 type="text"
                 value={searchQuery}
@@ -714,7 +714,7 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-5 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <NewsletterSignup
             source="homepage"
             variant="full"

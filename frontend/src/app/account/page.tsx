@@ -179,12 +179,13 @@ function AccountContent() {
           </div>
         )}
 
-        <section className="grid grid-cols-12 gap-6">
+        <section className="grid grid-cols-12 gap-6 sm:gap-8">
           {/* LEFT PROFILE CARD */}
           <aside className="col-span-12 lg:col-span-3 -mt-4 sm:mt-0">
-            <div className="flex flex-row items-start gap-4 lg:flex-col rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full">
+            <div className="flex flex-row items-start gap-4 lg:flex-col lg:justify-between rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f5f0ff] p-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] 
+                           sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] h-full md:min-h-[190px] lg:h-full">
               {/* Avatar */}
-              <div className="relative w-24 h-24 lg:w-[240px] lg:h-[240px] flex-shrink-0">
+              <div className="relative w-24 h-24 md:w-42 md:h-42 lg:w-[240px] lg:h-[240px] flex-shrink-0 lg:flex-shrink-0">
                 <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-black bg-[#e8dff5]">
                   <Image
                     key={avatarSrc}
@@ -200,23 +201,23 @@ function AccountContent() {
               </div>
 
               {/* Right: Name + Buttons (on mobile) */}
-              <div className="flex flex-col lg:mt-auto flex-1 w-full">
+              <div className="flex flex-col flex-1 w-full lg:flex-shrink-0 lg:justify-end">
                 {/* Profile Info */}
                 <div className="space-y-1 text-left">
-                  <h2 className="text-lg lg:text-2xl font-extrabold leading-tight text-gray-900">
+                  <h2 className="text-lg md:text-3xl lg:text-2xl font-extrabold leading-tight text-gray-900">
                     {displayName}
                   </h2>
                   {profile?.username && (
-                    <p className="text-xs lg:text-base font-semibold text-[#7C6DB1]">
+                    <p className="text-xs md:text-lg lg:text-base font-medium text-[#7C6DB1]">
                       {profile.username}
                     </p>
                   )}
                 </div>
                 {/* Action Buttons */}
-                <div className="pt-3 lg:pt-6 flex flex-row lg:flex-col gap-2 lg:gap-3 w-full">
+                <div className="pt-3 md:pt-11 lg:pt-6 flex flex-row lg:flex-col gap-2 lg:gap-3 w-full">
                   <Link
                     href="/account/settings"
-                    className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 lg:py-3 text-xs lg:text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
+                    className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 md:py-3 text-xs md:text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)]"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -242,7 +243,7 @@ function AccountContent() {
           {/* RIGHT: MATCH HISTORY WITH MASCOT */}
           <div className="col-span-12 lg:col-span-9 relative">
             {/* Matchy Mascot - Positioned on top center of the Match History box */}
-            <div className="hidden sm:block absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
+            <div className="hidden lg:block absolute -top-46 left-1/2 -translate-x-110 z-20 pointer-events-none">
               <Image
                 src="/img/mascot/matchy_hourglass.png"
                 alt="Matchy mascot"
@@ -257,9 +258,9 @@ function AccountContent() {
           </div>
 
           {/* SECOND ROW - Wishlist */}
-          <div className="col-span-12 lg:col-span-12 relative">
+          <div className="col-span-12 lg:col-span-12 relative mt-4 sm:mt-0">
             <WishlistPanel token={authToken} />
-            <div className="hidden sm:block absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
+            <div className="hidden lg:block absolute -top-[184px] -right-[30px] sm:-right-[50px] z-20 pointer-events-none">
               <Image
                 src="/img/mascot/matchy_heart.png"
                 alt="Matchy mascot"
@@ -475,7 +476,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
       headerAction={
         <button
           onClick={() => setEditMode(!editMode)}
-          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 text-xs font-bold 
+          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 md:py-2 lg:py-1.5 text-xs font-bold 
                     transition shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] 
                     active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
             editMode 
@@ -507,7 +508,7 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
             {actionError}
           </div>
         )}
-        <div className="grid grid-cols-2 md:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-5 mt-3 sm:mt-4 mr-1">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-3 sm:mt-4 mr-1">
           {visibleHistory.map((item, index) => {
             const key = item.sessionId ?? item.profileId ?? `${item.completedAt}-${index}`;
             const completedDate = new Date(item.completedAt);
@@ -736,7 +737,32 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
   );
 }
 
-export function WishlistPanel({ token }: { token: string | null }) {
+const WISHLIST_LIMITS = {
+  mobile: 6,
+  medium: 12,
+  large: 12,
+} as const;
+
+const getWishlistVisibilityClasses = (index: number) => {
+  if (index < WISHLIST_LIMITS.mobile) {
+    return "";
+  }
+  if (index < WISHLIST_LIMITS.medium) {
+    return "hidden md:block";
+  }
+  if (index < WISHLIST_LIMITS.large) {
+    return "hidden md:hidden lg:block";
+  }
+  return "hidden";
+};
+
+type WishlistPanelProps = {
+  token: string | null;
+  variant?: "preview" | "full";
+  title?: string;
+};
+
+export function WishlistPanel({ token, variant = "preview", title = "Wishlist" }: WishlistPanelProps) {
   const [items, setItems] = useState<import("@/lib/api.wishlist").WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -748,6 +774,8 @@ export function WishlistPanel({ token }: { token: string | null }) {
   const [productDetailError, setProductDetailError] = useState<string | null>(null);
   const detailCacheRef = useRef<Record<string, ProductDetail>>({});
   const currentDetailRequestRef = useRef<string | null>(null);
+  const limitDisplay = variant === "preview";
+  const isFullVariant = variant === "full";
 
   useEffect(() => {
     let cancelled = false;
@@ -856,7 +884,7 @@ export function WishlistPanel({ token }: { token: string | null }) {
 
   if (loading) {
     return (
-      <Panel title="Wishlist" tall>
+      <Panel title={title} tall={!isFullVariant} full={isFullVariant}>
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-[#7C6DB1]" />
@@ -869,7 +897,7 @@ export function WishlistPanel({ token }: { token: string | null }) {
 
   if (error && !items.length) {
     return (
-      <Panel title="Wishlist" tall>
+      <Panel title={title} tall={!isFullVariant} full={isFullVariant}>
         <div className="flex h-full flex-col items-center justify-center gap-2 text-center px-4">
           <p className="text-base font-bold text-gray-900">{error}</p>
         </div>
@@ -880,8 +908,9 @@ export function WishlistPanel({ token }: { token: string | null }) {
   if (!items.length) {
     return (
       <Panel
-        title="Wishlist"
-        tall
+        title={title}
+        tall={!isFullVariant}
+        full={isFullVariant}
         emptyMessage="Save your favorite products here."
         headerAction={
           <button
@@ -911,14 +940,38 @@ export function WishlistPanel({ token }: { token: string | null }) {
     );
   }
 
+  const hasMoreThanMobile = limitDisplay && items.length > WISHLIST_LIMITS.mobile;
+  const hasMoreThanMedium = limitDisplay && items.length > WISHLIST_LIMITS.medium;
+  const hasMoreThanLarge = limitDisplay && items.length > WISHLIST_LIMITS.large;
+  const shouldShowViewAll = hasMoreThanMobile || hasMoreThanMedium || hasMoreThanLarge;
+
+  // Determine the appropriate visibility class based on item count
+  // Show button at breakpoints where items are hidden due to limits
+  const getViewAllVisibilityClass = () => {
+    if (!shouldShowViewAll) return "";
+    
+    // If more than 12 items: items 7-12 are hidden on mobile, items 13+ are hidden on all preview sizes
+    // Show button on all breakpoints (mobile needs it for items 7-12, medium+ needs it for items 13+)
+    if (items.length > WISHLIST_LIMITS.large) {
+      return ""; // Show on all breakpoints
+    }
+    // If 7-12 items: items 7-12 are hidden on mobile only, visible on medium+
+    // Show button on mobile only
+    return "md:hidden";
+  };
+
+  const viewAllButtonClassName =
+    "inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-4 py-1.5 text-xs font-bold text-gray-900 shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:bg-[#f5f4ff] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)]";
+
   return (
     <Panel
-      title="Wishlist"
-      tall
+      title={title}
+      tall={!isFullVariant}
+      full={isFullVariant}
       headerAction={
         <button
           onClick={() => setEditMode(!editMode)}
-          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 text-xs font-bold transition shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+          className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black px-4 py-1.5 md:py-2 lg:py-1.5 text-xs font-bold transition shadow-[0_3px_0_rgba(0,0,0,0.2)] hover:-translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] active:translate-y-[1px] active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
             editMode ? 'bg-[#c8e6d7] text-[#2d5f4d]' : 'bg-white text-gray-900'
           }`}
         >
@@ -940,85 +993,99 @@ export function WishlistPanel({ token }: { token: string | null }) {
         </button>
       }
     >
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pr-2 items-stretch">
-  {items.map((p) => (
-    <div key={p.id} className="relative h-full">
-      <div className="h-full flex flex-col rounded-2xl border-2 border-black/80 sm:border-black/80 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
-            <div className="flex sm:block h-36 sm:h-auto relative">
-              <div className="w-32 h-full sm:w-auto sm:h-auto sm:aspect-[4/3] bg-[#f7f5ff] border-r-2 border-black/80 sm:border-r-0 sm:border-b-2 z-0">
-                {p.image ? (
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    width={320}
-                    height={320}
-                    className="h-full w-full object-cover"
-                    sizes="(max-width: 640px) 50vw, 33vw"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
-                )}
-              </div>
-              <div className="p-3 sm:p-4 flex-1 relative pb-14 sm:pb-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
-                    <h4 className="text-sm sm:text-base font-extrabold text-gray-900 line-clamp-2">{p.name}</h4>
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 pr-2 items-stretch">
+        {items.map((p, index) => {
+          const visibilityClass = limitDisplay ? getWishlistVisibilityClasses(index) : "";
+          const cardClassName = ["relative h-full", visibilityClass].filter(Boolean).join(" ");
+          return (
+            <div key={p.id} className={cardClassName} data-testid="wishlist-card">
+              <div className="h-full flex flex-col rounded-2xl border-2 border-black/80 sm:border-black/80 bg-white shadow-[0_6px_0_rgba(0,0,0,0.15)] overflow-hidden">
+                <div className="flex sm:block h-36 sm:h-auto relative">
+                  <div className="w-32 h-full sm:w-auto sm:h-auto sm:aspect-[4/3] bg-[#f7f5ff] border-r-2 border-black/80 sm:border-r-0 sm:border-b-2 z-0">
+                    {p.image ? (
+                      <Image
+                        src={p.image}
+                        alt={p.name}
+                        width={320}
+                        height={320}
+                        className="h-full w-full object-cover"
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
+                    )}
+                  </div>
+                  <div className="p-3 sm:p-4 flex-1 relative pb-14 sm:pb-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
+                        <h4 className="text-sm sm:text-base font-extrabold text-gray-900 line-clamp-2">{p.name}</h4>
+                      </div>
+                    </div>
+                    <div className="mt-1 sm:mt-2 flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
+                    </div>
+                    <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:border-t border-black/10 pt-2 sm:pt-3 sm:static absolute bottom-3 right-3 z-10 sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleShowProductDetails(p)}
+                        className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                      >
+                        Details
+                      </button>
+                      {p.productUrl && (
+                        <a
+                          href={p.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                        >
+                          Shop
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="mt-1 sm:mt-2 flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
-                </div>
-                <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:border-t border-black/10 pt-2 sm:pt-3 sm:static absolute bottom-3 right-3 z-10 sm:justify-end">
+                {editMode && (
                   <button
-                    type="button"
-                    onClick={() => handleShowProductDetails(p)}
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    onClick={() => handleRemove(p.id)}
+                    disabled={removing.has(p.id)}
+                    className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
+                      removing.has(p.id) ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
+                    }`}
+                    aria-label="Remove from wishlist"
                   >
-                    Details
-                  </button>
-                  {p.productUrl && (
-                    <a
-                      href={p.productUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    <svg
+                      className={`h-5 w-5 text-[#8b4949] ${removing.has(p.id) ? "animate-pulse" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      Shop
-                    </a>
-                  )}
-                </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
-            {editMode && (
-              <button
-                onClick={() => handleRemove(p.id)}
-                disabled={removing.has(p.id)}
-                className={`absolute -top-3 -right-3 z-10 rounded-full border-2 border-black bg-[#f5e6e6] p-2.5 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-1 hover:bg-[#fdd] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0 active:shadow-[0_2px_0_rgba(0,0,0,0.15)] ${
-                  removing.has(p.id) ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]" : ""
-                }`}
-                aria-label="Remove from wishlist"
-              >
-                <svg
-                  className={`h-5 w-5 text-[#8b4949] ${removing.has(p.id) ? "animate-pulse" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
-         </div>
-        ))}
+          );
+        })}
       </div>
+      {shouldShowViewAll && (
+        <div className="mt-6 flex justify-center">
+          <Link
+            href="/account/wishlist"
+            className={`${viewAllButtonClassName} ${getViewAllVisibilityClass()}`}
+          >
+            View all
+          </Link>
+        </div>
+      )}
       {activeProduct && (
         <WishlistProductDetailModal
           product={activeProduct}

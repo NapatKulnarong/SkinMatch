@@ -52,7 +52,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
     return (
       <PageContainer as="section" id={sectionId} className="pt-12 sm:pt-16 lg:pt-20">
         <div className="rounded-[28px] border-2 border-black bg-white/60 shadow-[8px_10px_0_rgba(0,0,0,0.2)]">
-          <div className="animate-pulse rounded-[28px] min-h-[420px] md:min-h-[520px]" />
+          <div className="animate-pulse rounded-[28px] min-h-[280px] md:min-h-[240px]" />
         </div>
       </PageContainer>
     );
@@ -79,7 +79,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
         <div className="relative overflow-hidden rounded-[22px] lg:rounded-[32px] border-2 border-black 
                        bg-gradient-to-br from-[#fff1d6] via-[#ffe9c8] to-[#f4f1df] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[10px_12px_0_rgba(0,0,0,0.22)]">
         <div className="grid lg:grid-cols-[minmax(0,3fr)_300px] lg:items-stretch">
-          <div className="relative w-full min-h-[305px] sm:min-h-[480px] lg:min-h-[550px] lg:h-full lg:self-stretch">
+          <div className="relative w-full min-h-[240px] md:min-h-[260px] lg:h-full">
             <Image
               src={heroImage}
               alt={current.heroImageAlt ?? current.title}
@@ -90,23 +90,24 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
             />
           <div className="absolute inset-0 bg-gradient-to-r from-[#2d4a2b]/85 via-[#2d4a2b]/20 to-transparent" />
 
-            <div className="absolute inset-y-0 left-0 flex flex-col justify-between px-4 py-5 sm:px-10 sm:py-10 text-white">
-              <div className="space-y-4 max-w-xl">
+            <div className="absolute inset-0 left-0 flex flex-col justify-between px-4 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-4 text-white">
+              <div className="space-y-3 max-w-xl">
                 <p className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
                   Editors&apos; pick
                 </p>
-                <h3 className="text-2xl lg:text-5xl font-extrabold leading-tight drop-shadow-sm">
+                <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight drop-shadow-sm">
                   {current.title}
                 </h3>
-                <p className="text-base lg:text-2xl leading-relaxed text-white/85">
+                <p className="text-sm md:text-lg lg:text-xl leading-relaxed text-white/85">
                   {blurb}
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-shrink-0">
                 <Link
                   href={`/facts/${current.slug}`}
-                  className="inline-flex w-fit items-center justify-center gap-2 rounded-full border-2 border-black bg-[#fef9ef] px-5 py-1 lg:py-3 text-sm lg:text-xl font-semibold text-[#2d4a2b] shadow-[0_6px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-[2px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 sm:w-auto"
+                  className="inline-flex w-fit items-center justify-center gap-2 rounded-full border-2 border-black bg-[#fef9ef] px-5 py-1 md:py-2 lg:py-3 text-sm md:text-lg lg:text-xl font-semibold text-[#2d4a2b] 
+                            shadow-[0_6px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-[2px] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 sm:w-auto"
                 >
                   Read
                   <span aria-hidden className="text-lg">↗</span>
@@ -116,7 +117,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
             </div>
           </div>
 
-          <aside className="hidden lg:flex flex-col gap-3 border-l-2 border-[#2d4a2b]/10 bg-black/10 p-5">
+          <aside className="hidden lg:flex flex-col gap-2 border-l-2 border-[#2d4a2b]/10 bg-black/10 p-4">
             {topics.slice(0, 5).map((topic, i) => {
               const isActive = i === idx;
               const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
@@ -126,7 +127,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                   type="button"
                   aria-current={isActive}
                   onClick={() => setIdx(i)}
-                  className={`group relative flex flex-1 items-center gap-4 rounded-2xl border-black px-3 py-3 text-left transition ${
+                  className={`group relative flex items-center gap-3 rounded-2xl border-black px-3 py-2 text-left transition ${
                     isActive ? "border-2 bg-white shadow-[0_6px_0_rgba(0,0,0,0.25)]" : "border-0 bg-[#FFFAEC] hover:bg-white"
                   }`}
                 >

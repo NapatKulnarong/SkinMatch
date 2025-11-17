@@ -30,6 +30,17 @@ jest.mock("@/lib/api.wishlist", () => ({
   removeFromWishlist: jest.fn(),
 }));
 
+const buildWishlistItem = (index: number) => ({
+  id: `p${index}`,
+  name: `Product ${index}`,
+  brand: "SkinMatch",
+  image: "/img/product.jpg",
+  price: 100 + index,
+  currency: "THB",
+  productUrl: "https://example.com/product",
+  category: "cleanser",
+});
+
 describe("WishlistPanel", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -97,6 +108,24 @@ describe("WishlistPanel", () => {
 
     expect(
       screen.getByText("Sign in to view your wishlist.")
+    ).toBeInTheDocument();
+  });
+
+  it("limits the preview list and shows a View all link when items exceed the mobile limit", async () => {
+    mockFetchWishlist.mockResolvedValueOnce(
+      Array.from({ length: 7 }, (_, index) => buildWishlistItem(index))
+    );
+
+    render(<WishlistPanel token="test-token" />);
+
+    const cards = await screen.findAllByTestId("wishlist-card");
+    expect(cards).toHaveLength(7);
+
+    const hiddenCards = cards.filter(card => card.className.includes("hidden"));
+    expect(hiddenCards).toHaveLength(1);
+
+    expect(
+      screen.getByRole("link", { name: /View all/i })
     ).toBeInTheDocument();
   });
 });
