@@ -37,7 +37,20 @@ class SecurityHeadersMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        csp = getattr(settings, "CONTENT_SECURITY_POLICY", "").strip()
+        # Use relaxed CSP for API documentation
+        if request.path.startswith('/api/docs'):
+            csp = (
+                "default-src 'self'; "
+                "img-src 'self' data: blob: https:; "
+                "media-src 'self' data: blob:; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
+                "style-src 'self' 'unsafe-inline' https:; "
+                "font-src 'self' data: https:; "
+                "connect-src 'self' https:; "
+            )
+        else:
+            csp = getattr(settings, "CONTENT_SECURITY_POLICY", "").strip()
+        
         if csp:
             header = (
                 "Content-Security-Policy-Report-Only"
