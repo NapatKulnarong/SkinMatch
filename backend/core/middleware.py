@@ -1,8 +1,8 @@
-"""Custom middleware helpers for the core app."""
 
 from __future__ import annotations
 
 import ipaddress
+import json
 import logging
 import math
 import re
@@ -410,7 +410,7 @@ class SecurityMonitoringMiddleware:
 class APIInputValidationMiddleware:
     """
     Performs basic payload validation (size limits, blocklist scanning) before hitting views.
-    Fixed to properly handle multipart/form-data file uploads.
+    Fixed to properly handle multipart/form-data file uploads and prevent request body errors.
     """
 
     def __init__(self, get_response):
@@ -443,35 +443,52 @@ class APIInputValidationMiddleware:
         content_type = (request.META.get("CONTENT_TYPE") or "").lower()
         is_multipart = "multipart/form-data" in content_type
         
-        # For file uploads (multipart/form-data), use a more lenient size limit
-        # or skip size check entirely since files are handled by Django's upload handlers
+        # For file uploads (multipart/form-data), skip middleware validation
+        # Django's FILE_UPLOAD_MAX_MEMORY_SIZE and DATA_UPLOAD_MAX_MEMORY_SIZE
+        # settings will handle file size limits more appropriately
         if is_multipart:
-            # Django's FILE_UPLOAD_MAX_MEMORY_SIZE and DATA_UPLOAD_MAX_MEMORY_SIZE
-            # settings will handle file size limits more appropriately
             return True
         
-        # Check content length for non-multipart requests
+        # Check content length for non-multipart requests with proper error handling
         content_length = request.META.get("CONTENT_LENGTH")
-        if content_length and self.max_body_bytes and int(content_length) > self.max_body_bytes:
-            record_security_event(
-                "api.payload_rejected",
-                "warning",
-                "Payload exceeds allowed size",
-                metadata={"path": request.path, "length": content_length},
-                force_alert=True,
-            )
-            return False
+        if content_length and self.max_body_bytes:
+            try:
+                length = int(content_length)
+                if length > self.max_body_bytes:
+                    record_security_event(
+                        "api.payload_rejected",
+                        "warning",
+                        "Payload exceeds allowed size",
+                        metadata={"path": request.path, "length": content_length},
+                        force_alert=True,
+                    )
+                    return False
+            except (ValueError, TypeError):
+                # Invalid Content-Length header, let Django handle it
+                pass
 
-        # Skip blocklist scanning for non-text content
+        # Skip blocklist scanning if no patterns configured
         if not self.blocklist:
             return True
 
+        # Safely access request body without breaking downstream handlers
         try:
+            # Check if body was already consumed
+            if hasattr(request, '_read_started') and request._read_started:
+                # Body already consumed by another middleware, skip scanning
+                return True
+            
+            # Read and decode body
             body = request.body.decode("utf-8", errors="ignore")
         except Exception:
+            # If we can't read the body safely, allow it through
+            # Let Django's error handling deal with malformed requests
             return True
         
+        # Prepare body for scanning (sanitize JSON content)
         scan_body = self._prepare_body_for_scan(request, body)
+        
+        # Check against blocklist patterns
         for pattern in self.blocklist:
             if pattern.search(scan_body):
                 record_security_event(
@@ -482,6 +499,7 @@ class APIInputValidationMiddleware:
                     force_alert=True,
                 )
                 return False
+        
         return True
 
     def _prepare_body_for_scan(self, request, body: str) -> str:
@@ -491,11 +509,24 @@ class APIInputValidationMiddleware:
         text but keep raw body for other content types.
         """
         content_type = (request.META.get("CONTENT_TYPE") or "").lower()
+        
+        # If explicitly JSON content-type, sanitize it
         if "json" in content_type:
             return sanitize_plain_text(body)
+        
+        # Try to detect JSON by actually parsing it
         trimmed = body.lstrip()
         if trimmed.startswith("{") or trimmed.startswith("["):
-            return sanitize_plain_text(body)
+            try:
+                # Attempt to parse as JSON to confirm it's valid JSON
+                json.loads(trimmed)
+                # If it parses successfully, it's JSON - sanitize it
+                return sanitize_plain_text(body)
+            except (json.JSONDecodeError, ValueError):
+                # Not valid JSON despite appearance, scan raw body
+                pass
+        
+        # Return raw body for non-JSON content
         return body
 
 
