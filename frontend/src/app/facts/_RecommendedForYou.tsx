@@ -295,7 +295,6 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                   </Link>
                 ))}
             </div>
-          )}
         </div>
 
         {!promptType && !loading && !recommendations.length ? (
