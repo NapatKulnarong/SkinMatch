@@ -11,6 +11,7 @@ import {
   type IngredientSummary,
   type IngredientSearchProduct,
 } from "@/lib/api.ingredients";
+<<<<<<< Updated upstream
 
 const FALLBACK_PRODUCT_MESSAGE = "Preview coming soon";
 
@@ -35,6 +36,11 @@ const formatPrice = (price: number | null, currency: string) => {
     return `${currency} ${price.toFixed(0)}`;
   }
 };
+=======
+import ProductResults from "./ProductResults";
+
+const SEARCH_RESULT_LIMIT = 60;
+>>>>>>> Stashed changes
 
 type SearchParamsShape = Record<string, string | string[] | undefined> | URLSearchParams;
 
@@ -206,10 +212,21 @@ function IngredientResultSection({ item }: SectionProps) {
         <IngredientFacts ingredient={ingredient} />
       </div>
 
+<<<<<<< Updated upstream
       <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
           <ProductCard key={product.productId} product={product} />
         ))}
+=======
+      <div className="mt-6 flex justify-end">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#3f6b3a]/30 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e4b2c]">
+          {matchLabel}
+        </span>
+      </div>
+
+      <div className="mt-4 sm:mt-6">
+        <ProductResults products={products} />
+>>>>>>> Stashed changes
       </div>
     </section>
   );
