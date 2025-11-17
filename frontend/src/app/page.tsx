@@ -455,7 +455,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
-      <PageContainer className="relative flex flex-col gap-6 sm:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
+      <PageContainer className="relative flex flex-col gap-6 sm:gap-8 md:gap-8 lg:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
         {/* Hero Section */}
         <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
           {/* Mobile Layout: Mascot left, content right */}
