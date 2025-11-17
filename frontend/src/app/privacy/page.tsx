@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import PageContainer from "@/components/PageContainer";
+import SiteFooter from "@/components/SiteFooter";
 
 type PolicySection = {
   title: string;
@@ -107,30 +108,27 @@ const POLICY_LAST_UPDATED = "April 15, 2024";
 export default function PrivacyPolicyPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#eef5ff] via-white to-[#eef5ff] text-[#0f1f2b]">
-      <section className="relative overflow-hidden border-b border-[#0f1f2b]/10 bg-gradient-to-br from-[#cfe8ff] via-[#d9f0ff] to-[#edf6ff] px-4 py-12 sm:px-6 sm:py-20 lg:py-28">
+      <section className="relative overflow-hidden border-b border-[#0f1f2b]/10 bg-gradient-to-br from-[#cfe8ff] via-[#d9f0ff] to-[#edf6ff] px-4 py-12 sm:px-6 sm:py-20 lg:py-28 pb-10 md:pb-10 lg:pb-12">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-8 right-10 h-32 w-32 rounded-full bg-white/50 blur-3xl" />
           <div className="absolute bottom-12 left-8 h-36 w-36 rounded-full bg-[#6fc3ff]/30 blur-3xl" />
         </div>
-        <div className="relative mx-auto mt-28 lg:mt-16 max-w-4xl space-y-4 sm:space-y-6">
-          <div className="hidden md:block flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f1f2b]/70 sm:gap-3 sm:text-xs">
-            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
-              Privacy First
-            </span>
-            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
-              Updated {POLICY_LAST_UPDATED}
-            </span>
-          </div>
+        <div className="relative mx-auto lg:mx-42 mt-28 md:mt-12 lg:mt-0 max-w-4xl space-y-4 sm:space-y-6">
           <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0d1b2a] sm:text-4xl lg:text-5xl">
             Privacy Policy
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-[#0f1f2b]/75 sm:text-lg">
             Your trust matters. This policy explains how SkinMatch collects, protects, and uses your personal information so you can feel confident every time you explore new skincare matches.
           </p>
+          <div className="-mt-1 flex flex-wrap items-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#0f1f2b]/70 sm:text-xs">
+            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
+              Updated {POLICY_LAST_UPDATED}
+            </span>
+          </div>
         </div>
       </section>
 
-      <PageContainer as="section" className="py-10 sm:py-16 lg:py-20">
+      <PageContainer as="section" className="py-8 lg:py-12">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
           <article className="space-y-8 overflow-hidden rounded-[24px] border-2 border-black/80 bg-white/95 p-6 shadow-[6px_8px_0_rgba(31,45,38,0.12)] sm:rounded-[32px] sm:p-8 lg:space-y-10 lg:p-10">
             <div className="sticky top-0 z-10 -mx-6 -mt-6 bg-gradient-to-b from-white via-white to-white/0 px-6 pb-4 pt-6 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pb-6 sm:pt-8 lg:hidden">
@@ -171,7 +169,7 @@ export default function PrivacyPolicyPage() {
             ))}
           </article>
 
-          <aside className="space-y-4 rounded-[24px] border-2 border-black bg-[#1d3349] p-6 text-white shadow-[6px_8px_0_rgba(15,31,43,0.2)] sm:rounded-[32px] sm:p-8 lg:sticky lg:top-24 lg:self-start">
+          <aside className="space-y-4 rounded-[24px] border-2 border-black bg-[#87a4be] p-6 text-white shadow-[6px_8px_0_rgba(15,31,43,0.2)] sm:rounded-[32px] sm:p-8 lg:sticky lg:top-24 lg:self-start">
             <h2 className="text-xl font-bold sm:text-2xl">Key Takeaways</h2>
             <ul className="space-y-3 text-sm leading-relaxed sm:text-base">
               <li>We only collect data that helps personalise skincare guidance and improve SkinMatch.</li>
@@ -195,6 +193,7 @@ export default function PrivacyPolicyPage() {
           </aside>
         </div>
       </PageContainer>
+      <SiteFooter />
     </main>
   );
 }

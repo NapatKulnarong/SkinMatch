@@ -131,16 +131,24 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
       <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
       <div className="relative">
         {/* Header */}
-        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#122016]">
+        <div className="mb-4 md:mb-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl md:text-[28px] lg:text-3xl md:text-4xl font-extrabold text-[#122016]">
               Skin Knowledge
             </h2>
-            <p className="hidden sm:block mt-2 text-[#1f2d26]/70 md:text-lg">
+            <p className="text-[#1f2d26]/70 md:text-lg">
               Hand-picked ingredient guides to help you build smarter routines.
             </p>
+            <div className="hidden sm:flex lg:hidden gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70 mt-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+                Updated weekly
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+                Evidence based
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+          <div className="hidden lg:flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70 lg:mt-3">
             <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
               Updated weekly
             </span>

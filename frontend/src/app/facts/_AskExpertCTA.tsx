@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 
 import PageContainer from "@/components/PageContainer";
 import NewsletterSignup from "@/components/NewsletterSignup";
+import { ChatBubbleLeftEllipsisIcon } from "@heroicons/react/24/solid";
+
 
 type AskExpertCTAProps = {
   sectionId?: string;
@@ -34,17 +36,20 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
   return (
     <PageContainer as="section" id={sectionId} className="pt-6 pb-12 lg:pt-3 lg:pb-0">
       <div className="flex w-full flex-col gap-6">
-        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#84AE92] to-[#D6F4ED] p-4 py-6 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
+        <div className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#a1c995] to-[#dbedbb] p-4 py-6 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[8px_8px_0_0_rgba(0,0,0,0.25)] sm:p-10">
           <div className="space-y-3 lg:text-center">
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-[#101b27] md:text-[2.1rem]">
-              Debunk a skincare myth!
-            </h2>
+            <span className="inline-flex items-center justify-center text-[#101b27]/95 gap-2">
+              <ChatBubbleLeftEllipsisIcon className="h-7 w-7 md:h-9 md:w-9" />
+              <h2 className="text-2xl lg:text-3xl font-extrabold md:text-[2.1rem]">
+                Debunk a skincare myth
+              </h2>
+            </span>
             <p className="text-sm font-medium leading-relaxed text-black/70 md:text-lg">
-              Heard any skincare rumors or claims? Tell Matchy, our experts might fact-check it next!
+              Heard any skincare claims? Tell Matchy, our experts might fact-check it next!
             </p>
           </div>
 
-          <div className="mt-6 text-sm text-black">
+          <div className="mt-6 text-sm md:text-xl text-black">
             <div className="rounded-[5px] lg:rounded-[20px] border-2 border-dashed border-gray-600 bg-white/50 px-4 py-3 sm:hidden">
               <ul className="space-y-3">
                 {[
@@ -59,7 +64,23 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
                 ))}
               </ul>
             </div>
-            <ul className="hidden gap-3 text-sm text-black sm:grid sm:grid-cols-3">
+            <div className="hidden text-sm text-black sm:block lg:hidden">
+              <div className="rounded-[5px] border-2 border-dashed border-gray-600 bg-white/50 px-4 py-3">
+                <ul className="space-y-3">
+                  {[
+                    "Dermatologist-backed answers",
+                    "Ingredient pairings that work",
+                    "Myths decoded before they trend",
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-black" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <ul className="hidden gap-3 text-sm text-black lg:grid lg:grid-cols-3">
               {[
                 "Dermatologist-backed answers",
                 "Ingredient pairings that work",
@@ -98,8 +119,8 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#E7EFC7] px-6 py-2.5 text-sm font-semibold text-black 
-                          shadow-md transition hover:shadow-lg active:shadow-sm"
+                className="inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#ede09d] lg:bg-white/50 px-6 py-2.5 text-sm font-semibold text-black 
+                          shadow-md transition hover:shadow-lg hover:bg-[#ede09d] active:shadow-sm"
               >
                 Suggest a myth
                 <span aria-hidden className="text-base">✶</span>

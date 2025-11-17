@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
         port: '3000',
         pathname: '/media/**',
       },
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {
