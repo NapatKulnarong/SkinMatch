@@ -46,8 +46,8 @@ export function ProductCard({ product, compact = false, onShowDetails }: Product
     ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-2.5 py-1 text-[9px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
     : "inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]";
   const shopButtonClasses = compact
-    ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-2.5 py-1 text-[9px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
-    : "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]";
+    ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-2.5 py-1 text-[9px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+    : "inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]";
 
   return (
     <article
@@ -162,7 +162,7 @@ export function ProductCard({ product, compact = false, onShowDetails }: Product
               rel="noopener noreferrer"
               className={shopButtonClasses}
             >
-              Shop
+              Shopee
             </Link>
           ) : (
             <span className="text-[10px] text-[#1f2d26]/40">No shop link</span>
