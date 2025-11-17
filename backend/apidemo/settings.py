@@ -227,6 +227,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.APIInputValidationMiddleware",
     "core.middleware.SessionIdleTimeoutMiddleware",
     "core.middleware.AdminAccessControlMiddleware",
     "core.middleware.SecurityMonitoringMiddleware",
