@@ -326,26 +326,13 @@ export default function AccountSettingsPage() {
           </Link>
         </div>
 
-        {(message || error) && (
-          <div
-            className={[
-              "hidden sm:block mb-6 rounded-full border-3 border-dashed px-5 py-4 text-lg font-semibold ",
-              message
-                ? "border-green-800 bg-[#cdeebc]/85 text-green-800"
-                : "border-red-300 bg-red-50 text-red-800",
-            ].join(" ")}
-          >
-            {message ?? error}
-          </div>
-        )}
-
-        <section className="relative rounded-[24px] border-0 bg-transparent p-0 shadow-none sm:rounded-[24px] sm:border-2 sm:border-black sm:bg-[#D8D9DA] sm:p-6 sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)] lg:rounded-[32px] lg:p-10">
-          <div className="grid gap-6 md:gap-8 lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr]">
+        <section className="relative">
+          <div className="grid gap-6 md:gap-8 lg:grid-cols-[400px_1fr] xl:grid-cols-[450px_1fr] lg:items-stretch">
             {/* Left Column - Avatar */}
-            <div className="flex flex-col gap-6">
-              <div className="rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-6">
+            <div className="flex flex-col gap-6 lg:h-full">
+              <div className="rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-8 lg:h-full lg:flex lg:flex-col">
                 <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Profile picture</h2>
-                <div className="mt-5 space-y-5">
+                <div className="mt-5 space-y-5 lg:flex-1 lg:flex lg:flex-col lg:justify-between">
                   {/* Circular Avatar */}
                   <div className="relative mx-auto h-48 w-48 overflow-hidden rounded-full border-2 border-black bg-[#f0e7ff] sm:h-56 sm:w-56 lg:h-64 lg:w-64">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -373,7 +360,7 @@ export default function AccountSettingsPage() {
                   <div className="mt-2 flex flex-wrap gap-3">
                     <label className="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-black bg-[#94c6ef] 
                                       px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-black shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]
-                                      hover:bg-[#6d5da0] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3">
+                                      hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3 whitespace-nowrap">
                       <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -390,7 +377,7 @@ export default function AccountSettingsPage() {
                       type="button"
                       disabled={avatarUploading || (!profile?.avatar_url && !avatarPreview)}
                       onClick={handleRemoveAvatar}
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f57371] px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f57371] px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3 whitespace-nowrap"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -401,25 +388,11 @@ export default function AccountSettingsPage() {
                 </div>
               </div>
 
-              {/* Unsaved Changes Warning */}
-              {canSave && !saving && (
-                <div className="rounded-xl border-2 border-[#f3c078] bg-gradient-to-br from-[#fff8e8] to-[#fff3dc] px-4 py-3.5 shadow-[0_4px_0_rgba(0,0,0,0.15)]">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-[#d97706] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-bold text-[#92400e]">Unsaved changes</p>
-                      <p className="text-xs text-[#b45309] mt-1">Remember to save your updates below</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Right Column - Form */}
             <form
-              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-6 lg:p-8"
+              className="flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] sm:p-8 lg:p-10 lg:h-full"
               onSubmit={handleProfileSubmit}
             >
               <div>
@@ -495,17 +468,45 @@ export default function AccountSettingsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 pt-4 border-t-2 border-gray-100 items-end sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <div className="flex flex-col gap-2 pt-4 border-t-2 border-gray-100 items-end sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                {/* Notifications on the left */}
+                <div className="flex-1">
+                  {(message || error) && (
+                    <div className={`rounded-xl border-2 px-4 py-3.5 shadow-[0_4px_0_rgba(0,0,0,0.15)] ${
+                      message
+                        ? "border-[#f3c078] bg-gradient-to-br from-[#fff8e8] to-[#fff3dc]"
+                        : "border-red-300 bg-red-50"
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        {message ? (
+                          <svg className="w-5 h-5 text-[#d97706] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        )}
+                        <div>
+                          <p className={`text-sm font-bold ${message ? "text-[#92400e]" : "text-red-800"}`}>
+                            {message ?? error}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {canSave && !saving && !message && (
+                    <p className="text-sm font-semibold text-[#92400e]">Unsaved changes</p>
+                  )}
+                </div>
                 <button
                   type="submit"
                   disabled={!canSave || isSavingInProgress}
-                  className={`inline-flex w-fit max-w-[240px] items-center justify-center rounded-full border-2 border-black px-4 lg:px-8 py-2 lg:py-3.5 
-                            text-[11px] lg:text-base font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition 
-                            ${allChangesSaved ? "bg-[#dbe9d7]" : "bg-[#94c6ef]"} 
-                            ${allChangesSaved ? "text-[#2d5f4d]" : "text-gray-900"} 
+                  className={`inline-flex w-fit items-center justify-center rounded-full border-2 border-black px-4 py-2.5 text-[11px] lg:text-[13px] sm:text-sm font-bold text-gray-900 shadow-[0_5px_0_rgba(0,0,0,0.25)] transition 
+                            bg-[#94c6ef] text-gray-900 
                             hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] 
                             active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] 
-                            disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:max-w-none`}
+                            disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] whitespace-nowrap`}
                 >
                   {isSavingInProgress ? (
                     <>
@@ -514,7 +515,7 @@ export default function AccountSettingsPage() {
                     </>
                   ) : allChangesSaved ? (
                     <>
-                      <svg className="w-5 h-5 mr-2 text-[#2d5f4d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                       All changes saved
@@ -534,7 +535,7 @@ export default function AccountSettingsPage() {
           
           {/* Second Row - set new password */}
           <form
-            className="mt-8 flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_6px_0_rgba(0,0,0,0.18)] w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl sm:p-6 lg:p-8"
+            className="mt-8 flex flex-col gap-6 rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_6px_0_rgba(0,0,0,0.18)] w-full max-w-full sm:max-w-lg md:max-w-full lg:max-w-2xl sm:p-8 lg:p-10"
             onSubmit={handlePasswordSubmit}
           >
             <div>
@@ -605,8 +606,8 @@ export default function AccountSettingsPage() {
             <div className="flex flex-col gap-3 pt-2 items-end sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="submit"
-                disabled={passwordSaving}
-                className={`inline-flex w-fit items-center justify-center rounded-full border-2 border-black px-4 lg:px-8 py-2 lg:py-3.5 text-xs lg:text-base font-bold shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:w-auto ${passwordMessage ? "bg-[#dbe9d7] text-[#2d5f4d]" : "bg-[#94c6ef] text-gray-900"}`}
+                disabled={passwordSaving || (!passwordState.current.trim() && !passwordState.next.trim() && !passwordState.confirm.trim())}
+                className={`inline-flex w-fit items-center justify-center rounded-full border-2 border-black bg-[#94c6ef] text-gray-900 px-4 py-2.5 text-[11px] lg:text-[13px] sm:text-sm font-bold shadow-[0_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_3px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_5px_0_rgba(0,0,0,0.25)] whitespace-nowrap ${(!passwordState.current.trim() && !passwordState.next.trim() && !passwordState.confirm.trim()) ? "opacity-50" : ""}`}
               >
                 {passwordSaving ? (
                   <>
@@ -615,7 +616,7 @@ export default function AccountSettingsPage() {
                   </>
                 ) : passwordMessage ? (
                   <>
-                    <svg className="w-5 h-5 mr-2 text-[#2d5f4d]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
                     Password updated
@@ -631,12 +632,12 @@ export default function AccountSettingsPage() {
               </button>
             </div>
           </form>
-          <div className="absolute -bottom-24 -right-20 hidden lg:block">
+          <div className="absolute -bottom-43 -right-32 hidden lg:block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
             src="/img/mascot/matchy_set.png"
             alt = "Matchy Mascot (Settings)"
-            className="w-120 h-120 md:w-150 md:h-150 xl:w-160 xl:h-160 object-contain"
+            className="w-120 h-120 md:w-150 md:h-150 lg:w-170 lg:h-170 xl:w-190 xl:h-190 object-contain"
             />
           </div>
         </section>

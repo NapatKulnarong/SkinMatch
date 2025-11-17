@@ -312,7 +312,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
             </div>
           </div>
         ) : detail && guidance && answerLabels ? (
-          <section className="mt-10 space-y-10">
+          <section className="mt-10 space-y-8">
             {/* header / meta */}
             <header className="text-center space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#B9375D]">
@@ -400,7 +400,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
               </section>
 
               {/* RIGHT COLUMN: caution card + email card stacked */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* caution card */}
                 <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
                   <h3 className="text-lg font-bold text-[#70410f]">Use with caution</h3>
@@ -473,19 +473,19 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
             </div>
 
             {/* FIXED PRODUCT MATCHES SECTION */}
-            <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
+            <section className="rounded-3xl border-2 border-black bg-[#e5dcd1] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
               <h3 className="text-lg font-bold text-[#3C3D37] mb-4">Product matches</h3>
               <div>{renderRecommendations(recommendations, handleShowProductDetails, wishlistedIds, setWishlistedIds)}</div>
             </section>
 
             {/* NEW FEEDBACK SECTION */}
-            <section className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#ffd4e5] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
+            <section className="rounded-3xl border-2 border-black bg-gradient-to-tl from-[#f3d28c] to-[#f2ebd3] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)]">
               <h3 className="text-lg font-bold text-[#3C3D37] mb-4">Rate your match experience</h3>
               
               {feedbackSubmitted ? (
                 <div className="text-center py-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#A7E399] mb-4">
-                    <svg className="w-8 h-8 text-[#33574a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#c9b99f] mb-4">
+                    <svg className="w-8 h-8 text-[#5a4a3a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
@@ -508,8 +508,8 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                           <svg
                             className={`w-10 h-10 ${
                               star <= (hoverRating || rating)
-                                ? "text-[#fbbf24] fill-current"
-                                : "text-gray-300"
+                                ? "text-[#f0b620] fill-current"
+                                : "text-black/70"
                             }`}
                             fill={star <= (hoverRating || rating) ? "currentColor" : "none"}
                             stroke="currentColor"
@@ -540,7 +540,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                       aria-checked={anonymizeFeedback}
                       onClick={() => setAnonymizeFeedback((prev) => !prev)}
                       className={`relative inline-flex h-9 w-16 items-center rounded-full border-2 border-black transition ${
-                        anonymizeFeedback ? "bg-[#B9375D]" : "bg-white"
+                        anonymizeFeedback ? "bg-[#6b5b4f]" : "bg-white"
                       }`}
                     >
                       <span className="sr-only">
@@ -564,7 +564,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                       onChange={(e) => setFeedback(e.target.value)}
                       placeholder="Share your thoughts about the matches, ingredients, or overall experience..."
                       rows={4}
-                      className="w-full rounded-2xl border-2 border-black px-4 py-3 text-sm text-[#3C3D37] placeholder-[#3C3D37] placeholder-opacity-40 focus:outline-none focus:ring-2 focus:ring-[#B9375D] shadow-[2px_3px_0_rgba(0,0,0,0.1)]"
+                      className="w-full rounded-2xl border-2 border-black px-4 py-3 text-sm text-[#3C3D37] placeholder-[#3C3D37] placeholder-opacity-40 focus:outline-none focus:ring-2 focus:ring-[#6b5b4f] shadow-[2px_3px_0_rgba(0,0,0,0.1)]"
                     />
                   </div>
 
@@ -572,7 +572,7 @@ function MatchDetailContent({ profileId }: { profileId: string }) {
                     type="button"
                     onClick={handleSubmitFeedback}
                     disabled={rating === 0 || isSubmittingFeedback}
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#6b5b4f] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
                   >
                     {isSubmittingFeedback ? "Sending..." : "Submit feedback"}
                   </button>
@@ -891,7 +891,7 @@ function renderRecommendations(
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
       {recommendations.map((item) => {
         const brandLabel = item.brandName ?? item.brand;
         const priceLabel = formatPriceLabel(item.priceSnapshot, item.currency);
@@ -948,23 +948,7 @@ function renderRecommendations(
             </div>
 
             {/* Footer - Rating & CTA */}
-            <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
-              <div className="flex items-center gap-1 text-[10px] text-[#3C3D37] text-opacity-60">
-                {item.averageRating ? (
-                  <>
-                    <svg className="h-3 w-3 text-[#fbbf24]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="font-semibold text-[#3C3D37]">
-                      {item.averageRating.toFixed(1)}
-                    </span>
-                    <span>({item.reviewCount})</span>
-                  </>
-                ) : (
-                  <span>No reviews</span>
-                )}
-              </div>
-              
+            <footer className="mt-3 flex flex-wrap items-center justify-between md:justify-end gap-2 border-t border-black/10 pt-3">          
               <div className="flex items-center gap-1.5">
                 {/* Wishlist Heart Button */}
                 <button

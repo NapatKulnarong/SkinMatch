@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
+import SiteFooter from "@/components/SiteFooter";
 import TermsEmailRequest from "./TermsEmailRequest";
 
 type TermsParagraph = {
@@ -203,21 +204,14 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#f4f8fb] via-[#fef5f1] to-[#f4f8fb] text-[#1f2d26]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden border-b border-[#1f2d26]/10 bg-gradient-to-br from-[#ffe7da] via-[#ffd5c8] to-[#ffccb8] px-4 py-12 sm:px-6 sm:py-20 lg:py-28">
+      <section className="relative overflow-hidden border-b border-[#1f2d26]/10 bg-gradient-to-br from-[#ffe7da] via-[#ffd5c8] to-[#ffccb8] px-4 py-12 sm:px-6 sm:py-20 lg:py-28 pb-10 md:pb-10 lg:pb-12">
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-10 right-10 h-32 w-32 rounded-full bg-white/40 blur-3xl" />
           <div className="absolute bottom-10 left-10 h-40 w-40 rounded-full bg-[#ff9b82]/20 blur-3xl" />
         </div>
         
-        <div className="mt-28 lg:mt-0 relative mx-auto max-w-7xl space-y-4 sm:space-y-6">
-          <div className="hidden md:inline-flex items-center gap-2 rounded-full border-2 border-black/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#1f2d26]/70 shadow-[2px_2px_0_rgba(31,45,38,0.1)] sm:px-4 sm:text-xs sm:tracking-[0.2em] sm:shadow-[3px_3px_0_rgba(31,45,38,0.12)]">
-            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Terms & Trust
-          </div>
-          
+        <div className="mt-28 md:mt-12 lg:mt-0 relative mx-auto max-w-7xl space-y-4 sm:space-y-6">
           <h1 className="max-w-3xl text-2xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl xl:text-6xl">
             Terms of Service
           </h1>
@@ -227,25 +221,24 @@ export default function TermsPage() {
             you understand your rights, responsibilities, and the limits of our services.
           </p>
           
-          <div className="flex flex-col gap-1.5 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:pt-2">
-            <p className="text-xs font-semibold text-[#1f2d26]/60 sm:text-base">
-              Effective: {TERMS_LAST_UPDATED}
-            </p>
-            <span className="hidden h-1 w-1 rounded-full bg-[#1f2d26]/30 sm:block" />
-            <p className="text-xs text-[#1f2d26]/60 sm:text-base">
-              Last updated: {TERMS_LAST_UPDATED}
-            </p>
+          <div className="-mt-1 flex flex-wrap items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1f2d26]/70 sm:gap-3 sm:text-xs">
+            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
+              Effective {TERMS_LAST_UPDATED}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-black/15 bg-white px-4 py-1 shadow-[2px_2px_0_rgba(0,0,0,0.15)]">
+              Updated {TERMS_LAST_UPDATED}
+            </span>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <PageContainer as="section" className="py-10 sm:py-16 lg:py-20">
+      <PageContainer as="section" className="py-8 lg:py-12">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
           {/* Terms Content */}
           <article className="space-y-8 overflow-hidden rounded-2xl border-2 border-black/80 bg-white p-6 shadow-[6px_8px_0_rgba(31,45,38,0.12)] transition-shadow hover:shadow-[8px_10px_0_rgba(31,45,38,0.15)] sm:rounded-3xl sm:p-8 lg:space-y-10 lg:p-10">
             {/* Progress indicator for mobile */}
-            <div className="sticky top-0 z-10 -mx-6 -mt-6 bg-gradient-to-b from-white via-white to-white/0 px-6 pb-4 pt-6 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pb-6 sm:pt-8 lg:hidden">
+            <div className="sticky top-0 z-10 -mx-6 -mt-8 bg-gradient-to-b from-white via-white to-white/0 px-6 pb-4 pt-0 sm:-mx-8 sm:-mt-10 sm:px-8 sm:pb-6 sm:pt-0 lg:hidden">
               <div className="flex items-center gap-3 rounded-xl border border-[#1f2d26]/10 bg-[#f4f8fb] px-4 py-2.5 text-xs font-medium text-[#1f2d26]/70">
                 <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -381,6 +374,7 @@ export default function TermsPage() {
           </aside>
         </div>
       </PageContainer>
+      <SiteFooter />
     </main>
   );
 }

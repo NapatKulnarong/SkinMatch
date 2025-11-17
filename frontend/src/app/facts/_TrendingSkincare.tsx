@@ -121,18 +121,29 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
   return (
     <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
       <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
-        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-2xl lg:text-3xl md:text-4xl font-extrabold text-[#1a2130]">
+        <div className="mb-4 md:mb-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl md:text-[28px] lg:text-3xl  md:text-4xl font-extrabold text-[#1a2130]">
               Trending Skincare
             </h2>
-            <p className="hidden sm:block mt-2 text-[#1a2130]/70 md:text-lg">
+            <p className="text-[#1a2130]/70 md:text-lg">
               Editor-reviewed favourites making waves across Thai beauty feeds.
             </p>
+            <div className="hidden sm:flex lg:hidden text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70 mt-2 gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+                Social buzz ↑
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+                Talk of the town
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+          <div className="hidden lg:flex text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70 lg:mt-3 gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
               Social buzz ↑
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+                Talk of the town
             </span>
           </div>
         </div>

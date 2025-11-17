@@ -139,7 +139,7 @@ export function ProductScanner() {
 
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-      <div className="hidden md:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
+      <div className="hidden lg:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
         <Image
           src="/img/mascot/matchy_scan.png"
           alt="Matchy with camera"
@@ -238,7 +238,7 @@ export function ProductScanner() {
             </div>
           )}
           {isUploading && (
-            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[white/80] px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
+            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[#fddfdd] px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
               <SparklesIcon className="h-6 w-6 animate-bounce text-[#a85b5b]" />
               <p>Analyzing ingredients… sit tight!</p>
             </div>
