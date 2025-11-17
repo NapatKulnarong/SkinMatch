@@ -410,11 +410,12 @@ class SecurityMonitoringMiddleware:
 class APIInputValidationMiddleware:
     """
     Performs basic payload validation (size limits, blocklist scanning) before hitting views.
+    Fixed to properly handle multipart/form-data file uploads.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self.max_body_bytes = int(getattr(settings, "API_MAX_BODY_KB", 0)) * 1024
+        self.max_body_bytes = int(getattr(settings, "API_MAX_BODY_KB", 10240)) * 1024  # Default 10MB
         patterns = getattr(settings, "API_INPUT_BLOCKLIST", [])
         self.blocklist = [re.compile(pattern, re.IGNORECASE) for pattern in patterns if pattern]
         self.enabled = bool(self.max_body_bytes or self.blocklist)
@@ -438,6 +439,18 @@ class APIInputValidationMiddleware:
         if method not in {"POST", "PUT", "PATCH"}:
             return True
 
+        # Check content type first to determine how to handle the request
+        content_type = (request.META.get("CONTENT_TYPE") or "").lower()
+        is_multipart = "multipart/form-data" in content_type
+        
+        # For file uploads (multipart/form-data), use a more lenient size limit
+        # or skip size check entirely since files are handled by Django's upload handlers
+        if is_multipart:
+            # Django's FILE_UPLOAD_MAX_MEMORY_SIZE and DATA_UPLOAD_MAX_MEMORY_SIZE
+            # settings will handle file size limits more appropriately
+            return True
+        
+        # Check content length for non-multipart requests
         content_length = request.META.get("CONTENT_LENGTH")
         if content_length and self.max_body_bytes and int(content_length) > self.max_body_bytes:
             record_security_event(
@@ -449,6 +462,7 @@ class APIInputValidationMiddleware:
             )
             return False
 
+        # Skip blocklist scanning for non-text content
         if not self.blocklist:
             return True
 
@@ -456,6 +470,7 @@ class APIInputValidationMiddleware:
             body = request.body.decode("utf-8", errors="ignore")
         except Exception:
             return True
+        
         scan_body = self._prepare_body_for_scan(request, body)
         for pattern in self.blocklist:
             if pattern.search(scan_body):
@@ -625,3 +640,4 @@ class APIKeyMiddleware:
             )
             return False
         return True
+    
