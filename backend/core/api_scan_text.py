@@ -94,23 +94,55 @@ def _build_llm_prompt(ocr_text: str) -> Tuple[str, str, dict]:
     )
 
     user_prompt = f"""
-    Analyze the following OCR or typed ingredient text from a skincare product and produce structured insights.
+    Analyze the following OCR or typed label text from a consumer product
+    (skincare, makeup, haircare, bodycare, supplement, or other) and produce
+    structured insights using the schema below.
 
-    Non-negotiable rules:
-    1. Only keep skincare-relevant information; drop manufacturing codes or random OCR noise.
-    2. Every string must look like "Ingredient or Claim: What it does / why it matters" with real explanations.
-    3. Provide >=2 benefits and >=2 actives whenever that many unique ingredients or claims exist. If fewer are present, explain the limitation in the note instead of inventing data.
-    4. Concerns should only mention potential irritants (fragrance, alcohol, allergens, harsh exfoliants, etc.) and must explain the risk.
-    5. Notes capture usage tips, texture, routine pairings, or "free from" claims.
-    6. confidence is a decimal between 0 and 1 (0.65+ only when the answer is trustworthy; go lower if the OCR text is messy).
-    7. Confidence calibration:
-        - 0.92 or higher when the text is clean/typed (comma-separated list, 6+ recognizable ingredients, or clear "Ingredients:" section).
-        - 0.8–0.9 when there is light OCR noise but key actives/claims are intact.
-        - Below 0.7 ONLY when the text is mostly noise or missing ingredient info.
-        - Never default to a low confidence when the text is structured and readable.
-    8. Respond with strictly valid JSON and keep marketing fluff out of the descriptions.
+    Your primary job is to understand what the product is AND summarize the
+    meaningful ingredients or claims.
 
-    Schema contract:
+    ============================
+    REQUIRED BEHAVIOR
+    ============================
+    1. IDENTIFY PRODUCT TYPE  
+    - Infer whether the item is skincare, makeup, haircare, bodycare,
+        supplement, or something else.  
+    - Add this information **as the FIRST line in notes**, in this exact format:  
+        "Product type: <classification>."  
+        Examples:  
+        "Product type: Supplement."  
+        "Product type: Makeup (foundation)."  
+        "Product type: Skincare (moisturizer)."  
+        If uncertain, choose the closest reasonable classification.
+
+    2. BENEFITS  
+    - List meaningful skin/body/product benefits in the format  
+        "Name: What it does".  
+    - Provide at least two when enough information exists.
+
+    3. ACTIVES  
+    - Extract actual active ingredients and what they do.  
+    - At least two whenever the text contains that many.
+
+    4. CONCERNS  
+    - Only mention real risk factors (fragrance, drying alcohols, allergens,
+        harsh surfactants, risky supplement additives, etc.).  
+    - Must follow the format "Name: Why it matters".
+
+    5. NOTES  
+    - First note = Product type (required).  
+    - Following notes may include usage tips, texture descriptions,
+        “free from” claims, or clarifications.
+
+    6. CONFIDENCE  
+    - Float 0-1 reflecting reliability of extraction.  
+    - 0.92+ when text is clear and structured.  
+    - 0.8-0.9 for mild OCR noise.  
+    - Below 0.7 only when the text is severely degraded.
+
+    7. STRICT JSON ONLY  
+    - No commentary.  
+    - Follow this exact schema:
     {schema_hint}
 
     High-quality example:
@@ -119,6 +151,33 @@ def _build_llm_prompt(ocr_text: str) -> Tuple[str, str, dict]:
     OCR_TEXT:
     \"\"\"{ocr_text}\"\"\"
     """
+
+    # user_prompt = f"""
+    # Analyze the following OCR or typed ingredient text from a skincare product and produce structured insights.
+
+    # Non-negotiable rules:
+    # 1. Only keep skincare-relevant information; drop manufacturing codes or random OCR noise.
+    # 2. Every string must look like "Ingredient or Claim: What it does / why it matters" with real explanations.
+    # 3. Provide >=2 benefits and >=2 actives whenever that many unique ingredients or claims exist. If fewer are present, explain the limitation in the note instead of inventing data.
+    # 4. Concerns should only mention potential irritants (fragrance, alcohol, allergens, harsh exfoliants, etc.) and must explain the risk.
+    # 5. Notes capture usage tips, texture, routine pairings, or "free from" claims.
+    # 6. confidence is a decimal between 0 and 1 (0.65+ only when the answer is trustworthy; go lower if the OCR text is messy).
+    # 7. Confidence calibration:
+    #     - 0.92 or higher when the text is clean/typed (comma-separated list, 6+ recognizable ingredients, or clear "Ingredients:" section).
+    #     - 0.8–0.9 when there is light OCR noise but key actives/claims are intact.
+    #     - Below 0.7 ONLY when the text is mostly noise or missing ingredient info.
+    #     - Never default to a low confidence when the text is structured and readable.
+    # 8. Respond with strictly valid JSON and keep marketing fluff out of the descriptions.
+
+    # Schema contract:
+    # {schema_hint}
+
+    # High-quality example:
+    # {example_block}
+
+    # OCR_TEXT:
+    # \"\"\"{ocr_text}\"\"\"
+    # """
 
     gen_cfg = {
         "temperature": 0.2,
