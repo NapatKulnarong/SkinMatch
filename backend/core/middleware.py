@@ -1,8 +1,8 @@
-"""Custom middleware helpers for the core app."""
 
 from __future__ import annotations
 
 import ipaddress
+import json
 import logging
 import math
 import re
@@ -37,7 +37,20 @@ class SecurityHeadersMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        csp = getattr(settings, "CONTENT_SECURITY_POLICY", "").strip()
+        # Use relaxed CSP for API documentation
+        if request.path.startswith('/api/docs'):
+            csp = (
+                "default-src 'self'; "
+                "img-src 'self' data: blob: https:; "
+                "media-src 'self' data: blob:; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
+                "style-src 'self' 'unsafe-inline' https:; "
+                "font-src 'self' data: https:; "
+                "connect-src 'self' https:; "
+            )
+        else:
+            csp = getattr(settings, "CONTENT_SECURITY_POLICY", "").strip()
+        
         if csp:
             header = (
                 "Content-Security-Policy-Report-Only"
@@ -397,11 +410,12 @@ class SecurityMonitoringMiddleware:
 class APIInputValidationMiddleware:
     """
     Performs basic payload validation (size limits, blocklist scanning) before hitting views.
+    Fixed to properly handle multipart/form-data file uploads and prevent request body errors.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self.max_body_bytes = int(getattr(settings, "API_MAX_BODY_KB", 0)) * 1024
+        self.max_body_bytes = int(getattr(settings, "API_MAX_BODY_KB", 10240)) * 1024  # Default 10MB
         patterns = getattr(settings, "API_INPUT_BLOCKLIST", [])
         self.blocklist = [re.compile(pattern, re.IGNORECASE) for pattern in patterns if pattern]
         self.enabled = bool(self.max_body_bytes or self.blocklist)
@@ -425,25 +439,56 @@ class APIInputValidationMiddleware:
         if method not in {"POST", "PUT", "PATCH"}:
             return True
 
+        # Check content type first to determine how to handle the request
+        content_type = (request.META.get("CONTENT_TYPE") or "").lower()
+        is_multipart = "multipart/form-data" in content_type
+        
+        # For file uploads (multipart/form-data), skip middleware validation
+        # Django's FILE_UPLOAD_MAX_MEMORY_SIZE and DATA_UPLOAD_MAX_MEMORY_SIZE
+        # settings will handle file size limits more appropriately
+        if is_multipart:
+            return True
+        
+        # Check content length for non-multipart requests with proper error handling
         content_length = request.META.get("CONTENT_LENGTH")
-        if content_length and self.max_body_bytes and int(content_length) > self.max_body_bytes:
-            record_security_event(
-                "api.payload_rejected",
-                "warning",
-                "Payload exceeds allowed size",
-                metadata={"path": request.path, "length": content_length},
-                force_alert=True,
-            )
-            return False
+        if content_length and self.max_body_bytes:
+            try:
+                length = int(content_length)
+                if length > self.max_body_bytes:
+                    record_security_event(
+                        "api.payload_rejected",
+                        "warning",
+                        "Payload exceeds allowed size",
+                        metadata={"path": request.path, "length": content_length},
+                        force_alert=True,
+                    )
+                    return False
+            except (ValueError, TypeError):
+                # Invalid Content-Length header, let Django handle it
+                pass
 
+        # Skip blocklist scanning if no patterns configured
         if not self.blocklist:
             return True
 
+        # Safely access request body without breaking downstream handlers
         try:
+            # Check if body was already consumed
+            if hasattr(request, '_read_started') and request._read_started:
+                # Body already consumed by another middleware, skip scanning
+                return True
+            
+            # Read and decode body
             body = request.body.decode("utf-8", errors="ignore")
         except Exception:
+            # If we can't read the body safely, allow it through
+            # Let Django's error handling deal with malformed requests
             return True
+        
+        # Prepare body for scanning (sanitize JSON content)
         scan_body = self._prepare_body_for_scan(request, body)
+        
+        # Check against blocklist patterns
         for pattern in self.blocklist:
             if pattern.search(scan_body):
                 record_security_event(
@@ -454,6 +499,7 @@ class APIInputValidationMiddleware:
                     force_alert=True,
                 )
                 return False
+        
         return True
 
     def _prepare_body_for_scan(self, request, body: str) -> str:
@@ -463,11 +509,24 @@ class APIInputValidationMiddleware:
         text but keep raw body for other content types.
         """
         content_type = (request.META.get("CONTENT_TYPE") or "").lower()
+        
+        # If explicitly JSON content-type, sanitize it
         if "json" in content_type:
             return sanitize_plain_text(body)
+        
+        # Try to detect JSON by actually parsing it
         trimmed = body.lstrip()
         if trimmed.startswith("{") or trimmed.startswith("["):
-            return sanitize_plain_text(body)
+            try:
+                # Attempt to parse as JSON to confirm it's valid JSON
+                json.loads(trimmed)
+                # If it parses successfully, it's JSON - sanitize it
+                return sanitize_plain_text(body)
+            except (json.JSONDecodeError, ValueError):
+                # Not valid JSON despite appearance, scan raw body
+                pass
+        
+        # Return raw body for non-JSON content
         return body
 
 
@@ -612,3 +671,4 @@ class APIKeyMiddleware:
             )
             return False
         return True
+    

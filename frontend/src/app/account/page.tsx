@@ -24,6 +24,7 @@ import {
   type QuizHistoryItem,
   type ProductDetail,
 } from "@/lib/api.quiz";
+import { clearQuizCompletionFlag, emitQuizRecommendationsRefresh } from "@/app/quiz/_QuizContext";
 
 export default function AccountPage() {
   return (
@@ -357,6 +358,9 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
         setHistory(items);
         setError(null);
         setActionError(null);
+        if (!items.length) {
+          clearQuizCompletionFlag();
+        }
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to load quiz history", err);
@@ -391,9 +395,14 @@ function MatchHistoryPanel({ token }: { token: string | null }) {
     setDeletingKeys(prev => new Set(prev).add(key));
 
     try {
-      await deleteQuizHistory(identifier, token);
+      const deletion = await deleteQuizHistory(identifier, token);
       const refreshed = await fetchQuizHistory(token);
       setHistory(refreshed);
+      if (!refreshed.length) {
+        clearQuizCompletionFlag();
+      } else if (deletion.wasLatest) {
+        emitQuizRecommendationsRefresh();
+      }
     } catch (err) {
       console.error("Failed to delete quiz history item", err);
       const message = err instanceof Error ? err.message : "Failed to delete match";
@@ -1215,11 +1224,11 @@ function WishlistProductDetailModal({
                   href={affiliateUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#B9375D] px-4 py-2 text-sm 
-                            font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] 
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#f97316] px-4 py-2 text-sm 
+                            font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] 
                             hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
                 >
-                  Shop with affiliate
+                  Shopee
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M12.293 2.293a1 1 0 011.414 0l4 4A1 1 0 0117 8h-3v7a1 1 0 11-2 0V7a1 1 0 011-1h2.586L12.293 3.707a1 1 0 010-1.414z" />
                     <path d="M5 4a3 3 0 00-3 3v7a3 3 0 003 3h7a3 3 0 003-3v-1a1 1 0 112 0v1a5 5 0 01-5 5H5a5 5 0 01-5-5V7a5 5 0 015-5h1a1 1 0 110 2H5z" />

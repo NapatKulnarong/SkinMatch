@@ -111,6 +111,21 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
 
+5. **(Optional) Export / import curated Skin Facts**
+
+   We keep the Skin Facts topics (and their hero/block images) under `./data`. Use these commands to refresh or seed another environment:
+
+   ```bash
+   # Export current topics + images to data/…
+   cd backend
+   python manage.py export_skinfact_seed
+
+   # Import them into a clean database (copies media back into ./media)
+   python manage.py import_skinfact_seed --reset
+   ```
+
+   Both commands default to `../data/skin_facts_seed.json` and `../data/skin_facts_media`, so everything stays in a single folder. Pass `--skip-missing` (export) or `--skip-missing-media` (import) if you want to skip topics whose images weren’t found.
+
 ---
 
 ## 🔐 Security
