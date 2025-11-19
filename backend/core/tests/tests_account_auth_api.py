@@ -137,3 +137,80 @@ class AccountAuthAPITests(TestCase):
         self.assertEqual(data["email"], user.email)
         self.assertEqual(data["first_name"], user.first_name)
         self.assertIn("u_id", data)
+
+    def test_check_username_available(self):
+        """Test that available usernames return available=True"""
+        response = self.client.post(
+            "/api/auth/check-username",
+            data=json.dumps({"username": "newuser123"}),
+            content_type="application/json",
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["available"])
+        self.assertEqual(data["message"], "Username is available")
+
+    def test_check_username_taken(self):
+        """Test that taken usernames return available=False"""
+        User.objects.create_user(
+            username="takenuser",
+            email="taken@example.com",
+            password="Pass123!",
+        )
+        
+        response = self.client.post(
+            "/api/auth/check-username",
+            data=json.dumps({"username": "takenuser"}),
+            content_type="application/json",
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["available"])
+        self.assertEqual(data["message"], "Username already taken")
+
+    def test_check_username_case_insensitive(self):
+        """Test that username check is case-insensitive"""
+        User.objects.create_user(
+            username="CoolUser",
+            email="cool@example.com",
+            password="Pass123!",
+        )
+        
+        response = self.client.post(
+            "/api/auth/check-username",
+            data=json.dumps({"username": "cooluser"}),
+            content_type="application/json",
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["available"])
+        self.assertEqual(data["message"], "Username already taken")
+
+    def test_check_username_too_short(self):
+        """Test that usernames shorter than 3 characters are rejected"""
+        response = self.client.post(
+            "/api/auth/check-username",
+            data=json.dumps({"username": "ab"}),
+            content_type="application/json",
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["available"])
+        self.assertEqual(data["message"], "Username must be at least 3 characters")
+
+    def test_check_username_empty(self):
+        """Test that empty usernames are rejected"""
+        response = self.client.post(
+            "/api/auth/check-username",
+            data=json.dumps({"username": "   "}),
+            content_type="application/json",
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["available"])
+        self.assertEqual(data["message"], "Username cannot be empty")

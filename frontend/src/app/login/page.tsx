@@ -10,6 +10,7 @@ import {
   signup as signupRequest,
   createAdminSession,
   requestPasswordReset,
+  checkUsername,
 } from "@/lib/api.auth";
 import {
   clearSession,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { UsernameRequirements } from "@/components/UsernameRequirements";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
 
@@ -120,6 +122,9 @@ function LoginContent() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState<ForgotStatus>("idle");
   const [forgotError, setForgotError] = useState<string | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const usernameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
@@ -215,6 +220,14 @@ function LoginContent() {
     setForgotEmail("");
     setForgotStatus("idle");
     setForgotError(null);
+    setUsernameAvailable(null);
+    setUsernameChecking(false);
+    
+    // Clear username check timeout
+    if (usernameCheckTimeoutRef.current) {
+      clearTimeout(usernameCheckTimeoutRef.current);
+    }
+    
     const shouldReplaceHistory = next === previousMode;
     syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
@@ -239,6 +252,15 @@ function LoginContent() {
       return prev;
     });
   }, [searchParams]);
+
+  // Cleanup username check timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeoutRef.current) {
+        clearTimeout(usernameCheckTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
@@ -301,6 +323,45 @@ function LoginContent() {
   ) => {
     const { name, value } = e.target;
     setSignup((prev) => ({ ...prev, [name]: value }));
+    
+    // Real-time username validation
+    if (name === "username") {
+      setUsernameAvailable(null);
+      
+      // Clear previous timeout
+      if (usernameCheckTimeoutRef.current) {
+        clearTimeout(usernameCheckTimeoutRef.current);
+      }
+      
+      const trimmedUsername = value.trim();
+      
+      // Basic validation
+      if (!trimmedUsername) {
+        setUsernameAvailable(null);
+        setUsernameChecking(false);
+        return;
+      }
+      
+      if (trimmedUsername.length < 3) {
+        setUsernameAvailable(false);
+        setUsernameChecking(false);
+        return;
+      }
+      
+      // Debounce the API call
+      setUsernameChecking(true);
+      usernameCheckTimeoutRef.current = setTimeout(async () => {
+        try {
+          const result = await checkUsername(trimmedUsername);
+          setUsernameAvailable(result.available);
+        } catch (error) {
+          console.error("Username check failed:", error);
+          setUsernameAvailable(false);
+        } finally {
+          setUsernameChecking(false);
+        }
+      }, 500); // 500ms debounce
+    }
   };
 
   const onSignupCheckboxChange = (
@@ -653,6 +714,12 @@ function LoginContent() {
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Pick a username"
                   />
+                  <div className="mt-[0.5px] sm:hidden">
+                    <UsernameRequirements
+                      isAvailable={usernameAvailable}
+                      isChecking={usernameChecking}
+                    />
+                  </div>
                 </Field>
 
                 <Field label="Email">
@@ -665,6 +732,13 @@ function LoginContent() {
                     placeholder="you@example.com"
                   />
                 </Field>
+
+                <div className="hidden sm:block sm:col-span-2 mt-[2px]">
+                  <UsernameRequirements
+                    isAvailable={usernameAvailable}
+                    isChecking={usernameChecking}
+                  />
+                </div>
 
                 <Field label="Password" colSpan={2}>
                   <input

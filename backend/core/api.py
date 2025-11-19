@@ -97,6 +97,13 @@ class SignUpOut(Schema):
     ok: bool
     message: str
 
+class UsernameCheckIn(Schema):
+    username: str
+
+class UsernameCheckOut(Schema):
+    available: bool
+    message: str
+
 class LoginIn(Schema):
     identifier: Optional[str] = None
     email: Optional[str] = None
@@ -742,6 +749,23 @@ def google_login(request, payload: GoogleLoginIn):
     _stamp_last_login(user)
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": message}
+
+@api.post("/auth/check-username", response=UsernameCheckOut)
+def check_username(request, payload: UsernameCheckIn):
+    """Check if a username is available"""
+    username = payload.username.strip()
+    
+    if not username:
+        return {"available": False, "message": "Username cannot be empty"}
+    
+    if len(username) < 3:
+        return {"available": False, "message": "Username must be at least 3 characters"}
+    
+    # Check if username already exists (case-insensitive)
+    if User.objects.filter(username__iexact=username).exists():
+        return {"available": False, "message": "Username already taken"}
+    
+    return {"available": True, "message": "Username is available"}
 
 @api.post("/auth/signup", response=SignUpOut)
 @transaction.atomic
