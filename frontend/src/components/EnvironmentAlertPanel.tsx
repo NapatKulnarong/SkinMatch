@@ -29,8 +29,17 @@ const MAX_UV = 11;
 export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelProps) {
   const { alerts, loading, error, locationLabel, lastUpdated, refresh, snapshot } = useEnvironmentAlerts();
   const uvSummary = snapshot?.uv;
-  const uvValue = Math.min(Math.max(uvSummary?.index ?? 0, 0), MAX_UV);
-  const uvPointerPercent = (uvValue / MAX_UV) * 100;
+  // Ensure we use the exact numeric value, not rounded - convert to number explicitly
+  const uvIndex = uvSummary?.index != null ? Number(uvSummary.index) : 0;
+  const uvValue = Math.min(Math.max(uvIndex, 0), MAX_UV);
+  // Calculate pointer position: scale from 0-11
+  // The scale has 11 segments (1-11), so each segment is 100/11 = 9.09% wide
+  // UV index 1 should be centered at 9.09/2 = 4.545%, UV 2 at 13.64%, etc.
+  // Formula: ((uvIndex - 0.5) / 11) * 100 to center values within their segments
+  // For uvIndex = 0.9: ((0.9 - 0.5) / 11) * 100 = 3.64% (left of center of "1")
+  // For uvIndex = 1.0: ((1.0 - 0.5) / 11) * 100 = 4.545% (centered on "1")
+  const rawPercent = ((uvIndex - 0.5) / MAX_UV) * 100;
+  const uvPointerPercent = Math.max(0, Math.min(100, rawPercent));
 
   const hasAlerts = alerts.length > 0;
   const primaryAlert = hasAlerts ? alerts[0] : null;
@@ -86,7 +95,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
             <div className="text-sm font-semibold text-[#1f2d26]">
               UV Index:{" "}
               <span className="text-xl sm:text-2xl font-black text-[#0d3064]">
-                {uvSummary ? uvSummary.index.toFixed(1) : "--"}
+                {uvSummary ? uvIndex.toFixed(1) : "--"}
               </span>{" "}
               <span className="text-xs uppercase tracking-wide text-[#0d3064]/70">{uvRisk}</span>
             </div>
@@ -97,7 +106,9 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
           <div className="relative overflow-hidden rounded-[5px] border-2 border-black bg-gradient-to-r from-[#2e9c4c] via-[#ffd449] via-[#ff6b21] via-[#f7317a] to-[#7e3dcf] h-5">
             <div
               className="absolute -top-1 h-7 w-[2px] bg-black shadow-[0_0_0_2px_#fff]"
-              style={{ left: `calc(${uvPointerPercent}% - 1px)` }}
+              style={{ 
+                left: `calc(${uvPointerPercent.toFixed(6)}% - 1px)` 
+              }}
             />
           </div>
           <div className="mt-2 grid grid-cols-11 text-center text-[10px] font-semibold text-[#0d3064]/70">
