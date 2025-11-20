@@ -1,14 +1,38 @@
 from __future__ import annotations
 
 import io, os, re, json
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 from ninja.errors import HttpError
-import cv2
-import numpy as np
-from PIL import Image
-import pytesseract
-from ninja import Router, File, Schema
+
+try:  # pragma: no cover - optional dependency
+    import cv2
+except ImportError:
+    cv2 = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from PIL import Image
+except ImportError:
+    Image = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import pillow_heif  # type: ignore
+except ImportError:
+    pillow_heif = None  # type: ignore
+else:  # pragma: no cover - registers heif opener when available
+    pillow_heif.register_heif_opener()
+
+try:  # pragma: no cover - optional dependency
+    import pytesseract
+except ImportError:
+    pytesseract = None  # type: ignore
+from ninja import File, Router, Schema
 from ninja.files import UploadedFile
 
 try:
@@ -26,6 +50,13 @@ from .api_scan import scan_router as _legacy_scan_router
 
 scan_text_router = Router(tags=["scan-text"])
 
+
+def _ensure_ocr_stack_ready() -> None:
+    if cv2 is None or np is None or Image is None or pytesseract is None:
+        raise HttpError(
+            503,
+            "OCR dependencies (Pillow, pytesseract, opencv-python, numpy) are not installed.",
+        )
 EXAMPLE_JSON = {
     "benefits": [
         "Hydration: Provides deep moisture to keep skin plump.",
@@ -130,8 +161,25 @@ def _build_llm_prompt(ocr_text: str) -> Tuple[str, str, dict]:
     return sys_msg, user_prompt, gen_cfg
 
 # ---------------- OCR helpers (English only) ----------------
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic"}
+
+
 def _load_pil(file: UploadedFile) -> Image.Image:
     """Read an uploaded file into an RGB PIL image (raises if not an image)."""
+    filename = (file.name or "").lower()
+    extension = Path(filename).suffix
+    if extension and extension not in ALLOWED_EXTENSIONS:
+        raise HttpError(
+            415,
+            "Unsupported file type. Please upload JPG, JPEG, HEIC, or PNG.",
+        )
+    if extension in {".heic"} and pillow_heif is None:
+        raise HttpError(
+            415,
+            "HEIC images require pillow-heif support on the server.",
+        )
+    if Image is None:
+        raise HttpError(503, "Pillow is not installed on the server.")
     data = file.read()
     if hasattr(file, "seek"):
         try:
@@ -154,10 +202,12 @@ def _preprocess(image: Image.Image) -> Image.Image:
     return image
 
 def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
+    _ensure_ocr_stack_ready()
     return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def _ocr_text(pil_img: Image.Image) -> str:
     """Run preprocess → cv2 conversion → OCR (Thai/English)."""
+    _ensure_ocr_stack_ready()
     prepared = _preprocess(pil_img)
     np_img = cv2.cvtColor(np.array(prepared), cv2.COLOR_RGB2BGR)
     raw_text = cv2_to_text(np_img)
@@ -165,10 +215,12 @@ def _ocr_text(pil_img: Image.Image) -> str:
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
     """Glue helper used by the API endpoint (kept separate for test patching)."""
+    _ensure_ocr_stack_ready()
     pil = _load_pil(file)
     return _ocr_text(pil)
 
 def cv2_to_text(img: np.ndarray) -> str:
+    _ensure_ocr_stack_ready()
     return pytesseract.image_to_string(img, lang="tha+eng")
 
 # ---------------- Fallback extractor (English/Thai keywords) ----------------
@@ -366,7 +418,6 @@ def _call_one_model(model_name: str, user_prompt: str, sys_msg: str, gen_cfg: di
     if not raw:
         return None
 
-    # --- 4 Try to parse JSON, with debug help ---
     try:
         data = json.loads(raw)
     except Exception as e:
@@ -508,7 +559,17 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
     Try the LLM helper a few times. If it never produces a payload we trust,
     return the heuristic fallback so the UI can still render something.
     """
-    fallback_result = _fallback_extract(text)
+    fallback_result: dict | None = None
+
+    def _fallback_list(key: str) -> list[str]:
+        nonlocal fallback_result
+        if fallback_result is None:
+            fallback_result = _fallback_extract(text)
+        return list(fallback_result.get(key, []))
+
+    def _fallback_confidence() -> float:
+        return float(fallback_result.get("confidence", 0.55)) if fallback_result else 0.55
+
     attempt = 0
     while attempt < max_attempts:
         primary = _call_primary_model(text)
@@ -518,12 +579,13 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
             concerns_primary = primary.get("concerns", [])
             notes_primary = primary.get("notes", [])
             combined = {
-                "benefits": _combine_lists(benefits_primary, fallback_result.get("benefits", []), sort_results=True, prefer_primary=bool(benefits_primary)),
-                "actives": _combine_lists(actives_primary, fallback_result.get("actives", []), sort_results=True, prefer_primary=bool(actives_primary)),
-                "concerns": _combine_lists(concerns_primary, fallback_result.get("concerns", []), sort_results=True, prefer_primary=bool(concerns_primary)),
-                "notes": _combine_lists(notes_primary, fallback_result.get("notes", []), prefer_primary=bool(notes_primary)),
+                "benefits": _combine_lists(benefits_primary, [] if benefits_primary else _fallback_list("benefits"), sort_results=True, prefer_primary=bool(benefits_primary)),
+                "actives": _combine_lists(actives_primary, [] if actives_primary else _fallback_list("actives"), sort_results=True, prefer_primary=bool(actives_primary)),
+                "concerns": _combine_lists(concerns_primary, [] if concerns_primary else _fallback_list("concerns"), sort_results=True, prefer_primary=bool(concerns_primary)),
+                "notes": _combine_lists(notes_primary, [] if notes_primary else _fallback_list("notes"), prefer_primary=bool(notes_primary)),
             }
-            confidence = float(primary.get("confidence", fallback_result.get("confidence", 0.55)))
+            fallback_conf = _fallback_confidence()
+            confidence = float(primary.get("confidence", fallback_conf))
             if sum(len(values) for values in combined.values()) >= 3:
                 return combined, confidence, False
         else:
@@ -531,13 +593,16 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
             break
         attempt += 1
 
+    if fallback_result is None:
+        fallback_result = _fallback_extract(text)
+
     combined_fallback = {
         "benefits": list(fallback_result.get("benefits", [])),
         "actives": list(fallback_result.get("actives", [])),
         "concerns": list(fallback_result.get("concerns", [])),
         "notes": list(fallback_result.get("notes", [])),
     }
-    confidence = float(fallback_result.get("confidence", 0.55))
+    confidence = _fallback_confidence()
     return combined_fallback, confidence, True
 
 # ---------------- Endpoint ----------------

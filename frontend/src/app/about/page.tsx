@@ -119,7 +119,7 @@ const TIMELINE_EVENTS = [
 const VALUES = [
   {
     title: "Science-Backed",
-    description: "Every recommendation is rooted in dermatological research and ingredient science.",
+    description: "Each suggestion is crafted with dermatological research in mind.",
     icon: "🔬",
     color: "#d7ebf4",
   },
@@ -148,7 +148,7 @@ export default function AboutPage() {
     <>
       <main className="min-h-screen bg-[#bcdcf6]">
         {/* Intro Letter */}
-        <PageContainer as="section" className="pt-45 sm:pt-44 pb-10 px-4">
+        <PageContainer as="section" className="pt-43 md:pt-32 lg:pt-42 pb-10 px-4">
           <div
             className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-black shadow-[4px_6px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]"
             style={{
@@ -163,29 +163,29 @@ export default function AboutPage() {
               alt="Matchy mascot smiling"
               width={320}
               height={240}
-              className="hidden sm:block absolute -top-45 left-8 w-[240px] md:w-[300px]"
+              className="hidden lg:block absolute -top-45 left-8 w-[240px] md:w-[300px]"
               priority
             />
             <div className="relative p-6 sm:p-10">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#3B2F4A] mb-4 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#3B2F4A] mb-4 sm:mb-6">
                 Message from our Team
               </h2>
 
-              <p className="italic text-base sm:text-xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
+              <p className="italic text-base sm:text-xl lg:text-2xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
               Choosing skincare can be overwhelming with endless products, confusing ingredient lists, 
               and bold marketing claims. SkinMatch simplifies, safely, and stress-free skincare.
               </p>
 
-              <p className="italic text-base sm:text-xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
+              <p className="italic text-base sm:text-xl lg:text-2xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
               By analyzing ingredients and building personalized skin profiles, we help you understand what supports your skin 
               and what irritates it. This knowledge enables you to create effective and safe routines that fit your goals.
               </p>
 
-              <p className="italic text-base sm:text-xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
+              <p className="italic text-base sm:text-xl lg:text-2xl leading-relaxed mb-4 sm:mb-6 text-gray-800">
                 Our mission is to help everyone feels confident that each skincare decision they make is the right match for their skin.
               </p>
 
-              <p className="italic text-base sm:text-xl leading-relaxed font-semibold text-gray-800">
+              <p className="italic text-base sm:text-xl lg:text-2xl leading-relaxed font-semibold text-gray-800">
                 Your Skin, Your Match, Your Best Care!
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function AboutPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Our Values
             </h2>
-            <p className="text-sm sm:text-base text-gray-700 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-xl text-gray-700 max-w-2xl lg:mx-auto">
               The principles that guide everything we do at SkinMatch
             </p>
           </div>
@@ -206,7 +206,7 @@ export default function AboutPage() {
             {VALUES.map((value, idx) => (
               <div
                 key={idx}
-                className="group rounded-2xl sm:rounded-3xl border-2 border-black shadow-[4px_6px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)] p-5 sm:p-6 text-center hover:-translate-y-1 hover:shadow-[6px_10px_0_rgba(0,0,0,0.35)] sm:hover:shadow-[8px_12px_0_rgba(0,0,0,0.35)] transition-all duration-200"
+                className="group rounded-2xl sm:rounded-3xl border-2 border-black shadow-[4px_6px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)] p-5  sm:p-6 text-center hover:-translate-y-1 hover:shadow-[6px_10px_0_rgba(0,0,0,0.35)] sm:hover:shadow-[8px_12px_0_rgba(0,0,0,0.35)] transition-all duration-200"
                 style={{ background: value.color }}
               >
                 <div className="text-4xl sm:text-5xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-200 relative z-10">
@@ -215,7 +215,7 @@ export default function AboutPage() {
                 <h3 className="text-lg sm:text-xl font-extrabold text-gray-800 mb-2 sm:mb-3">
                   {value.title}
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                <p className="text-xs md:text-base font-bold md:font-normal sm:text-sm text-gray-700 leading-relaxed">
                   {value.description}
                 </p>
               </div>
@@ -229,17 +229,17 @@ export default function AboutPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Our Journey
             </h2>
-            <p className="text-sm sm:text-base text-gray-700 max-w-2xl mx-auto lg:px-4">
+            <p className="text-sm sm:text-xl text-gray-700 max-w-2xl lg:mx-auto lg:px-4">
               From idea to launch: How SkinMatch came to life
             </p>
           </div>
           
           <div className="relative max-w-5xl mx-auto">
-            {/* Vertical line for desktop only */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-[#2C3E50] transform -translate-x-1/2" />
+            {/* Vertical line for desktop only (xl+) */}
+            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-[#2C3E50] transform -translate-x-1/2" />
 
-            {/* Mobile: Simple stacked layout */}
-            <div className="md:hidden space-y-6 relative">
+            {/* Mobile & iPad Pro: Simple stacked layout (same as iPad Mini) */}
+            <div className="xl:hidden space-y-6 relative">
               {TIMELINE_EVENTS.map((event, idx) => (
                 <div key={idx} className="relative">
                   {/* Connecting line to next card */}
@@ -258,21 +258,21 @@ export default function AboutPage() {
                   >
                   {/* Header with step number, date, and title/emoji */}
                   <div className="flex items-start justify-between mb-3">
-                    <div className="text-6xl lg:text-5xl font-extrabold text-gray-800/30">
+                    <div className="text-6xl font-extrabold text-gray-800/30">
                       {idx + 1}
                     </div>
                     <div className="pt-1 sm:pt-0 flex flex-col items-end gap-1 text-right">
-                      <div className="inline-block text-[11px] font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
+                      <div className="inline-block text-[11px] sm:text-[14px] lg:text-[15px] font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
                         {event.date}
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <span className="text-2xl">{event.icon}</span>
-                        <h3 className="text-lg font-bold text-gray-800">{event.title}</h3>
+                        <h3 className="text-lg sm:text-xl lg:text-2xl sm:mt-2 sm:mb-2 font-bold text-gray-800">{event.title}</h3>
                       </div>
                     </div>
                   </div>
                   
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-sm sm:text-lg lg:text-xl text-gray-700 leading-relaxed">
                     {event.description}
                   </p>
                 </div>
@@ -280,8 +280,8 @@ export default function AboutPage() {
               ))}
             </div>
 
-            {/* Desktop: Alternating layout */}
-            <div className="hidden md:block space-y-12">
+            {/* Desktop: Alternating layout (xl+) */}
+            <div className="hidden xl:block space-y-12">
               {TIMELINE_EVENTS.map((event, idx) => (
                 <div
                   key={idx}
@@ -304,7 +304,7 @@ export default function AboutPage() {
                   />
 
                   {/* Content card */}
-                  <div className={`w-[calc(50%-2.5rem)] ${idx % 2 === 0 ? "pr-0" : "pl-0"}`}>
+                  <div className={`basis-[55%] flex-none ${idx % 2 === 0 ? "pr-0 -ml-24" : "pl-0 -mr-24"}`}>
                     <div
                       className="group rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] p-6 hover:-translate-y-1 hover:shadow-[8px_12px_0_rgba(0,0,0,0.35)] transition-all duration-200"
                       style={{ 
@@ -315,7 +315,7 @@ export default function AboutPage() {
                       }}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="text-5xl shrink-0 group-hover:scale-110 transition-transform duration-200 relative z-10">
+                        <div className="text-6xl shrink-0 group-hover:scale-110 transition-transform duration-200 relative z-10">
                           {event.icon}
                         </div>
                         <div className="flex-1">
@@ -325,7 +325,7 @@ export default function AboutPage() {
                           <h3 className="text-2xl font-extrabold text-gray-800 mb-3">
                             {event.title}
                           </h3>
-                          <p className="text-base text-gray-700 leading-relaxed">
+                          <p className="text-lg text-gray-700 leading-relaxed">
                             {event.description}
                           </p>
                         </div>
@@ -334,7 +334,7 @@ export default function AboutPage() {
                   </div>
 
                   {/* Spacer */}
-                  <div className="w-[calc(50%-2.5rem)]" />
+                  <div className="basis-[45%] flex-none" />
                 </div>
               ))}
             </div>
@@ -349,7 +349,7 @@ export default function AboutPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2C3E50] mb-3">
               Meet the Team
             </h2>
-            <p className="text-sm sm:text-base text-gray-700 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-xl text-gray-700 max-w-2xl lg:mx-auto">
               The passionate people behind SkinMatch
             </p>
           </div>
@@ -384,7 +384,7 @@ function TeamCard({ member }: { member: Member }) {
   return (
     <div className="relative [perspective:1200px]">
       <div
-        className={`relative min-h-[205px] sm:min-h-[280px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
+        className={`relative min-h-[205px] sm:min-h-[270px] lg:min-h-[320px] w-full transition-transform duration-500 [transform-style:preserve-3d] ${
           flipped ? "[transform:rotateY(180deg)]" : ""
         }`}
       >
@@ -396,7 +396,7 @@ function TeamCard({ member }: { member: Member }) {
           <div
             className="
               relative mr-3 sm:mr-5 shrink-0 rounded-xl sm:rounded-2xl overflow-hidden
-              aspect-[3/4] w-[32%] sm:w-[30%] md:w-[28%]
+              aspect-[3/4] w-[32%] sm:w-[30%] md:w-[40%] lg:w-[34%]
             "
             style={{ background: member.thumbBg }}
           >
@@ -413,10 +413,10 @@ function TeamCard({ member }: { member: Member }) {
 
           <div className="relative flex-1 flex flex-col">
             <div className="pr-2 sm:pr-10">
-              <h4 className="text-lg sm:text-2xl lg:text-[2.4rem] font-extrabold text-gray-800 leading-tight">
+              <h4 className="text-lg md:text-[19px] lg:text-3xl font-extrabold text-gray-800 leading-tight">
                 {member.name}
               </h4>
-              <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-semibold text-gray-700 leading-snug">
+              <p className="mt-1.5 sm:mt-3 text-xs sm:text-base lg:text-lg font-semibold text-gray-700 leading-snug">
                 {roleTitle}
                 {roleDetail && (
                   <>

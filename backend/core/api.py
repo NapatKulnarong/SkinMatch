@@ -3,6 +3,7 @@ import os
 from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import quote
 from uuid import uuid4
 import uuid
 
@@ -35,6 +36,7 @@ from .models import (
     SkinFactTopic,
     SkinFactView,
     NewsletterSubscriber,
+    SkinProfile,
 )
 from pydantic import ConfigDict, field_validator, model_validator
 
@@ -50,11 +52,12 @@ else:
     else:
         EmailStr = _EmailStr  # type: ignore
 
-from .auth import create_access_token, JWTAuth
+from .auth import create_access_token, JWTAuth, decode_token
 from .google_auth import authenticate_google_id_token
 from quiz.views import router as quiz_router, _resolve_request_user
 from quiz.models import QuizSession, Product
 from .models import WishlistItem
+from .environment import fetch_environment_alerts, EnvironmentServiceError
 
 
 logger = logging.getLogger(__name__)
@@ -65,11 +68,14 @@ from .api_scan_text import scan_text_router
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-api = NinjaAPI()
+api = NinjaAPI(version=getattr(settings, "API_VERSION_DEFAULT", "v1"), title="SkinMatch API")
 api.add_router("/quiz", quiz_router)
 api.add_router("/scan", scan_router)
 api.add_router("/scan-text", scan_text_router)
 User = get_user_model()
+DEFAULT_LATITUDE = 13.7563
+DEFAULT_LONGITUDE = 100.5018
+DEFAULT_LOCATION_LABEL = "Bangkok"
 
 if genai:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -84,9 +90,18 @@ class SignUpIn(Schema):
     confirm_password: str
     date_of_birth: str | None = None # 'YYYY-MM-DD'
     gender: str | None = None #'male'|'female'|'prefer_not'
+    accept_terms_of_service: bool
+    accept_privacy_policy: bool
 
 class SignUpOut(Schema):
     ok: bool
+    message: str
+
+class UsernameCheckIn(Schema):
+    username: str
+
+class UsernameCheckOut(Schema):
+    available: bool
     message: str
 
 class LoginIn(Schema):
@@ -203,6 +218,36 @@ class FactTopicDetailOut(FactTopicSummary):
     updated_at: datetime
 
 
+class UVSummaryOut(Schema):
+    index: float
+    max_index: float
+    level: str
+    level_label: str
+    message: str
+
+
+class AlertItemOut(Schema):
+    id: str
+    category: str
+    severity: str
+    title: str
+    message: str
+    tips: List[str]
+    valid_until: datetime
+
+
+class EnvironmentAlertResponse(Schema):
+    generated_at: datetime
+    latitude: float
+    longitude: float
+    location_label: Optional[str] = None
+    uv: UVSummaryOut
+    alerts: List[AlertItemOut]
+    source_name: str
+    source_url: str
+    refresh_minutes: int
+
+
 class NewsletterSubscribeIn(Schema):
     email: EmailStr
     source: Optional[str] = None
@@ -235,7 +280,6 @@ class SendTermsEmailOut(Schema):
 
 def _get_newsletter_welcome_email_html(email: str = "") -> str:
     """Generate HTML email template for newsletter welcome email."""
-    from urllib.parse import quote
     
     # Use FRONTEND_ORIGIN for development, or SITE_URL for production
     site_url = (
@@ -696,13 +740,36 @@ def google_login(request, payload: GoogleLoginIn):
     token = create_access_token(user)
     return {"ok": True, "token": token, "message": message}
 
+@api.post("/auth/check-username", response=UsernameCheckOut)
+def check_username(request, payload: UsernameCheckIn):
+    """Check if a username is available"""
+    username = payload.username.strip()
+    
+    if not username:
+        return {"available": False, "message": "Username cannot be empty"}
+    
+    if len(username) < 3:
+        return {"available": False, "message": "Username must be at least 3 characters"}
+    
+    # Check if username already exists (case-insensitive)
+    if User.objects.filter(username__iexact=username).exists():
+        return {"available": False, "message": "Username already taken"}
+    
+    return {"available": True, "message": "Username is available"}
+
 @api.post("/auth/signup", response=SignUpOut)
 @transaction.atomic
 def signup(request, payload: SignUpIn):
     # basic checks
     if payload.password != payload.confirm_password:
         return {"ok": False, "message": "Passwords do not match"}
-    
+
+    if not payload.accept_terms_of_service:
+        return {"ok": False, "message": "You must accept the Terms of Service to create an account."}
+
+    if not payload.accept_privacy_policy:
+        return {"ok": False, "message": "You must accept the Privacy Policy to create an account."}
+
     # enforce uniqueness in code (case-insensitive)
     if User.objects.filter(username__iexact=payload.username).exists():
         return {"ok": False, "message": "Username already taken"}
@@ -771,6 +838,15 @@ def signup(request, payload: SignUpIn):
     if gender_choice is not None and profile.gender != gender_choice:
         profile.gender = gender_choice
         profile_updates.append("gender")
+
+    acceptance_timestamp = timezone.now()
+    if payload.accept_terms_of_service and profile.terms_accepted_at is None:
+        profile.terms_accepted_at = acceptance_timestamp
+        profile_updates.append("terms_accepted_at")
+
+    if payload.accept_privacy_policy and profile.privacy_policy_accepted_at is None:
+        profile.privacy_policy_accepted_at = acceptance_timestamp
+        profile_updates.append("privacy_policy_accepted_at")
 
     if profile_updates:
         profile.save(update_fields=profile_updates + ["updated_at"])
@@ -918,6 +994,43 @@ def list_users(request, limit: int = 50, offset: int = 0):
 @api.get("/hello")
 def api_root(request):
     return {"message": "Welcome to the API!"}
+
+
+# --------------- Environment alerts ---------------
+
+
+@api.get("/alerts/environment", response=EnvironmentAlertResponse)
+def get_environment_alerts(
+    request,
+    latitude: float | None = None,
+    longitude: float | None = None,
+):
+    lat, lon, inferred_label = _normalize_coordinates(latitude, longitude)
+
+    user = None
+    try:
+        user = _resolve_request_user_object(request)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("[environment] Failed to resolve request user: %s", exc)
+
+    keywords: list[str] = []
+    if user:
+        try:
+            keywords = _keywords_for_user(user)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("[environment] Failed to build keywords for user %s: %s", getattr(user, "id", None), exc)
+
+    try:
+        payload = fetch_environment_alerts(
+            latitude=lat,
+            longitude=lon,
+            keywords=keywords,
+            location_label=inferred_label,
+        )
+    except EnvironmentServiceError as exc:
+        raise HttpError(503, str(exc))
+    return payload
+
 
 # -----------------------------skin fact---------------------------------------------
 
@@ -1235,6 +1348,11 @@ def fact_topic_detail(request, slug: str):
     topic.refresh_from_db(fields=["view_count", "updated_at"])
 
     blocks = [_serialize_fact_block(block, request) for block in topic.content_blocks.all()]
+    hero_url = _resolve_media_url(request, topic.hero_image)
+    if not hero_url:
+        hero_url = _build_placeholder_image(topic.title)
+    logger.debug("[Hero Image Detail] %s: %s", topic.title, hero_url)
+
     return FactTopicDetailOut(
         id=topic.id,
         slug=topic.slug,
@@ -1242,7 +1360,7 @@ def fact_topic_detail(request, slug: str):
         subtitle=topic.subtitle or None,
         excerpt=topic.excerpt or None,
         section=topic.section,
-        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_url=hero_url,
         hero_image_alt=topic.hero_image_alt or None,
         view_count=topic.view_count,
         updated_at=topic.updated_at,
@@ -1250,7 +1368,19 @@ def fact_topic_detail(request, slug: str):
     )
 
 
+def _build_placeholder_image(title: str) -> str:
+    """Fallback placeholder image shown when no hero image exists."""
+    safe_title = (title or "SkinMatch").strip() or "SkinMatch"
+    text = quote(safe_title[:20])
+    return f"https://placehold.co/600x400/e5e5e5/666666?text={text}"
+
+
 def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSummary:
+    hero_url = _resolve_media_url(request, topic.hero_image)
+    if not hero_url:
+        hero_url = _build_placeholder_image(topic.title)
+    logger.debug("[Hero Image] %s: %s", topic.title, hero_url)
+
     return FactTopicSummary(
         id=topic.id,
         slug=topic.slug,
@@ -1258,7 +1388,7 @@ def _serialize_fact_topic_summary(topic: SkinFactTopic, request) -> FactTopicSum
         subtitle=topic.subtitle or None,
         excerpt=topic.excerpt or None,
         section=topic.section,
-        hero_image_url=_resolve_media_url(request, topic.hero_image),
+        hero_image_url=hero_url,
         hero_image_alt=topic.hero_image_alt or None,
         view_count=topic.view_count,
     )
@@ -1275,20 +1405,35 @@ def _serialize_fact_block(block: SkinFactContentBlock, request) -> FactContentBl
 
 
 def _resolve_media_url(request, image_field) -> Optional[str]:
+    """Resolve media URL for use by the frontend, handling local dev rewrites."""
     if not image_field:
         return None
 
     try:
         relative_url = image_field.url  # e.g. "/media/facts/hero/myimg.jpg"
-    except ValueError:
+    except (ValueError, AttributeError):
         return None
 
-    if not request:
-        # fallback: just return relative
+    if not relative_url:
+        return None
+
+    if relative_url.startswith(("http://", "https://")):
         return relative_url
 
-    # Build something like "http://backend:8000/media/facts/hero/myimg.jpg"
-    return request.build_absolute_uri(relative_url)
+    relative = relative_url if relative_url.startswith("/") else f"/{relative_url}"
+    backend_base = getattr(settings, "BACKEND_URL", None)
+
+    absolute = None
+    if request:
+        try:
+            absolute = request.build_absolute_uri(relative)
+        except Exception:  # pragma: no cover - defensive guard
+            absolute = None
+
+    if not absolute and backend_base:
+        absolute = f"{backend_base.rstrip('/')}{relative}"
+
+    return absolute or relative
 
 
 # ------------------------------------------------------------------------------------
@@ -1370,6 +1515,58 @@ def remove_from_wishlist(request, product_id: uuid.UUID):
     item.delete()
     return {"ok": True, "status": "removed"}
 
+
+def _normalize_coordinates(
+    latitude: float | None,
+    longitude: float | None,
+) -> tuple[float, float, str | None]:
+    lat = latitude if latitude is not None else DEFAULT_LATITUDE
+    lon = longitude if longitude is not None else DEFAULT_LONGITUDE
+    if not (-90 <= lat <= 90):
+        raise HttpError(400, "Latitude must be between -90 and 90 degrees.")
+    if not (-180 <= lon <= 180):
+        raise HttpError(400, "Longitude must be between -180 and 180 degrees.")
+    label = DEFAULT_LOCATION_LABEL if latitude is None and longitude is None else None
+    return lat, lon, label
+
+
+def _resolve_request_user_object(request):
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False):
+        return user
+    auth_header = ""
+    if hasattr(request, "headers"):
+        auth_header = request.headers.get("Authorization", "") or ""
+    if not auth_header and hasattr(request, "META"):
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "") or ""
+    if auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+        data = decode_token(token)
+        if data and data.get("user_id"):
+            try:
+                return User.objects.get(id=data["user_id"])
+            except User.DoesNotExist:
+                return None
+    return None
+
+
+def _keywords_for_user(user) -> list[str]:
+    if not user:
+        return []
+    profile = (
+        SkinProfile.objects.filter(user=user, is_latest=True)
+        .order_by("-created_at")
+        .first()
+    )
+    if not profile:
+        return []
+    profile_data = {
+        "primary_concerns": profile.primary_concerns or [],
+        "secondary_concerns": profile.secondary_concerns or [],
+        "eye_area_concerns": profile.eye_area_concerns or [],
+    }
+    return _concern_keywords_from_profile(profile_data)
+
 def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
     """Very small heuristic mapping of concerns to ingredient/keyword hints."""
     concerns: list[str] = []
@@ -1411,3 +1608,173 @@ def _concern_keywords_from_profile(profile_data: dict) -> list[str]:
     # dedupe, keep order
     return list(dict.fromkeys([kw.lower() for kw in keywords]))
 
+
+api_urlpatterns = api.urls
+@api.get("/facts/topics/recommended", response=List[FactTopicSummary])
+def recommended_facts(request, limit: int = 4, session_id: Optional[str] = None):
+    """Personalized Skin Facts based on COMPLETED quiz only.
+    
+    Works for both authenticated and anonymous users.
+    For anonymous users, pass session_id to get recommendations based on their completed quiz.
+    Returns empty list if no completed quiz found (frontend will show fallback).
+    """
+    user = _resolve_request_user(request)
+    limit = max(1, min(limit, 8))
+    
+    logger.debug(f"[recommended_facts] user={user}, session_id={session_id}, limit={limit}")
+
+    # Get profile data from COMPLETED quiz session only
+    profile_data: dict | None = None
+    latest_session: QuizSession | None = None
+    
+    # If session_id is provided (for anonymous users), use that
+    if session_id:
+        try:
+            session_uuid = uuid.UUID(session_id)
+            latest_session = (
+                QuizSession.objects.filter(
+                    id=session_uuid,
+                    completed_at__isnull=False  # MUST be completed
+                ).first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Found completed anonymous session: {session_uuid}")
+        except (ValueError, TypeError):
+            logger.debug(f"[recommended_facts] Invalid session_id: {session_id}")
+    
+    # For logged-in users, get their latest COMPLETED session
+    if not profile_data and user:
+        # Try to get from SkinProfile (persisted profile with is_latest=True)
+        latest_profile = (
+            SkinProfile.objects.filter(user=user, is_latest=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if latest_profile:
+            profile_data = {
+                "primary_concerns": latest_profile.primary_concerns or [],
+                "secondary_concerns": latest_profile.secondary_concerns or [],
+                "eye_area_concerns": latest_profile.eye_area_concerns or [],
+            }
+            logger.debug(f"[recommended_facts] Using SkinProfile for user {user.id}")
+        else:
+            # Fall back to latest completed session's profile_snapshot
+            latest_session = (
+                QuizSession.objects.filter(
+                    user=user, 
+                    completed_at__isnull=False  # MUST be completed
+                )
+                .order_by("-completed_at", "-started_at")
+                .first()
+            )
+            if latest_session and isinstance(latest_session.profile_snapshot, dict):
+                profile_data = latest_session.profile_snapshot
+                logger.debug(f"[recommended_facts] Using completed session for user {user.id}")
+
+    # If no completed quiz found, return empty list
+    if not profile_data:
+        logger.debug("[recommended_facts] No completed quiz found, returning empty list")
+        return []
+
+    # Extract keywords from profile
+    keywords: list[str] = _concern_keywords_from_profile(profile_data)
+    logger.debug(f"[recommended_facts] Extracted keywords: {keywords[:10]}")
+
+    if not keywords:
+        logger.debug("[recommended_facts] No keywords extracted, returning empty list")
+        return []
+
+    # Base query for published topics
+    qs = SkinFactTopic.objects.filter(is_published=True)
+
+    # Build Q filter for keywords (title, subtitle, excerpt)
+    keyword_q = Q()
+    for kw in keywords:
+        keyword_q |= (
+            Q(title__icontains=kw)
+            | Q(subtitle__icontains=kw)
+            | Q(excerpt__icontains=kw)
+        )
+
+    # Filter topics by keywords
+    filtered = qs.filter(keyword_q)
+
+    if not filtered.exists():
+        logger.debug("[recommended_facts] No topics matched keywords")
+        return []
+
+    # Get user's viewing history to avoid showing already-viewed topics
+    viewed_ids = []
+    if user:
+        viewed_ids = list(
+            SkinFactView.objects.filter(user=user).values_list("topic_id", flat=True)
+        )
+
+    # Prefer different sections for diversity (max 2 per section)
+    ordered = (
+        filtered.annotate()
+        .order_by(
+            Case(
+                When(section=SkinFactTopic.Section.INGREDIENT_SPOTLIGHT, then=0),
+                When(section=SkinFactTopic.Section.KNOWLEDGE, then=1),
+                When(section=SkinFactTopic.Section.FACT_CHECK, then=2),
+                When(section=SkinFactTopic.Section.TRENDING, then=3),
+                default=4,
+                output_field=IntegerField(),
+            ),
+            "-updated_at",
+            "-view_count",
+        )
+    )
+
+    # Fetch topics
+    topics = list(ordered[: limit * 3])  # overfetch for diversity filtering
+
+    # Apply section diversity: max 2 topics per section
+    def score_topic(t: SkinFactTopic) -> tuple[int, int, int]:
+        """Score for sorting: (viewed_penalty, section_rank, -view_count)"""
+        section_rank = {
+            SkinFactTopic.Section.INGREDIENT_SPOTLIGHT: 0,
+            SkinFactTopic.Section.KNOWLEDGE: 1,
+            SkinFactTopic.Section.FACT_CHECK: 2,
+            SkinFactTopic.Section.TRENDING: 3,
+        }.get(t.section, 4)
+        
+        viewed_penalty = 1 if t.id in viewed_ids else 0
+        return (viewed_penalty, section_rank, -t.view_count)
+
+    topics.sort(key=score_topic)
+    
+    # Pick topics with section diversity
+    picked = []
+    seen_ids = set()
+    section_counts = {}
+    
+    for t in topics:
+        if t.id in seen_ids:
+            continue
+        
+        # Limit to 2 topics per section for diversity
+        section_count = section_counts.get(t.section, 0)
+        if section_count >= 2:
+            continue
+        
+        seen_ids.add(t.id)
+        section_counts[t.section] = section_count + 1
+        picked.append(t)
+        
+        if len(picked) >= limit:
+            break
+
+    # If we still need more after section limits, add remaining topics
+    if len(picked) < limit:
+        for t in topics:
+            if t.id not in seen_ids:
+                picked.append(t)
+                seen_ids.add(t.id)
+                if len(picked) >= limit:
+                    break
+
+    logger.debug(f"[recommended_facts] Returning {len(picked)} topics")
+    return [_serialize_fact_topic_summary(topic, request) for topic in picked]

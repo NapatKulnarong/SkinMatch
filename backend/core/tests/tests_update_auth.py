@@ -1,17 +1,21 @@
 # pytest + DRF
 import json
+
 import pytest
-from django.urls import reverse
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.test import APIClient
+
+from core.auth import create_access_token
+from core.models import UserProfile
 
 User = get_user_model()
 
+
 @pytest.fixture
-def api():
+def api_client():
     return APIClient()
+
 
 @pytest.fixture
 def user(db):
@@ -19,34 +23,50 @@ def user(db):
         username="alice", email="alice@example.com", password="Passw0rd!"
     )
 
-def _jwt_for(user):
-    refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token)
+
+def _auth_headers(user: User) -> dict[str, str]:
+    token = create_access_token(user)
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
 
 @pytest.mark.django_db
-def test_update_pref_requires_auth_returns_401(api):
-    url = reverse("user-prefs-update")  # e.g. path("api/user/prefs/update/", ..., name="user-prefs-update")
-    payload = {"marketing_emails": False}
-    res = api.post(url, data=json.dumps(payload), content_type="application/json")
+def test_update_profile_requires_auth_returns_401(api_client):
+    payload = {"first_name": "Updated"}
+    res = api_client.put(
+        "/api/v1/auth/me",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
 
     assert res.status_code == status.HTTP_401_UNAUTHORIZED
-    assert "login required" in res.data.get("detail", "").lower()
+    payload = json.loads(res.content or b"{}")
+    assert payload.get("detail", "").lower() in {"unauthorized", "authentication credentials were not provided."}
+
 
 @pytest.mark.django_db
-def test_update_pref_happy_path_with_jwt_updates_and_200(api, user, django_assert_num_queries):
-    # Prepare: attach existing prefs if your code requires creation first
-    from core.models import UserPreference  # adjust import
-    prefs = UserPreference.objects.create(user=user, marketing_emails=True)
+def test_update_profile_happy_path_with_jwt_updates_and_200(api_client, user):
+    headers = _auth_headers(user)
+    payload = {
+        "first_name": "Alice",
+        "last_name": "Wonder",
+        "username": "alice2",
+    }
 
-    token = _jwt_for(user)
-    api.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-
-    url = reverse("user-prefs-update")
-    payload = {"marketing_emails": False}
-
-    res = api.post(url, data=json.dumps(payload), content_type="application/json")
+    res = api_client.put(
+        "/api/v1/auth/me",
+        data=json.dumps(payload),
+        content_type="application/json",
+        **headers,
+    )
     assert res.status_code == status.HTTP_200_OK
-    assert "preferences updated" in res.data.get("message", "").lower()
+    body = json.loads(res.content or b"{}")
+    assert body["first_name"] == "Alice"
+    assert body["last_name"] == "Wonder"
+    assert body["username"] == "alice2"
 
-    prefs.refresh_from_db()
-    assert prefs.marketing_emails is False
+    user.refresh_from_db()
+    assert user.first_name == "Alice"
+    assert user.last_name == "Wonder"
+    assert user.username == "alice2"
+    profile = UserProfile.objects.get(user=user)
+    assert profile.avatar_url == ""

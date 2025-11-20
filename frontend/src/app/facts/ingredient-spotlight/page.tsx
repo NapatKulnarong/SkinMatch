@@ -4,6 +4,8 @@ import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
+const FALLBACK_IMAGE = "/img/facts_img/centella_ampoule.jpg";
+
 export const metadata = {
   title: "Ingredient Spotlight Library • SkinMatch",
   description: "Browse every Ingredient Spotlight deep dive curated by the SkinMatch team.",
@@ -48,7 +50,7 @@ export default async function IngredientSpotlightArchivePage() {
         {topics.length ? (
           <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {topics.map((topic) => {
-              const image = topic.heroImageUrl ?? "/img/facts_img/serum_texture.jpg";
+              const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
               const description = topic.subtitle || topic.excerpt || "Discover the routine benefits, pairings, and notes.";
 
               return (

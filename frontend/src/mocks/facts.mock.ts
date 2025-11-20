@@ -4,6 +4,8 @@ import type {
   SkinFactSection,
 } from "@/lib/types";
 
+const INGREDIENT_FALLBACK = "/img/facts_img/centella_ampoule.jpg";
+
 const createSummary = (
   id: string,
   slug: string,
@@ -290,7 +292,7 @@ export const sectionTopicsMock: Record<
       "28",
       "hyaluronic-acid-deep-dive",
       "Hyaluronic Acid: The Ultimate Hydrator",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "From molecular weights to layering techniques—your complete HA guide.",
       5200
@@ -299,7 +301,7 @@ export const sectionTopicsMock: Record<
       "29",
       "niacinamide-brightener",
       "Niacinamide: The Multi-Tasker",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "How this B-vitamin derivative controls oil, fades marks, and strengthens barriers.",
       4900
@@ -308,7 +310,7 @@ export const sectionTopicsMock: Record<
       "30",
       "azelaic-acid-gentle-exfoliant",
       "Azelaic Acid: The Gentle Exfoliant",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "Pore-clearing powerhouse that works for sensitive and rosacea-prone skin.",
       4650
@@ -317,7 +319,7 @@ export const sectionTopicsMock: Record<
       "31",
       "peptides-anti-aging",
       "Peptides: Building Blocks for Youthful Skin",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "Understanding signal peptides, carrier peptides, and neuropeptides.",
       4380
@@ -326,7 +328,7 @@ export const sectionTopicsMock: Record<
       "32",
       "ceramides-barrier-repair",
       "Ceramides: The Barrier Repair Experts",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "How these lipids lock in moisture and protect against environmental stressors.",
       4120
@@ -335,7 +337,7 @@ export const sectionTopicsMock: Record<
       "33",
       "tranexamic-acid-hyperpigmentation",
       "Tranexamic Acid: Hyperpigmentation Fighter",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "Clinical evidence for fading dark spots and melasma safely.",
       3890
@@ -344,7 +346,7 @@ export const sectionTopicsMock: Record<
       "34",
       "bakuchiol-retinol-alternative",
       "Bakuchiol: The Plant-Based Retinol Alternative",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "Pregnancy-safe alternative that delivers similar anti-aging benefits.",
       3650
@@ -353,7 +355,7 @@ export const sectionTopicsMock: Record<
       "35",
       "allantoin-soothing-healer",
       "Allantoin: The Soothing Healer",
-      "/img/facts_img/serum_texture.jpg",
+      INGREDIENT_FALLBACK,
       "ingredient_spotlight",
       "Gentle ingredient that promotes cell regeneration and calms irritation.",
       3420

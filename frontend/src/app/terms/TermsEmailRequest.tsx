@@ -47,13 +47,13 @@ export default function TermsEmailRequest({
 
   return (
     <form
-      className="mt-3 space-y-3"
+      className="mt-3 space-y-2"
       onSubmit={handleSubmit}
       noValidate
       aria-live="polite"
     >
       <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+        <label className="text-xs font-semibold uppercase tracking-[0.2em] text-black/60">
           Email Address
         </label>
         <input
@@ -68,14 +68,15 @@ export default function TermsEmailRequest({
             }
           }}
           required
-          className="w-full rounded-full border border-white/20 bg-white/15 px-4 py-2.5 text-sm text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed"
+          className="mt-2 w-full rounded-[5px] lg:rounded-full border border-black/20 bg-white/15 px-4 py-2.5 text-sm text-white placeholder:text-white/50 focus:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed"
         />
       </div>
 
       <button
         type="submit"
         disabled={disabled}
-        className="w-full rounded-full border border-white/20 bg-[#fcd2b5] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#1f2d26] transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#ffe0c9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-[5px] lg:rounded-full border border-black bg-white px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.2em] text-[#1f2d26] transition 
+                  hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "success" ? "Sent!" : status === "loading" ? "Sending…" : "Email me the terms"}
       </button>

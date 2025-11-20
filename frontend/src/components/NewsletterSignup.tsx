@@ -23,6 +23,7 @@ export default function NewsletterSignup({
   variant = "full",
   inputProps,
 }: NewsletterSignupProps) {
+  const { className: inputClassName, ...restInputProps } = inputProps ?? {};
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -55,22 +56,29 @@ export default function NewsletterSignup({
   const sharedWrapper =
     variant === "compact"
       ? "w-full space-y-3"
-      : "mx-auto max-w-2xl text-center space-y-4 sm:space-y-6";
+      : "mx-auto max-w-[45rem] lg:max-w-2xl text-center space-y-4 sm:space-y-6 md:px-0";
 
   const formLayout =
     variant === "compact"
       ? "flex flex-col gap-3"
       : "flex flex-col sm:flex-row gap-3";
 
-  const inputClass =
-    "flex-1 rounded-[5px] lg:rounded-full border-2 border-black bg-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]";
+  const inputClass = [
+    "flex-1 rounded-[5px] lg:rounded-full border-2 border-black",
+    "bg-white px-4 py-2.5 sm:py-3 text-sm",
+    "text-[#102030] placeholder:text-[#8C9AAE]",
+    "shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]",
+    inputClassName ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const buttonClass =
-    "rounded-[5px] lg:rounded-full border-2 border-black bg-[#6A9AB0] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
+    "rounded-[5px] lg:rounded-full border-2 border-black bg-[#7db5d0] lg:bg-white/50  px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-black/80 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#7db5d0] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className={sharedWrapper} aria-live="polite" aria-atomic="true">
-      <div className="space-y-2 text-left sm:text-center">
+      <div className="space-y-2 text-left lg:text-center md:pt-3 lg:pt-0">
         {title ? (
           <h2 className={variant === "compact" ? "text-xl font-bold text-[#3C5B6F]" : "text-xl sm:text-2xl font-bold text-[#3C5B6F]"}>
             {title}
@@ -97,7 +105,7 @@ export default function NewsletterSignup({
           placeholder="your.email@example.com"
           aria-invalid={status === "error"}
           className={inputClass}
-          {...inputProps}
+          {...restInputProps}
         />
         <button type="submit" disabled={status === "loading"} className={buttonClass}>
           {status === "loading" ? "Subscribing…" : buttonLabel}

@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import hmac
 
 from datetime import date
 from typing import Optional, Any
@@ -8,6 +10,7 @@ from django.core.validators import FileExtensionValidator, validate_email
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from .validators import validate_fact_image_size, validate_image_mime_type
 
 # Create your models here.
 class UserProfile(models.Model):
@@ -19,6 +22,12 @@ class UserProfile(models.Model):
         FEMALE = "female", "Female"
         MALE = "male", "Male"
         PREFER_NOT = "prefer_not", "Prefer not to say"
+
+    class Role(models.TextChoices):
+        ADMIN = "admin", "Administrator"
+        STAFF = "staff", "Staff"
+        READ_ONLY = "read_only", "Read-only"
+        MEMBER = "member", "Member"
     
     u_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, 
@@ -30,8 +39,25 @@ class UserProfile(models.Model):
     avatar_url = models.URLField(blank=True) # optional profile pic
     date_of_birth = models.DateField(null=True, blank=True) # dd/mm/yyyy
     gender = models.CharField(max_length=20, choices=Gender.choices, null=True, blank=True)
+    role = models.CharField(
+        max_length=32,
+        choices=Role.choices,
+        default=Role.MEMBER,
+        db_index=True,
+        help_text="RBAC role used for staff/admin protections."
+    )
     is_verified = models.BooleanField(default=False)
     google_sub = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Terms of Service."
+    )
+    privacy_policy_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the user accepted the Privacy Policy."
+    )
 
     #audit
     created_at = models.DateTimeField(auto_now_add=True)
@@ -63,6 +89,18 @@ class UserProfile(models.Model):
     def full_name(self):
         n = f"{self.user.first_name} {self.user.last_name}".strip()
         return n or self.user.username
+
+    def has_role(self, *roles: str) -> bool:
+        """
+        Convenience helper for RBAC checks.
+        """
+        if not roles:
+            return False
+        try:
+            current = (self.role or "").lower()
+        except AttributeError:
+            return False
+        return current in {r.lower() for r in roles}
     
 
 class SkinProfile(models.Model):
@@ -158,7 +196,11 @@ class SkinFactTopic(models.Model):
     section = models.CharField(max_length=20, choices=Section.choices)
     hero_image = models.ImageField(
         upload_to="facts/hero/",
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
         blank=True,
         help_text="Supported formats: JPG, PNG, WebP, AVIF. WebP and AVIF provide better compression and quality."
     )
@@ -223,7 +265,11 @@ class SkinFactContentBlock(models.Model):
         upload_to="facts/blocks/",
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"])],
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "webp", "avif"]),
+            validate_image_mime_type,
+            validate_fact_image_size,
+        ],
         help_text="Image for image blocks. Supported formats: JPG, PNG, WebP, AVIF. Leave empty if this is a text block."
     )
 
@@ -359,3 +405,48 @@ class WishlistItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} - {getattr(self.product, 'name', 'product')}"
+
+
+class APIClient(models.Model):
+    """
+    Represents an external integration authenticated via API key.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=120)
+    contact_email = models.EmailField(blank=True)
+    key_prefix = models.CharField(max_length=12, db_index=True)
+    key_hash = models.CharField(max_length=128, unique=True)
+    allowed_ips = models.JSONField(default=list, blank=True, help_text="Optional list of IPs or CIDR ranges.")
+    rate_limit_per_minute = models.PositiveIntegerField(
+        default=120,
+        help_text="Maximum requests per minute for this key. Set to 0 for unlimited.",
+    )
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+        indexes = [
+            models.Index(fields=["key_prefix"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.key_prefix}…)"
+
+    def set_key(self, raw_key: str) -> None:
+        if not raw_key:
+            raise ValueError("raw_key is required")
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        self.key_hash = digest
+        self.key_prefix = raw_key[:8]
+
+    def check_key(self, raw_key: str) -> bool:
+        if not raw_key or not self.key_hash:
+            return False
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return hmac.compare_digest(digest, self.key_hash)

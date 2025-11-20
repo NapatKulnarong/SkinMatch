@@ -25,6 +25,8 @@ jobs:
       DATABASE_URL: postgres://skinuser:skinpass@localhost:5432/skinmatch
       DJANGO_SECRET_KEY: dummy
       DJANGO_DEBUG: "False"
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      API_REQUIRE_KEY_FOR_ANONYMOUS: "False"
       GOOGLE_TEST_MODE: "1"    
       SITE_ID: 2
 
@@ -47,8 +49,8 @@ jobs:
       - name: Run migrations
         run: python backend/manage.py migrate
 
-      - name: Run unit tests 
-        run: python backend/manage.py test core -v 2
+      - name: Run backend pytest suite
+        run: cd backend && pytest
 
       - name: Security scan (Bandit)
         run: bandit -r backend -q || true

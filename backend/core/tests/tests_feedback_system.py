@@ -98,3 +98,32 @@ class QuizFeedbackAPITests(TestCase):
         self.assertEqual(named_entry["initials"], "JD")
         self.assertEqual(named_entry["location"], "Chiang Mai")
         self.assertEqual(named_entry["message"], "Loved the ingredient insights!")
+
+    def test_feedback_sanitizes_message_and_metadata(self):
+        payload = {
+            "session_id": str(self.session.id),
+            "rating": 4,
+            "message": "  <b>Glow</b> & <script>alert('x')</script> shine  ",
+            "metadata": {
+                "display_name": "<img src=x onerror=alert(1)>Glow Getter</img>",
+                "location": " <i>Bangkok</i> ",
+                "badge": "<b>Dewy</b>",
+            },
+        }
+
+        response = self.client.post("/api/quiz/feedback", data=payload, format="json")
+        self.assertEqual(response.status_code, 200)
+
+        record = QuizFeedback.objects.get(session=self.session)
+        self.assertEqual(record.message, "Glow & alert('x') shine")
+        self.assertEqual(record.metadata.get("display_name"), "Glow Getter")
+        self.assertEqual(record.metadata.get("location"), "Bangkok")
+        self.assertEqual(record.metadata.get("badge"), "Dewy")
+
+        highlights = self.client.get("/api/quiz/feedback/highlights", {"limit": 1}).json()
+        self.assertEqual(len(highlights), 1)
+        entry = highlights[0]
+        self.assertEqual(entry["message"], "Glow & alert('x') shine")
+        self.assertEqual(entry["display_name"], "Glow Getter")
+        self.assertEqual(entry["location"], "Bangkok")
+        self.assertEqual(entry["badge"], "Dewy")

@@ -41,7 +41,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
   subtitle: raw.subtitle ?? null,
   excerpt: raw.excerpt ?? null,
   section: raw.section,
-  heroImageUrl: resolveMediaUrl(raw.hero_image_url),
+  heroImageUrl: resolveMediaUrl(raw.hero_image_url, { keepBackendOrigin: true }),
   heroImageAlt: raw.hero_image_alt ?? null,
   viewCount: raw.view_count ?? 0,
 });
@@ -49,7 +49,7 @@ const mapSummary = (raw: RawFactTopicSummary): FactTopicSummary => ({
 const mapBlock = (raw: RawFactContentBlock): FactContentBlock => ({
   order: raw.order,
   content: raw.content ?? null,
-  imageUrl: resolveMediaUrl(raw.image_url),
+  imageUrl: resolveMediaUrl(raw.image_url, { keepBackendOrigin: true }),
   imageAlt: raw.image_alt ?? null,
 });
 

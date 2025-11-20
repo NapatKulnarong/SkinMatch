@@ -9,11 +9,9 @@ import {
   type IngredientSearchItem,
   type IngredientSummary,
 } from "@/lib/api.ingredients";
-import ProductCard from "./ProductCard";
-import { MobileProductGrid } from "./MobileProductGrid";
+import ProductResults from "./ProductResults";
 
 const SEARCH_RESULT_LIMIT = 60;
-const DESKTOP_PRODUCT_LIMIT = 30;
 
 type SearchParamsShape = Record<string, string | string[] | undefined> | URLSearchParams;
 
@@ -197,12 +195,7 @@ function IngredientResultSection({ item }: SectionProps) {
       </div>
 
       <div className="mt-4 sm:mt-6">
-        <MobileProductGrid products={products} />
-        <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-3 sm:gap-5">
-          {products.slice(0, DESKTOP_PRODUCT_LIMIT).map((product) => (
-            <ProductCard key={product.productId} product={product} />
-          ))}
-        </div>
+        <ProductResults products={products} />
       </div>
     </section>
   );

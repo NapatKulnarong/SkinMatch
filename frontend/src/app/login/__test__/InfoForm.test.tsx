@@ -17,6 +17,19 @@ jest.mock("next/navigation", () => ({
   usePathname: jest.fn(() => "/login"),
 }));
 
+jest.mock("@/lib/api.auth", () => ({
+  signup: jest.fn(),
+  checkUsername: jest.fn(),
+  login: jest.fn(),
+  fetchProfile: jest.fn(),
+  createAdminSession: jest.fn(),
+}));
+
+const { signup, checkUsername } = jest.requireMock("@/lib/api.auth") as {
+  signup: jest.Mock;
+  checkUsername: jest.Mock;
+};
+
 describe("LoginPage - Signup Validation", () => {
   // Suppress console logs during tests
   beforeAll(() => {
@@ -51,12 +64,28 @@ describe("LoginPage - Signup Validation", () => {
     dobInput: document.querySelector('input[name="dob"]') as HTMLInputElement,
   });
 
+  const setCheckboxState = async (testId: string, shouldBeChecked: boolean) => {
+    const checkbox = screen.getByTestId(testId) as HTMLInputElement;
+    if (!checkbox) return;
+    if (checkbox.checked === shouldBeChecked) return;
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+  };
+
   // Helper: fill form with valid data
-  const fillValidForm = async (overrides?: {
-    password?: string;
-    confirmPassword?: string;
-    dob?: string;
-  }) => {
+  const fillValidForm = async (
+    overrides?: {
+      password?: string;
+      confirmPassword?: string;
+      dob?: string;
+    },
+    consentOverrides?: {
+      terms?: boolean;
+      privacy?: boolean;
+    }
+  ) => {
     const { passwordInput, confirmInput, dobInput } = getFormElements();
     
     const defaults = {
@@ -74,10 +103,25 @@ describe("LoginPage - Signup Validation", () => {
       fireEvent.change(passwordInput, { target: { value: values.password } });
       fireEvent.change(confirmInput, { target: { value: values.confirmPassword } });
     });
+
+    const consentSettings = {
+      terms: consentOverrides?.terms ?? true,
+      privacy: consentOverrides?.privacy ?? true,
+    };
+
+    await setCheckboxState("accept-terms", consentSettings.terms);
+    await setCheckboxState("accept-privacy", consentSettings.privacy);
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (signup as jest.Mock).mockReset();
+    (checkUsername as jest.Mock).mockReset();
+    (signup as jest.Mock).mockResolvedValue({ ok: true, message: "Signup successful" });
+    (checkUsername as jest.Mock).mockResolvedValue({
+      available: true,
+      message: "Username is available",
+    });
   });
 
   describe("Password validation", () => {
@@ -93,7 +137,7 @@ describe("LoginPage - Signup Validation", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/password must be at least 8 characters/i)
+          screen.getByText(/at least 8 characters/i)
         ).toBeInTheDocument();
       });
     });
@@ -171,16 +215,78 @@ describe("LoginPage - Signup Validation", () => {
       });
 
       await waitFor(() => {
-        expect(
-          screen.queryByText(/password must be at least 8 characters/i)
-        ).not.toBeInTheDocument();
+        const minLengthRequirement = screen.getByText(/at least 8 characters/i);
+        expect(minLengthRequirement).toHaveClass("font-medium");
         expect(
           screen.queryByText(/passwords do not match/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByText(/you must be at least 13 years old/i)
-        ).not.toBeInTheDocument();
+        screen.queryByText(/you must be at least 13 years old/i)
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Consent validation", () => {
+    it("should require Terms of Service acceptance", async () => {
+      await renderSignupForm();
+      await fillValidForm(undefined, { terms: false, privacy: true });
+
+      const { confirmButton } = getFormElements();
+
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/you must agree to the terms of service/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should require Privacy Policy acceptance", async () => {
+      await renderSignupForm();
+      await fillValidForm(undefined, { terms: true, privacy: false });
+
+      const { confirmButton } = getFormElements();
+
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/you must agree to the privacy policy/i)
+        ).toBeInTheDocument();
       });
     });
   });
+  
+  describe("Username availability + backend collision", () => {
+    it("shows username taken message when backend rejects duplicate username", async () => {
+      jest.useFakeTimers();
+      await renderSignupForm();
+      await fillValidForm();
+      const usernameInput = screen.getByPlaceholderText("Pick a username");
+      await act(async () => {
+        fireEvent.change(usernameInput, { target: { value: "glowgetter" } });
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+      await waitFor(() => {
+        expect(checkUsername).toHaveBeenCalledWith("glowgetter");
+      });
+      (signup as jest.Mock).mockRejectedValueOnce(new Error("Username already taken"));
+      const { confirmButton } = getFormElements();
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+      await waitFor(() => {
+        expect(screen.getAllByText(/username already taken/i).length).toBeGreaterThan(0);
+      });
+      jest.useRealTimers();
+    });
+  });
+});
 });

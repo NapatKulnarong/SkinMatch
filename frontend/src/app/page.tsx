@@ -6,15 +6,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, MagnifyingGlassIcon, SparklesIcon } from "@heroicons/react/24/solid";
+import { ArrowRightIcon, MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { GlobeAltIcon } from "@heroicons/react/24/outline";
 
 import { StarIcon } from "@heroicons/react/24/solid";
-import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import { ProductScanner } from "@/components/ProductScanner";
+import { EnvironmentAlertPanel } from "@/components/EnvironmentAlertPanel";
 import { TRENDING_INGREDIENTS } from "@/constants/ingredients";
 import { fetchIngredientSuggestions, type IngredientSuggestion } from "@/lib/api.ingredients";
 import {
@@ -121,7 +121,9 @@ function QuizCtaButton() {
     <Link
       href="/quiz"
       onClick={handleClick}
-      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-4 sm:px-8 py-2 sm:py-4 text-xs sm:text-base font-semibold text-black shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
+      className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full border-2 border-black bg-white px-4 sm:px-8 py-2 sm:py-4 text-xs sm:text-base font-semibold text-black 
+                shadow-[0_6px_0_rgba(0,0,0,0.35)] transition-all duration-150 ease-out hover:-translate-y-px hover:bg-[#ffe9a5] hover:shadow-[0_8px_0_rgba(0,0,0,0.35)] 
+                active:translate-y-[2px] active:bg-[#ffe2a6] active:shadow-[0_2px_0_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-4 focus-visible:ring-black/10 w-full sm:w-auto"
     >
       <span className="truncate">{buttonLabel}</span>
       <ArrowRightIcon className="hidden md:block h-4 w-4 sm:h-6 sm:w-6 flex-shrink-0" />
@@ -453,8 +455,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] text-gray-900">
-      <Navbar />
-      <PageContainer className="relative flex flex-col gap-6 sm:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
+      <PageContainer className="relative flex flex-col gap-6 sm:gap-8 md:gap-8 lg:gap-12 pt-43 sm:pt-32 pb-8 sm:pb-16">
         {/* Hero Section */}
         <section className="overflow-hidden rounded-[24px] sm:rounded-[32px] border-2 border-black bg-[#FFECC0] shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.35)]">
           {/* Mobile Layout: Mascot left, content right */}
@@ -499,12 +500,12 @@ export default function HomePage() {
                 width={360}
                 height={270}
                 priority
-                className="h-auto w-full max-w-sm"
+                className="h-auto w-full max-w-xs"
               />
             </div>
 
             <div className="space-y-6 text-left">
-              <div className="space-y-3 lg:space-y-8 lg:pt-3">
+              <div className="space-y-2 lg:space-y-4 lg:pt-3">
                 <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-gray-600">
                   Personalized skincare insights
                 </p>
@@ -553,7 +554,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <form onSubmit={handleIngredientSearch} className="relative">
+            <form onSubmit={handleIngredientSearch} className="relative mx-auto max-w-2xl w-full">
               <input
                 type="text"
                 value={searchQuery}
@@ -638,13 +639,13 @@ export default function HomePage() {
             </form>
 
           <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:overflow-visible sm:gap-2">
-            <span className="hidden md:block text-xs font-semibold text-[#2d4a2b]/60">Trending:</span>
             {TRENDING_INGREDIENTS.map((ingredient) => (
               <button
                 key={ingredient.name}
                 type="button"
                 onClick={() => handleTrendingSelect(ingredient.name)}
-                className="flex-none rounded-full border border-black/20 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
+                className="flex-none rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
+                          hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
               >
                 {ingredient.name}
               </button>
@@ -656,6 +657,9 @@ export default function HomePage() {
         {/* Product Scanner */}
         <ProductScanner />
 
+        {/* Environment Alerts */}
+        <EnvironmentAlertPanel />
+
         {/* Testimonials */}
         <section className="space-y-4 sm:space-y-6">
           <div className="lg:text-center space-y-2">
@@ -665,17 +669,17 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 sm:grid sm:snap-none sm:overflow-visible sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pt-1 pb-3">
             {successStories.map((story, index) => {
               const ratingValue = Math.max(0, Math.min(5, Math.round(story.rating ?? 5)));
               const key = story.id ?? `${story.name}-${index}`;
               return (
               <article
                 key={key}
-                className="flex-none w-[260px] sm:w-auto sm:flex-auto rounded-3xl sm:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)] snap-start overflow-hidden"
+                className="flex-none w-[260px] sm:w-[398px] rounded-[28px] border-2 border-black bg-gradient-to-br from-white to-[#fef5f5] p-5 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:shadow-[6px_8px_0_rgba(0,0,0,0.25)] snap-start overflow-hidden"
               >
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+                <div className="flex h-full flex-col space-y-3 sm:space-y-4">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-black bg-gradient-to-br from-[#f8d1d4] to-[#d8949a] text-sm sm:text-base font-bold text-[#5a2a3a]">
                         {story.initials}
@@ -685,7 +689,7 @@ export default function HomePage() {
                         <p className="text-[10px] sm:text-xs text-[#3C3D37]/60 truncate">{story.location}</p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5 flex-shrink-0 pr-1 sm:pr-0 sm:self-start">
+                    <div className="flex gap-0.5 ml-12 sm:ml-14">
                       {Array.from({ length: ratingValue }).map((_, i) => (
                         <StarIcon key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-[#f59e0b]" />
                       ))}
@@ -696,7 +700,7 @@ export default function HomePage() {
                     &ldquo;{story.text}&rdquo;
                   </p>
 
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
+                  <div className="mt-auto inline-flex max-w-max items-center gap-2 rounded-full border border-[#4a6b47]/20 bg-[#e8f4e3] px-3 py-1">
                     <span className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[#4a6b47]" />
                     <span className="text-[10px] sm:text-xs font-semibold text-[#4a6b47]">
                       {story.badge}
@@ -710,7 +714,7 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-5 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <NewsletterSignup
             source="homepage"
             variant="full"

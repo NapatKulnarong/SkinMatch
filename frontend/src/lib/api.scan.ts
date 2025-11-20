@@ -9,29 +9,6 @@ export type ScanLabelResult = {
   confidence: number;
 };
 
-const getApiBase = () => {
-  const baseFromClient = process.env.NEXT_PUBLIC_API_BASE || "/api";
-  const isServer = typeof window === "undefined";
-
-  if (isServer) {
-    let fromEnv =
-      process.env.INTERNAL_API_BASE ||
-      process.env.API_BASE ||
-      baseFromClient.replace(
-        /^https?:\/\/localhost(:\d+)?/,
-        (_match, port = ":8000") => `http://backend${port}`
-      );
-
-    if (fromEnv.startsWith("/")) {
-      fromEnv = `http://backend:8000${fromEnv}`;
-    }
-
-    return fromEnv.replace(/\/+$/, "");
-  }
-
-  return baseFromClient.replace(/\/+$/, "");
-};
-
 export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
   const base = resolveApiBase();
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchProfile,
@@ -9,6 +10,7 @@ import {
   signup as signupRequest,
   createAdminSession,
   requestPasswordReset,
+  checkUsername,
 } from "@/lib/api.auth";
 import {
   clearSession,
@@ -18,8 +20,12 @@ import {
 } from "@/lib/auth-storage";
 import { redirectTo } from "./redirect";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { UsernameRequirements } from "@/components/UsernameRequirements";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
+
+const isModeValue = (value: string | null): value is Mode =>
+  value === "intro" || value === "signup" || value === "login" || value === "forgot";
 
 type SignupState = {
   name: string;
@@ -30,6 +36,8 @@ type SignupState = {
   confirmPassword: string;
   dob: string;
   gender: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
 };
 
 type LoginState = {
@@ -48,6 +56,8 @@ const initialSignup: SignupState = {
   confirmPassword: "",
   dob: "",
   gender: "",
+  acceptTerms: false,
+  acceptPrivacy: false,
 };
 
 const initialLogin: LoginState = {
@@ -97,7 +107,10 @@ export { redirectTo } from "./redirect";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>("intro");
+  const [mode, setMode] = useState<Mode>(() => {
+    const initialMode = searchParams.get("mode");
+    return isModeValue(initialMode) ? initialMode : "intro";
+  });
   const [signup, setSignup] = useState<SignupState>(initialSignup);
   const [login, setLogin] = useState<LoginState>(initialLogin);
   const [signupError, setSignupError] = useState<string | null>(null);
@@ -109,6 +122,9 @@ function LoginContent() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState<ForgotStatus>("idle");
   const [forgotError, setForgotError] = useState<string | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const usernameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const allParams = Object.fromEntries(searchParams.entries()) as Record<string, string>;
@@ -169,7 +185,34 @@ function LoginContent() {
     }
   }, [searchParams, router]);
 
+  useEffect(() => {
+    const fromParam = searchParams.get("from");
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (fromParam) {
+      sessionStorage.setItem("login_from", fromParam);
+    }
+  }, [searchParams]);
+
+  const syncModeInQuery = (next: Mode, { replace = false }: { replace?: boolean } = {}) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "intro") {
+      params.delete("mode");
+    } else {
+      params.set("mode", next);
+    }
+    const qs = params.toString();
+    const url = `/login${qs ? `?${qs}` : ""}`;
+    if (replace) {
+      router.replace(url, { scroll: false });
+    } else {
+      router.push(url, { scroll: false });
+    }
+  };
+
   const changeMode = (next: Mode) => {
+    const previousMode = mode;
     setMode(next);
     setSignupError(null);
     setLoginError(null);
@@ -177,7 +220,47 @@ function LoginContent() {
     setForgotEmail("");
     setForgotStatus("idle");
     setForgotError(null);
+    setUsernameAvailable(null);
+    setUsernameChecking(false);
+    
+    // Clear username check timeout
+    if (usernameCheckTimeoutRef.current) {
+      clearTimeout(usernameCheckTimeoutRef.current);
+    }
+    
+    const shouldReplaceHistory = next === previousMode;
+    syncModeInQuery(next, { replace: shouldReplaceHistory });
   };
+
+  const lastSearchQueryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentQuery =
+      typeof searchParams?.toString === "function" ? searchParams.toString() : "";
+    if (currentQuery === lastSearchQueryRef.current) {
+      return;
+    }
+    lastSearchQueryRef.current = currentQuery;
+    const nextMode = searchParams.get("mode");
+    setMode((prev) => {
+      if (isModeValue(nextMode) && nextMode !== prev) {
+        return nextMode;
+      }
+      if (!nextMode && prev !== "intro") {
+        return "intro";
+      }
+      return prev;
+    });
+  }, [searchParams]);
+
+  // Cleanup username check timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeoutRef.current) {
+        clearTimeout(usernameCheckTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
@@ -240,6 +323,52 @@ function LoginContent() {
   ) => {
     const { name, value } = e.target;
     setSignup((prev) => ({ ...prev, [name]: value }));
+    
+    // Real-time username validation
+    if (name === "username") {
+      setUsernameAvailable(null);
+      
+      // Clear previous timeout
+      if (usernameCheckTimeoutRef.current) {
+        clearTimeout(usernameCheckTimeoutRef.current);
+      }
+      
+      const trimmedUsername = value.trim();
+      
+      // Basic validation
+      if (!trimmedUsername) {
+        setUsernameAvailable(null);
+        setUsernameChecking(false);
+        return;
+      }
+      
+      if (trimmedUsername.length < 3) {
+        setUsernameAvailable(false);
+        setUsernameChecking(false);
+        return;
+      }
+      
+      // Debounce the API call
+      setUsernameChecking(true);
+      usernameCheckTimeoutRef.current = setTimeout(async () => {
+        try {
+          const result = await checkUsername(trimmedUsername);
+          setUsernameAvailable(result.available);
+        } catch (error) {
+          console.error("Username check failed:", error);
+          setUsernameAvailable(false);
+        } finally {
+          setUsernameChecking(false);
+        }
+      }, 500); // 500ms debounce
+    }
+  };
+
+  const onSignupCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, checked } = e.target;
+    setSignup((prev) => ({ ...prev, [name]: checked }));
   };
 
   const onLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,6 +433,16 @@ function LoginContent() {
     }
   }
 
+    if (!signup.acceptTerms) {
+      setSignupError("You must agree to the Terms of Service to continue.");
+      return;
+    }
+
+    if (!signup.acceptPrivacy) {
+      setSignupError("You must agree to the Privacy Policy to continue.");
+      return;
+    }
+
     setSignupLoading(true);
     try {
       await signupRequest({
@@ -315,6 +454,8 @@ function LoginContent() {
         confirm_password: signup.confirmPassword,
         date_of_birth: formattedDob,
         gender: signup.gender || undefined,
+        accept_terms_of_service: signup.acceptTerms,
+        accept_privacy_policy: signup.acceptPrivacy,
       });
 
       const loginResponse = await loginRequest({
@@ -335,6 +476,9 @@ function LoginContent() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Signup failed. Please try again.";
       setSignupError(message);
+      if (typeof message === "string" && message.toLowerCase().includes("username already")) {
+        setUsernameAvailable(false);
+      }
     } finally {
       setSignupLoading(false);
     }
@@ -573,6 +717,12 @@ function LoginContent() {
                     className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black text-xs lg:text-base focus:outline-none placeholder:text-gray-600"
                     placeholder="Pick a username"
                   />
+                  <div className="mt-[0.5px] sm:hidden">
+                    <UsernameRequirements
+                      isAvailable={usernameAvailable}
+                      isChecking={usernameChecking}
+                    />
+                  </div>
                 </Field>
 
                 <Field label="Email">
@@ -585,6 +735,13 @@ function LoginContent() {
                     placeholder="you@example.com"
                   />
                 </Field>
+
+                <div className="hidden sm:block sm:col-span-2 mt-[2px]">
+                  <UsernameRequirements
+                    isAvailable={usernameAvailable}
+                    isChecking={usernameChecking}
+                  />
+                </div>
 
                 <Field label="Password" colSpan={2}>
                   <input
@@ -611,6 +768,44 @@ function LoginContent() {
                     placeholder="Re-enter password"
                   />
                 </Field>
+              </div>
+
+              <div className="mt-4 space-y-3 rounded-2xl border-2 border-black bg-white/90 p-4">
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptTerms"
+                    checked={signup.acceptTerms}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-terms"
+                  />
+                  <span>
+                    I agree to the{" "}
+                    <Link href="/terms" className="underline">
+                      Terms of Service
+                    </Link>
+                    {" "}and understand that violating the terms may lead to account suspension.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 text-xs font-semibold text-[#2C2533] sm:text-sm">
+                  <input
+                    type="checkbox"
+                    name="acceptPrivacy"
+                    checked={signup.acceptPrivacy}
+                    onChange={onSignupCheckboxChange}
+                    className="mt-1 h-4 w-4 rounded border-2 border-black text-[#6A4BB3] focus:ring-2 focus:ring-[#6A4BB3]"
+                    data-testid="accept-privacy"
+                  />
+                  <span>
+                    I acknowledge the{" "}
+                    <Link href="/privacy" className="underline">
+                      Privacy Policy
+                    </Link>
+                    {" "}and consent to SkinMatch processing my data to provide personalized skincare guidance.
+                  </span>
+                </label>
               </div>
 
               {signupError && (

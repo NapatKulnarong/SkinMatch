@@ -61,7 +61,10 @@ const backendLikeOrigins = (() => {
 })();
 
 export const resolveApiBase = () => {
-  const baseFromClient = stripTrailingSlash(process.env.NEXT_PUBLIC_API_BASE || "/api");
+  const versionFallback = process.env.NEXT_PUBLIC_API_VERSION || "v1";
+  const baseFromClient = stripTrailingSlash(
+    process.env.NEXT_PUBLIC_API_BASE || `/api/${versionFallback}`
+  );
   const isServer = typeof window === "undefined";
 
   if (!isServer) {
@@ -87,7 +90,44 @@ export const resolveApiBase = () => {
   return stripTrailingSlash(fromEnv);
 };
 
-export const resolveMediaUrl = (value?: string | null): string | null => {
+type MediaOptions = {
+  keepBackendOrigin?: boolean;
+};
+
+const resolveMediaBase = () => {
+  const candidates = [
+    process.env.NEXT_PUBLIC_MEDIA_BASE,
+    process.env.NEXT_PUBLIC_BACKEND_URL,
+    process.env.BACKEND_URL,
+    process.env.INTERNAL_BACKEND_URL,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const parsed = new URL(candidate);
+      return stripTrailingSlash(parsed.origin);
+    } catch {
+      if (candidate.startsWith("http://") || candidate.startsWith("https://")) {
+        return stripTrailingSlash(candidate);
+      }
+    }
+  }
+  return null;
+};
+
+const isLocalhost = (hostname: string) =>
+  hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+
+const withMediaBase = (path: string) => {
+  const base = resolveMediaBase();
+  if (!base) {
+    return path;
+  }
+  return `${base}${path}`;
+};
+
+export const resolveMediaUrl = (value?: string | null, options?: MediaOptions): string | null => {
   if (!value) {
     return null;
   }
@@ -97,16 +137,30 @@ export const resolveMediaUrl = (value?: string | null): string | null => {
   }
 
   if (trimmed.startsWith("/")) {
+    if (options?.keepBackendOrigin) {
+      return withMediaBase(trimmed);
+    }
     return trimmed;
   }
 
   try {
     const parsed = new URL(trimmed);
     if (backendLikeOrigins.has(parsed.origin)) {
-      return parsed.pathname + parsed.search;
+      const rebuilt = parsed.pathname + parsed.search;
+      if (options?.keepBackendOrigin) {
+        if (isLocalhost(parsed.hostname)) {
+          return withMediaBase(rebuilt);
+        }
+        return `${parsed.protocol}//${parsed.host}${rebuilt}`;
+      }
+      return rebuilt;
     }
     return trimmed;
   } catch {
-    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    if (options?.keepBackendOrigin) {
+      return withMediaBase(normalized);
+    }
+    return normalized;
   }
 };

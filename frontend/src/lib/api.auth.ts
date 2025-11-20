@@ -1,4 +1,5 @@
 import type { StoredProfile } from "./auth-storage";
+import { resolveApiBase } from "./apiBase";
 
 export type SignupPayload = {
   first_name: string;
@@ -9,6 +10,8 @@ export type SignupPayload = {
   confirm_password: string;
   date_of_birth?: string | null;
   gender?: string | null;
+  accept_terms_of_service: boolean;
+  accept_privacy_policy: boolean;
 };
 
 export type LoginPayload = {
@@ -22,7 +25,7 @@ export type ApiResponse<T> = {
   data?: T;
 };
 
-const API_BASE = "/api";
+const API_BASE = resolveApiBase();
 
 async function handleJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -59,6 +62,15 @@ async function handleJson<T>(res: Response): Promise<T> {
     throw new Error("Invalid server response");
   }
   return json;
+}
+
+export async function checkUsername(username: string) {
+  const res = await fetch(`${API_BASE}/auth/check-username`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  return handleJson<{ available: boolean; message: string }>(res);
 }
 
 export async function signup(payload: SignupPayload) {

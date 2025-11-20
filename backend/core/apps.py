@@ -7,4 +7,5 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         # connect signals
-        from . import signals
+        from . import signals  # noqa: F401
+        from . import security_signals  # noqa: F401

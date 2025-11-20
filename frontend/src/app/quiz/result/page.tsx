@@ -13,6 +13,7 @@ import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
+import { BeakerIcon, UserIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -309,17 +310,14 @@ export default function QuizResultPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FFF6E9] flex items-start justify-center pt-36 pb-20">
-      <section className="mx-auto w-full px-32 space-y-12" style={{ maxWidth: sectionMaxWidth }}>
-        <header className="text-center space-y-4">
-          <p className="uppercase tracking-[0.3em] text-xs font-semibold text-[#B9375D]">
-            Your Skin Match Snapshot
-          </p>
+    <main className="min-h-screen bg-[#F5EFE6] flex items-start justify-center pt-36 pb-20">
+      <section className="mx-auto lg:w-[85rem] px-32 space-y-12" style={{ maxWidth: sectionMaxWidth }}>
+        <header className="text-left space-y-4">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#3C3D37] drop-shadow-[0_2px_0_rgba(0,0,0,0.15)]">
-            Personalised routine roadmap
+            Personalised Routine Roadmap
           </h1>
-          <p className="text-base sm:text-lg text-[#3C3D37]/80 max-w-2xl mx-auto">
-            Here&apos;s a snapshot of your skin profile—plus the ingredient insights surfaced by our matcher.
+          <p className="text-base sm:text-lg text-[#3C3D37]/80">
+            Here&apos;s a snapshot of your SkinProfile—plus the ingredient insights surfaced by our matcher.
           </p>
           {error && (
             <p className="text-sm text-[#B9375D]">
@@ -330,12 +328,15 @@ export default function QuizResultPage() {
 
         <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
           <section className="space-y-8">
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f0f5ff] to-[#F5BABB] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your skin profile</h2>
+            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+              <div className="inline-flex gap-2 text-2xl text-[#35574a] items-center">
+                <UserIcon className="w-8 h-8" aria-hidden />
+                <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your Skin Profile</h2>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {profileItems.map((item) => (
                   <div key={item.label} className="rounded-2xl border border-black/60 bg-white/80 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#B95E82]/80 font-semibold">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#767394]/80 font-semibold">
                       {item.label}
                     </p>
                     <p className="mt-1 text-base font-semibold text-[#3C3D37]">{item.value}</p>
@@ -345,7 +346,10 @@ export default function QuizResultPage() {
             </div>
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-              <h2 className="text-2xl font-bold text-[#33574a]">Ingredients to prioritise</h2>
+            <div className="inline-flex gap-2 text-2xl text-[#33574a] font-bold items-center">
+              <BeakerIcon className="relative w-8 h-8" aria-hidden />
+              <h2 className="text-2xl">Ingredients to prioritise</h2>
+            </div>
               <ul className="space-y-4">
                 {ingredientHighlights.map((item) => (
                   <li key={item.ingredient} className="flex items-start gap-3">
@@ -362,20 +366,27 @@ export default function QuizResultPage() {
 
           <aside className="space-y-8">
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <h2 className="text-xl font-bold text-[#1b2a50]">Strategy notes</h2>
-              <ul className="mt-4 space-y-4">
-                {strategyNotes.map((insight) => (
-                  <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
-                    {insight}
-                  </li>
-                ))}
-              </ul>
+              <span className="inline-flex gap-2 text-2xl text-[#33574a]">
+              <span><BookOpenIcon className="w-8 h-8" /></span>
+              <span className="text-2xl font-bold">Strategy Notes</span>
+              </span>
+              <div className="mt-2 rounded-2xl border-2 border-black/40 border-dashed bg-white/40 p-4">
+                <ul className="space-y-4">
+                  {strategyNotes.map((insight) => (
+                    <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
+                      {insight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
               {!strategyNotes.length && (
                 <p className="text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>
               )}
+              <p className="mt-3 mr-1 text-sm text-[#1b2a50] text-right">powered by Gemini AI</p>
             </div>
+            
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
               <h2 className="text-2xl font-bold text-[#70410f]">Use with caution</h2>
@@ -638,10 +649,17 @@ function formatPriceLabel(price: number | null, currency?: string) {
   }
 }
 
+function formatProfileValue(value: string | null) {
+  if (!value) return "Not provided";
+  const trimmed = value.trim();
+  if (!trimmed) return "Not provided";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 function buildProfileItems(profile: QuizProfile | null, answers: Record<QuizAnswerKey, string | null>) {
   const items: { label: string; value: string }[] = [];
   const append = (label: string, value: string | null) => {
-    items.push({ label, value: value && value.trim() ? value : "Not provided" });
+    items.push({ label, value: formatProfileValue(value) });
   };
 
   if (profile) {
@@ -827,9 +845,9 @@ function renderRecommendations(
                       href={item.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                     >
-                      Shop
+                      Shopee
                     </a>
                   )}
                 </div>
@@ -995,14 +1013,14 @@ function ProductDetailModal({
                 )}
               </div>
 
-              {affiliateUrl && (
-                <a
-                  href={affiliateUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#B9375D] px-4 py-2 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
-                >
-                  Shop with affiliate
+        {affiliateUrl && (
+          <a
+            href={affiliateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#f97316] px-4 py-2 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)]"
+          >
+            Shopee
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M12.293 2.293a1 1 0 011.414 0l4 4A1 1 0 0117 8h-3v7a1 1 0 11-2 0V7a1 1 0 011-1h2.586L12.293 3.707a1 1 0 010-1.414z" />
                     <path d="M5 4a3 3 0 00-3 3v7a3 3 0 003 3h7a3 3 0 003-3v-1a1 1 0 112 0v1a5 5 0 01-5 5H5a5 5 0 01-5-5V7a5 5 0 015-5h1a1 1 0 110 2H5z" />

@@ -8,7 +8,7 @@ import PageContainer from "@/components/PageContainer";
 import { fetchTopicsBySection } from "@/lib/api.facts";
 import type { FactTopicSummary } from "@/lib/types";
 
-const FALLBACK_IMAGE = "/img/facts_img/serum_texture.jpg";
+const FALLBACK_IMAGE = "/img/facts_img/centella_ampoule.jpg";
 const PALETTE = [
   "from-[#e5f4ff] via-[#f0f9ff] to-white",
   "from-[#fef5ec] via-[#fff3f3] to-white",
@@ -50,21 +50,29 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
   return (
     <PageContainer as="section" id={sectionId} className="pt-6 lg:pt-3">
       <div className="sm:rounded-[32px] sm:border-2 sm:border-dashed sm:border-black sm:bg-white/50 sm:p-8 sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)]">
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-[#0f1f17] md:text-4xl">
+      <div className="md:mb-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl md:text-[28px] lg:text-3xl font-extrabold text-[#0f1f17] md:text-4xl">
             Ingredient Spotlight
           </h2>
-          <p className="hidden sm:block mt-2 text-[#0f1f17]/70 md:text-lg">
-            Swipe through the actives our community can’t stop talking about.
+          <p className="text-[#0f1f17]/70 md:text-lg">
+            Swipe through the actives our community cannot stop talking about.
           </p>
+          <div className="mt-2 flex gap-2 text-[10px] md:text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70 sm:flex-wrap lg:hidden">
+            <span className="hidden md:inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Ingredients that work
+            </span>
+            <span className="hidden md:inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+              Good match, good result
+            </span>
+          </div>
         </div>
 
-        <div className="flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
+        <div className="hidden lg:flex gap-2 text-xs uppercase tracking-[0.32em] text-[#3c4c3f]/70">
           <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
             Ingredients that work
           </span>
-          <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
+          <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-[#3c4c3f]/60 bg-white/60 px-3 py-1 font-semibold">
             Good match, good result
           </span>
         </div>

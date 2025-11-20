@@ -20,6 +20,7 @@ from django.http import Http404
 
 from core.models import SkinProfile
 from core.auth import decode_token
+from core.sanitizers import sanitize_plain_text, sanitize_metadata_dict
 from .models import (
     Answer,
     Choice,
@@ -497,20 +498,7 @@ def submit_feedback(request, payload: FeedbackIn):
 
 
 def _sanitize_feedback_metadata(metadata: dict | None) -> dict[str, str]:
-    if not isinstance(metadata, dict):
-        return {}
-    sanitized: dict[str, str] = {}
-    for key, value in metadata.items():
-        if value is None:
-            continue
-        key_str = str(key)
-        if isinstance(value, str):
-            cleaned = value.strip()
-            if cleaned:
-                sanitized[key_str] = cleaned
-        elif isinstance(value, (int, float)):
-            sanitized[key_str] = str(value)
-    return sanitized
+    return sanitize_metadata_dict(metadata)
 
 
 def _compose_feedback_message(raw_message: str | None, rating: int | None) -> str:
@@ -576,8 +564,12 @@ def list_feedback_highlights(request, limit: int = 6):
 
 
 def _serialize_feedback(feedback: QuizFeedback) -> dict:
-    metadata = _sanitize_feedback_metadata(feedback.metadata if isinstance(feedback.metadata, dict) else {})
-    display_name = (metadata.get("display_name") or metadata.get("name") or "").strip()
+    metadata = _sanitize_feedback_metadata(
+        feedback.metadata if isinstance(feedback.metadata, dict) else {}
+    )
+    display_name = sanitize_plain_text(
+        metadata.get("display_name") or metadata.get("name") or ""
+    )
 
     user = None
     if feedback.session_id:
@@ -595,14 +587,17 @@ def _serialize_feedback(feedback: QuizFeedback) -> dict:
         else:
             display_name = getattr(user, "username", "") or getattr(user, "email", "")
 
+    display_name = sanitize_plain_text(display_name)
     if not display_name:
         display_name = "SkinMatch member"
 
-    initials = (metadata.get("initials") or "").strip() or _initials_from_name(display_name)
-    location = (metadata.get("location") or "").strip() or None
-    badge = (metadata.get("badge") or "").strip() or None
+    initials = sanitize_plain_text(
+        metadata.get("initials") or ""
+    ) or _initials_from_name(display_name)
+    location = sanitize_plain_text(metadata.get("location") or "") or None
+    badge = sanitize_plain_text(metadata.get("badge") or "") or None
 
-    anonymous_flag = (metadata.get("anonymous") or "").strip().lower()
+    anonymous_flag = sanitize_plain_text(metadata.get("anonymous") or "").lower()
     is_anonymous = anonymous_flag in {"1", "true", "yes", "anon"}
 
     if is_anonymous:
@@ -617,7 +612,7 @@ def _serialize_feedback(feedback: QuizFeedback) -> dict:
             if isinstance(primary, list) and primary:
                 badge = str(primary[0])
 
-    message = feedback.message.strip()
+    message = sanitize_plain_text(feedback.message)
 
     return {
         "id": feedback.id,
@@ -748,40 +743,6 @@ def quiz_history(request):
     ]
 
 
-@router.delete("/history/{history_id}", response=HistoryDeleteAck)
-def delete_history_item(request, history_id: uuid.UUID):
-    user = _resolve_request_user(request)
-    if not user or not user.is_authenticated:
-        raise HttpError(401, "Authentication required")
-
-    profile = (
-        SkinProfile.objects.filter(user=user, id=history_id).first()
-        or SkinProfile.objects.filter(user=user, session_id=history_id).first()
-    )
-    if not profile:
-        raise HttpError(404, "Match history item not found")
-
-    was_latest = profile.is_latest
-    session = profile.session
-
-    with transaction.atomic():
-        profile.delete()
-
-        if session and session.user_id == user.id:
-            session.delete()
-
-        if was_latest:
-            replacement = (
-                SkinProfile.objects.filter(user=user)
-                .order_by("-created_at")
-                .first()
-            )
-            if replacement:
-                SkinProfile.objects.filter(pk=replacement.pk).update(is_latest=True)
-
-    return HistoryDeleteAck(ok=True, was_latest=was_latest)
-
-
 @router.get("/history/profile/{profile_id}", response=HistoryDetailOut)
 def history_profile_detail(request, profile_id: uuid.UUID):
     user = _resolve_request_user(request)
@@ -829,16 +790,26 @@ def delete_history_item(request, history_id: uuid.UUID):
     session = profile.session
     profile_id = profile.id
     session_id = session.id if session else None
+    was_latest = profile.is_latest
 
     with transaction.atomic():
         profile.delete()
         if session:
             session.delete()
+        if was_latest:
+            replacement = (
+                SkinProfile.objects.filter(user=user)
+                .order_by("-created_at")
+                .first()
+            )
+            if replacement:
+                SkinProfile.objects.filter(pk=replacement.pk).update(is_latest=True)
 
     return HistoryDeleteAck(
         ok=True,
         deleted_profile_id=profile_id,
         deleted_session_id=session_id,
+        was_latest=was_latest,
     )
 
 
@@ -1595,10 +1566,10 @@ def _serialize_review(review: ProductReview, current_user) -> ReviewOut:
         id=review.id,
         product_id=review.product_id,
         user_id=str(user.id),
-        user_display_name=display_name,
+        user_display_name=sanitize_plain_text(display_name),
         avatar_url=getattr(profile, "avatar_url", None),
         rating=review.rating,
-        comment=review.comment,
+        comment=sanitize_plain_text(review.comment),
         is_public=review.is_public,
         is_owner=is_owner,
         created_at=review.created_at,
