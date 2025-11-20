@@ -47,8 +47,8 @@ jobs:
       - name: Run migrations
         run: python backend/manage.py migrate
 
-      - name: Run unit tests 
-        run: python backend/manage.py test core -v 2
+      - name: Run backend pytest suite
+        run: cd backend && pytest
 
       - name: Security scan (Bandit)
         run: bandit -r backend -q || true
