@@ -1,15 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
 import { SkincareSearchBar } from "@/components/SkincareSearchBar";
-import { SkincareProductSummaryCard } from "@/components/SkincareProductSummaryCard";
 import {
   fetchTopSkincareProducts,
   searchSkincareProducts,
   type SkincareProductSummary,
 } from "@/lib/api.products";
+import { TopProductsSlider } from "./_TopProductsSlider";
+import { TrendingSkincareHub } from "./_TrendingSkincareHub";
 
 type SearchParamsShape = Record<string, string | string[] | undefined> | URLSearchParams;
 type AwaitableSearchParams =
@@ -77,46 +79,37 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
       <Navbar />
       <PageContainer className="pt-36 lg:pt-32 pb-16 space-y-10">
         <section className="rounded-[32px] border-2 border-black bg-white p-6 lg:p-10 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-5">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
-                Your new skincare control center
-              </p>
-              <h1 className="text-3xl sm:text-4xl font-black text-[#1f2d26]">
-                Discover the SkinMatch Skincare Hub
-              </h1>
-              <p className="text-base text-[#1f2d26]/70 max-w-2xl">
-                Search by product, compare reviews, and shop smarter. The hub
-                blends ingredient intelligence with real community feedback so
-                you can trust every addition to your routine.
-              </p>
-              <div className="flex flex-wrap gap-3 pt-1">
-                <Link
-                  href="#top-picks"
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#1f2d26] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.4)] transition hover:-translate-y-0.5"
-                >
-                  Jump to top products
-                </Link>
-                <Link
-                  href="#reviews"
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#1f2d26] shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5"
-                >
-                  Share a review
-                </Link>
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
+            <div className="space-y-6">
+              <div className="space-y-5">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+                  Your new skincare control center
+                </p>
+                <h1 className="text-3xl sm:text-4xl font-black text-[#1f2d26]">
+                  Discover the Skincare Hub
+                </h1>
+                <p className="text-base text-[#1f2d26]/70 max-w-xl">
+                  Search by product, compare reviews, and shop smarter. The hub
+                  blends ingredient intelligence with real community feedback so
+                  you can trust every addition to your routine.
+                </p>
+              </div>
+              <div className="max-w-xl">
+                <SkincareSearchBar
+                  initialQuery={queryValue}
+                  buttonLabel="Search hub"
+                  suggestionLabel="Popular picks"
+                  showHelperHint={false}
+                />
               </div>
             </div>
-            <div className="rounded-[28px] border-2 border-black bg-[#f7fbf3] p-4 shadow-[0_4px_0_rgba(0,0,0,0.2)]">
-              <p
-                id="skincare-hub-search-label"
-                className="pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#1f2d26]/60"
-              >
-                Search skincare
-              </p>
-              <SkincareSearchBar
-                initialQuery={queryValue}
-                buttonLabel="Search hub"
-                suggestionLabel="Popular picks"
-                showHelperHint={false}
+            <div className="hidden lg:flex lg:items-center lg:justify-center ps-13">
+              <Image
+                src="/img/mascot/matchy_lab_2.png"
+                alt="Matchy Lab"
+                width={550}
+                height={550}
+                className="w-auto h-auto max-w-[480px] object-contain"
               />
             </div>
           </div>
@@ -139,15 +132,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
             </p>
           </div>
           {topProducts.length ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {topProducts.map((product) => (
-                <SkincareProductSummaryCard
-                  key={product.productId}
-                  product={product}
-                  variant="horizontal"
-                />
-              ))}
-            </div>
+            <TopProductsSlider products={topProducts} />
           ) : (
             <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70">
               We&apos;re gathering the latest reviews. Check back soon for fresh
@@ -156,49 +141,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
           )}
         </section>
 
-        <section
-          id="search-results"
-          className="space-y-4 rounded-[28px] border-2 border-black bg-white/80 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
-        >
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
-              Explore the library
-            </p>
-            <h2 className="text-2xl font-black text-[#1f2d26]">
-              {query ? (
-                <>
-                  Search results for <span className="text-[#1f2d26]/70">“{query}”</span>
-                </>
-              ) : (
-                "Search for any skincare product"
-              )}
-            </h2>
-          </div>
-          {query ? (
-            searchError ? (
-              <div className="rounded-2xl border-2 border-[#b42318] bg-[#ffe9e6] px-4 py-6 text-sm text-[#5c1c15]">
-                {searchError}
-              </div>
-            ) : hasSearchResults ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {searchResults.map((product) => (
-                  <SkincareProductSummaryCard key={product.productId} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70">
-                We didn&apos;t find any products mentioning “{query}”. Try a brand
-                name, product nickname, or jump to the top list above.
-              </div>
-            )
-          ) : (
-            <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70">
-              Start typing above to see search results. You can enter a full
-              product name, a hero ingredient, or a brand—suggestions appear in
-              real time as you type.
-            </div>
-          )}
-        </section>
+        <TrendingSkincareHub />
 
         <section
           id="reviews"
