@@ -25,6 +25,7 @@ jobs:
       DATABASE_URL: postgres://skinuser:skinpass@localhost:5432/skinmatch
       DJANGO_SECRET_KEY: dummy
       DJANGO_DEBUG: "False"
+      DJANGO_SECURE_SSL_REDIRECT: "False"
       GOOGLE_TEST_MODE: "1"    
       SITE_ID: 2
 
