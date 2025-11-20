@@ -9,7 +9,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Avg, Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
@@ -55,6 +55,8 @@ from .schemas import (
     IngredientSuggestionResponse,
     MatchPickOut,
     ProductDetailOut,
+    ProductSearchOut,
+    ProductSuggestionResponse,
     QuestionOut,
     QuizResultSummary,
     EmailSummaryAck,
@@ -65,6 +67,7 @@ from .schemas import (
     SessionDetailOut,
     SessionOut,
     SkinProfileOut,
+    SkincareProductSummaryOut,
 )
 
 router = Router(tags=["quiz"])
@@ -217,6 +220,16 @@ def _category_label(category: str | None) -> str:
         return Product.Category(category).label
     except ValueError:
         return category.replace("_", " ").replace("-", " ").title()
+
+
+REVIEW_FILTER = Q(reviews__is_public=True)
+PRODUCT_REVIEW_ANNOTATIONS = {
+    "community_review_count": Count("reviews", filter=REVIEW_FILTER),
+    "community_avg_rating": Avg(
+        "reviews__rating",
+        filter=REVIEW_FILTER & Q(reviews__rating__isnull=False),
+    ),
+}
 
 
 @router.get("/ingredients/suggest", response=IngredientSuggestionResponse)
@@ -452,6 +465,142 @@ def ingredient_quick_search(
         )
 
     return {"query": query, "results": results_payload}
+
+
+@router.get("/products/suggest", response=ProductSuggestionResponse)
+def product_suggestions(request, q: str, limit: int = 8):
+    query = (q or "").strip()
+    if not query:
+        return {"query": "", "suggestions": []}
+
+    suggestion_limit = max(1, min(limit, 12))
+    slug_candidate = slugify(query)
+    filters = (
+        Q(name__icontains=query)
+        | Q(brand__icontains=query)
+        | Q(hero_ingredients__icontains=query)
+    )
+    if slug_candidate:
+        filters |= Q(slug__icontains=slug_candidate)
+
+    candidate_limit = max(suggestion_limit * 4, 24)
+    products = list(
+        Product.objects.filter(is_active=True)
+        .filter(filters)
+        .annotate(**PRODUCT_REVIEW_ANNOTATIONS)
+        .order_by("brand", "name")[:candidate_limit]
+    )
+
+    if not products:
+        return {"query": query, "suggestions": []}
+
+    query_lower = query.lower()
+    slug_lower = slug_candidate.lower() if slug_candidate else None
+    scored: list[tuple[Product, int, float, int, str, str]] = []
+    for product in products:
+        match_score = _score_product_match(product, query_lower, slug_lower)
+        average_rating, review_count = _derive_review_stats(product)
+        scored.append(
+            (
+                product,
+                match_score,
+                float(average_rating or 0.0),
+                review_count,
+                (product.brand or "").lower(),
+                (product.name or "").lower(),
+            )
+        )
+
+    scored.sort(key=lambda item: (-item[1], -item[2], -item[3], item[4], item[5]))
+    suggestions = [
+        _serialize_product_summary(product, hero_limit=3) for product, *_rest in scored[:suggestion_limit]
+    ]
+    return {"query": query, "suggestions": suggestions}
+
+
+@router.get("/products/search", response=ProductSearchOut)
+def product_search(request, q: str, limit: int = 12):
+    query = (q or "").strip()
+    if not query:
+        raise HttpError(400, "Product query cannot be blank.")
+
+    search_limit = max(1, min(limit, 30))
+    slug_candidate = slugify(query)
+    filters = (
+        Q(name__icontains=query)
+        | Q(brand__icontains=query)
+        | Q(summary__icontains=query)
+        | Q(hero_ingredients__icontains=query)
+        | Q(description__icontains=query)
+    )
+    if slug_candidate:
+        filters |= Q(slug__icontains=slug_candidate)
+
+    candidate_limit = max(search_limit * 4, 40)
+    products = list(
+        Product.objects.filter(is_active=True)
+        .filter(filters)
+        .annotate(**PRODUCT_REVIEW_ANNOTATIONS)
+        .order_by("brand", "name")[:candidate_limit]
+    )
+
+    if not products:
+        return {"query": query, "results": []}
+
+    query_lower = query.lower()
+    slug_lower = slug_candidate.lower() if slug_candidate else None
+    scored: list[tuple[Product, int, float, int, str, str]] = []
+    for product in products:
+        match_score = _score_product_match(product, query_lower, slug_lower)
+        average_rating, review_count = _derive_review_stats(product)
+        scored.append(
+            (
+                product,
+                match_score,
+                float(average_rating or 0.0),
+                review_count,
+                (product.brand or "").lower(),
+                (product.name or "").lower(),
+            )
+        )
+
+    scored.sort(key=lambda item: (-item[1], -item[2], -item[3], item[4], item[5]))
+    results = [_serialize_product_summary(product) for product, *_rest in scored[:search_limit]]
+    return {"query": query, "results": results}
+
+
+@router.get("/products/top", response=list[SkincareProductSummaryOut])
+def top_reviewed_products(request, limit: int = 5):
+    top_limit = max(1, min(limit, 12))
+    candidate_limit = max(top_limit * 3, 20)
+
+    products = list(
+        Product.objects.filter(is_active=True)
+        .annotate(**PRODUCT_REVIEW_ANNOTATIONS)
+        .order_by("brand", "name")[:candidate_limit]
+    )
+
+    if not products:
+        return []
+
+    scored: list[tuple[Product, int, float, int, str, str]] = []
+    for product in products:
+        review_count = getattr(product, "community_review_count", 0) or 0
+        has_user_reviews = 1 if review_count > 0 else 0
+        average_rating, fallback_count = _derive_review_stats(product)
+        scored.append(
+            (
+                product,
+                has_user_reviews,
+                float(average_rating or 0.0),
+                fallback_count,
+                (product.brand or "").lower(),
+                (product.name or "").lower(),
+            )
+        )
+
+    scored.sort(key=lambda item: (-item[1], -item[2], -item[3], item[4], item[5]))
+    return [_serialize_product_summary(product) for product, *_rest in scored[:top_limit]]
 
 
 @router.get("/questions", response=list[QuestionOut])
@@ -898,79 +1047,17 @@ def session_detail(request, session_id: uuid.UUID):
 
 @router.get("/products/{product_id}", response=ProductDetailOut)
 def product_detail(request, product_id: uuid.UUID):
-    product = get_object_or_404(
-        Product.objects.filter(id=product_id, is_active=True).prefetch_related(
-            Prefetch(
-                "productingredient_set",
-                queryset=ProductIngredient.objects.select_related("ingredient").order_by("order", "ingredient__common_name"),
-                to_attr="prefetched_ingredient_links",
-            ),
-            Prefetch(
-                "concerns",
-                queryset=SkinConcern.objects.all().order_by("name"),
-                to_attr="prefetched_concerns",
-            ),
-            Prefetch(
-                "skin_types",
-                queryset=SkinTypeTag.objects.all().order_by("name"),
-                to_attr="prefetched_skin_types",
-            ),
-            Prefetch(
-                "restrictions",
-                queryset=RestrictionTag.objects.all().order_by("name"),
-                to_attr="prefetched_restrictions",
-            ),
-        )
-    )
+    product = get_object_or_404(_product_detail_queryset(), id=product_id)
+    return _serialize_product_detail(product)
 
-    ingredient_entries: list[dict] = []
-    for link in getattr(product, "prefetched_ingredient_links", []):
-        ingredient = getattr(link, "ingredient", None)
-        if not ingredient:
-            continue
-        ingredient_entries.append(
-            {
-                "name": ingredient.common_name,
-                "inci_name": ingredient.inci_name or None,
-                "highlight": bool(link.highlight),
-                "order": link.order,
-            }
-        )
 
-    hero_ingredients_raw = product.hero_ingredients or ""
-    hero_ingredients = [part.strip() for part in hero_ingredients_raw.split(",") if part and part.strip()]
-    if not hero_ingredients and ingredient_entries:
-        hero_ingredients = [entry["name"] for entry in ingredient_entries[:3]]
-
-    price_value = _decimal_to_float(product.price)
-    if price_value is not None and price_value <= 0:
-        price_value = None
-
-    image_url = _product_image_url(product)
-    product_url = _sanitize_product_url(product.product_url)
-
-    return ProductDetailOut(
-        product_id=product.id,
-        slug=product.slug,
-        brand=product.brand,
-        product_name=product.name,
-        category=product.category,
-        category_label=_category_label(product.category),
-        summary=product.summary or None,
-        description=product.description or None,
-        hero_ingredients=hero_ingredients,
-        ingredients=sorted(ingredient_entries, key=lambda entry: entry["order"]),
-        concerns=[concern.name for concern in getattr(product, "prefetched_concerns", [])],
-        skin_types=[stype.name for stype in getattr(product, "prefetched_skin_types", [])],
-        restrictions=[tag.name for tag in getattr(product, "prefetched_restrictions", [])],
-        price=price_value,
-        currency=product.currency,
-        average_rating=_decimal_to_float(product.rating),
-        review_count=product.review_count,
-        image_url=image_url,
-        product_url=product_url,
-        affiliate_url=product_url,
-    )
+@router.get("/products/slug/{slug}", response=ProductDetailOut)
+def product_detail_by_slug(request, slug: str):
+    cleaned = (slug or "").strip()
+    if not cleaned:
+        raise HttpError(400, "Product slug cannot be blank.")
+    product = get_object_or_404(_product_detail_queryset(), slug__iexact=cleaned)
+    return _serialize_product_detail(product)
 
 
 @router.get("/products/{product_id}/reviews", response=list[ReviewOut])
@@ -1010,6 +1097,7 @@ def upsert_product_review(request, product_id: uuid.UUID, payload: ReviewCreateI
             "rating": payload.rating,
             "comment": payload.comment,
             "is_public": payload.is_public if payload.is_public is not None else True,
+            "is_anonymous": bool(payload.anonymous),
         },
     )
 
@@ -1018,6 +1106,7 @@ def upsert_product_review(request, product_id: uuid.UUID, payload: ReviewCreateI
         review.rating = payload.rating
         if payload.is_public is not None:
             review.is_public = payload.is_public
+        review.is_anonymous = bool(payload.anonymous)
         review.save()
 
     return _serialize_review(review, user)
@@ -1284,6 +1373,184 @@ def _placeholder_image_data(product: Product) -> str:
         f'{text}</text></svg>'
     )
     return f"data:image/svg+xml;utf8,{quote(svg)}"
+
+
+def _product_detail_queryset():
+    ingredient_prefetch = Prefetch(
+        "productingredient_set",
+        queryset=ProductIngredient.objects.select_related("ingredient").order_by(
+            "order", "ingredient__common_name"
+        ),
+        to_attr="prefetched_ingredient_links",
+    )
+    concerns_prefetch = Prefetch(
+        "concerns",
+        queryset=SkinConcern.objects.all().order_by("name"),
+        to_attr="prefetched_concerns",
+    )
+    skin_types_prefetch = Prefetch(
+        "skin_types",
+        queryset=SkinTypeTag.objects.all().order_by("name"),
+        to_attr="prefetched_skin_types",
+    )
+    restrictions_prefetch = Prefetch(
+        "restrictions",
+        queryset=RestrictionTag.objects.all().order_by("name"),
+        to_attr="prefetched_restrictions",
+    )
+    return (
+        Product.objects.filter(is_active=True)
+        .annotate(**PRODUCT_REVIEW_ANNOTATIONS)
+        .prefetch_related(
+            ingredient_prefetch,
+            concerns_prefetch,
+            skin_types_prefetch,
+            restrictions_prefetch,
+        )
+    )
+
+
+def _split_hero_ingredients(raw_value: str | None) -> list[str]:
+    if not raw_value:
+        return []
+    return [
+        part.strip()
+        for part in raw_value.split(",")
+        if part and part.strip()
+    ]
+
+
+def _derive_review_stats(product: Product) -> tuple[float | None, int]:
+    community_count = getattr(product, "community_review_count", None)
+    if isinstance(community_count, int) and community_count > 0:
+        community_avg = getattr(product, "community_avg_rating", None)
+        return _decimal_to_float(community_avg), community_count
+    fallback_average = _decimal_to_float(product.rating)
+    fallback_count = int(getattr(product, "review_count", 0) or 0)
+    return fallback_average, fallback_count
+
+
+def _serialize_product_summary(product: Product, hero_limit: int | None = None) -> SkincareProductSummaryOut:
+    hero_ingredients = _split_hero_ingredients(product.hero_ingredients)
+    if hero_limit is not None:
+        hero_ingredients = hero_ingredients[:hero_limit]
+
+    price_value = _decimal_to_float(product.price)
+    if price_value is not None and price_value <= 0:
+        price_value = None
+
+    average_rating, review_count = _derive_review_stats(product)
+    image_url = _product_image_url(product)
+    product_url = _sanitize_product_url(product.product_url)
+
+    return SkincareProductSummaryOut(
+        product_id=product.id,
+        slug=product.slug,
+        brand=product.brand,
+        product_name=product.name,
+        category=product.category,
+        category_label=_category_label(product.category),
+        summary=product.summary or None,
+        hero_ingredients=hero_ingredients,
+        price=price_value,
+        currency=product.currency,
+        average_rating=average_rating,
+        review_count=review_count,
+        image_url=image_url,
+        product_url=product_url,
+    )
+
+
+def _score_product_match(product: Product, query_lower: str, slug_lower: str | None) -> int:
+    score = 0
+    name_value = (product.name or "").lower()
+    brand_value = (product.brand or "").lower()
+    slug_value = (product.slug or "").lower()
+
+    if name_value == query_lower:
+        score += 10
+    elif name_value.startswith(query_lower):
+        score += 6
+    elif query_lower in name_value:
+        score += 3
+
+    if brand_value == query_lower:
+        score += 5
+    elif brand_value.startswith(query_lower):
+        score += 3
+    elif query_lower in brand_value:
+        score += 1
+
+    if slug_lower:
+        if slug_value == slug_lower:
+            score += 5
+        elif slug_value.startswith(slug_lower):
+            score += 2
+
+    hero_value = (product.hero_ingredients or "").lower()
+    if hero_value and query_lower in hero_value:
+        score += 1
+
+    summary_value = (product.summary or "").lower()
+    if summary_value and query_lower in summary_value:
+        score += 1
+
+    description_value = (product.description or "").lower()
+    if description_value and query_lower in description_value:
+        score += 1
+
+    return score
+
+
+def _serialize_product_detail(product: Product) -> ProductDetailOut:
+    ingredient_entries: list[dict] = []
+    for link in getattr(product, "prefetched_ingredient_links", []):
+        ingredient = getattr(link, "ingredient", None)
+        if not ingredient:
+            continue
+        ingredient_entries.append(
+            {
+                "name": ingredient.common_name,
+                "inci_name": ingredient.inci_name or None,
+                "highlight": bool(link.highlight),
+                "order": link.order,
+            }
+        )
+
+    hero_ingredients = _split_hero_ingredients(product.hero_ingredients)
+    if not hero_ingredients and ingredient_entries:
+        hero_ingredients = [entry["name"] for entry in ingredient_entries[:3]]
+
+    price_value = _decimal_to_float(product.price)
+    if price_value is not None and price_value <= 0:
+        price_value = None
+
+    average_rating, review_count = _derive_review_stats(product)
+    image_url = _product_image_url(product)
+    product_url = _sanitize_product_url(product.product_url)
+
+    return ProductDetailOut(
+        product_id=product.id,
+        slug=product.slug,
+        brand=product.brand,
+        product_name=product.name,
+        category=product.category,
+        category_label=_category_label(product.category),
+        summary=product.summary or None,
+        description=product.description or None,
+        hero_ingredients=hero_ingredients,
+        ingredients=sorted(ingredient_entries, key=lambda entry: entry["order"]),
+        concerns=[concern.name for concern in getattr(product, "prefetched_concerns", [])],
+        skin_types=[stype.name for stype in getattr(product, "prefetched_skin_types", [])],
+        restrictions=[tag.name for tag in getattr(product, "prefetched_restrictions", [])],
+        price=price_value,
+        currency=product.currency,
+        average_rating=average_rating,
+        review_count=review_count,
+        image_url=image_url,
+        product_url=product_url,
+        affiliate_url=product_url,
+    )
 
 
 def _build_answer_snapshot(answers: Iterable[Answer]) -> dict:
@@ -1585,17 +1852,23 @@ def _serialize_review(review: ProductReview, current_user) -> ReviewOut:
         and getattr(current_user, "is_authenticated", False)
         and user.id == current_user.id
     )
+    if review.is_anonymous and not is_owner:
+        display_name = "Anonymous reviewer"
+        avatar_url = None
+    else:
+        avatar_url = getattr(profile, "avatar_url", None)
 
     return ReviewOut(
         id=review.id,
         product_id=review.product_id,
         user_id=str(user.id),
         user_display_name=sanitize_plain_text(display_name),
-        avatar_url=getattr(profile, "avatar_url", None),
+        avatar_url=avatar_url,
         rating=review.rating,
         comment=sanitize_plain_text(review.comment),
         is_public=review.is_public,
         is_owner=is_owner,
+        is_anonymous=bool(review.is_anonymous),
         created_at=review.created_at,
         updated_at=review.updated_at,
     )

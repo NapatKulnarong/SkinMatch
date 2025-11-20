@@ -798,6 +798,31 @@ export async function fetchProductDetail(productId: string): Promise<ProductDeta
   return mapProductDetail(data);
 }
 
+export async function fetchProductDetailBySlug(slug: string): Promise<ProductDetail> {
+  const cleaned = slug.trim();
+  if (!cleaned) {
+    throw new Error("Product slug is required to load details.");
+  }
+
+  const base = resolveApiBase();
+  const res = await fetch(`${base}/quiz/products/slug/${encodeURIComponent(cleaned)}`, {
+    method: "GET",
+    headers: withAuth(),
+    cache: "no-store",
+  });
+
+  if (res.status === 404) {
+    throw new Error("We couldn't find that product. Please try another search.");
+  }
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || "Failed to load product details.");
+  }
+
+  const data: RawProductDetail = await res.json();
+  return mapProductDetail(data);
+}
+
 export async function emailQuizSummary(sessionId: string, email?: string): Promise<void> {
   const base = resolveApiBase();
   const res = await fetch(`${base}/quiz/email-summary`, {
