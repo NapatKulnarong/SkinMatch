@@ -237,38 +237,52 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
           </Link>
         </div>
 
-        <div className="px-3 lg:px-3 pb-1 lg:pb-5 pt-4 sm:px-6">
-          <div className="flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 lg:grid lg:auto-rows-[1fr] lg:grid-cols-2 lg:gap-4 lg:overflow-visible xl:grid-cols-4">
-          {loading && !recommendations.length
-            ? Array.from({ length: 4 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="h-44 min-w-[240px] rounded-[24px] border-2 border-black bg-white/70 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)] animate-pulse lg:h-56 lg:min-w-0"
-                />
-              ))
-            : recommendations.map((topic) => (
-                <Link
-                  key={topic.slug}
-                  href={`/facts/${topic.slug}`}
-                  className="group flex h-full min-h-[220px] lg:min-h-[245px] min-w-[250px] flex-col gap-3 rounded-[5px] border-2 border-black bg-white px-3 lg:px-4 py-2 lg:py-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[5px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 lg:min-w-0"
-                >
-                  <span className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#11224a]/60">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#11224a] bg-[#FFF1CA] text-sm font-bold">
-                      {topic.title.slice(0, 1)}
+        <div className="px-3 lg:px-3 pb-1 lg:pb-5 pt-4 sm:px-6 min-h-[260px]">
+          {promptType ? (
+            <div className="flex h-full items-center justify-center px-3 py-13 text-sm text-[#11224a]/70">
+              <div className="mx-auto max-w-xl rounded-[18px] border-2 border-[#11224a]/20 bg-white/80 p-5 text-center shadow-[3px_3px_0_rgba(0,0,0,0.25)]">
+                <p className="text-base font-semibold text-[#11224a]">
+                  {promptType === "auth" ? "Log in and take the SkinMatch quiz" : "Take the SkinMatch quiz"}
+                </p>
+                <p className="mt-2 text-sm text-[#11224a]/80">
+                  {promptType === "auth"
+                    ? "Sign in first, then complete the quiz to unlock personalised ingredients, routines, and insights tailored to your profile."
+                    : "Update your preferences to unlock personalised ingredients, routines, and insights curated just for you."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex snap-x snap-mandatory gap-3 lg:gap-4 overflow-x-auto pb-4 sm:grid sm:auto-rows-[1fr] sm:grid-cols-2 sm:gap-4 sm:overflow-visible xl:grid-cols-4 h-full">
+            {loading && !recommendations.length
+              ? Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="h-44 min-w-[240px] rounded-[24px] border-2 border-black bg-white/70 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.18)] animate-pulse sm:min-w-0"
+                  />
+                ))
+              : recommendations.map((topic) => (
+                  <Link
+                    key={topic.slug}
+                    href={`/facts/${topic.slug}`}
+                    className="group flex h-full min-h-[190px] lg:min-h-[245px] min-w-[250px] flex-col gap-3 rounded-[5px] border-2 border-black bg-white px-3 lg:px-4 py-2 lg:py-5 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[5px_6px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 sm:min-w-0"
+                  >
+                    <span className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#11224a]/60">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#11224a] bg-[#FFF1CA] text-sm font-bold">
+                        {topic.title.slice(0, 1)}
+                      </span>
+                      Match insight
                     </span>
-                    Match insight
-                  </span>
-                  <h3 className="lg:text-lg font-bold text-[#11224a] group-hover:text-[#0a1737]">
-                    {topic.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-[#11224a]/70 line-clamp-3">
-                    {topic.subtitle || topic.excerpt || "Tap to see why this ingredient belongs in your lineup."}
-                  </p>
-                  <div className="relative mt-auto flex items-center justify-between text-xs uppercase tracking-[0.28em] text-[#11224a]/50">
-  {/* Hide on mobile */}
-  <span className="hidden sm:inline">
-    {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
-  </span>
+                    <h3 className="lg:text-lg font-bold text-[#11224a] group-hover:text-[#0a1737]">
+                      {topic.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-[#11224a]/70 line-clamp-3">
+                      {topic.subtitle || topic.excerpt || "Tap to see why this ingredient belongs in your lineup."}
+                    </p>
+                    <div className="relative mt-auto flex items-center justify-between text-xs uppercase tracking-[0.28em] text-[#11224a]/50">
+                      {/* Hide on mobile */}
+                      <span className="hidden sm:inline">
+                        {new Intl.NumberFormat().format(topic.viewCount ?? 0)} reads
+                      </span>
 
                       {/* "View guide" button pinned bottom-right on mobile */}
                       <span
@@ -295,6 +309,7 @@ export default function RecommendedForYou({ sectionId }: RecommendedForYouProps)
                   </Link>
                 ))}
             </div>
+          )}
         </div>
 
         {!promptType && !loading && !recommendations.length ? (

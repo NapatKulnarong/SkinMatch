@@ -64,6 +64,15 @@ async function handleJson<T>(res: Response): Promise<T> {
   return json;
 }
 
+export async function checkUsername(username: string) {
+  const res = await fetch(`${API_BASE}/auth/check-username`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  return handleJson<{ available: boolean; message: string }>(res);
+}
+
 export async function signup(payload: SignupPayload) {
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: "POST",

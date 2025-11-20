@@ -235,11 +235,11 @@ export default function AboutPage() {
           </div>
           
           <div className="relative max-w-5xl mx-auto">
-            {/* Vertical line for desktop only */}
-            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-[#2C3E50] transform -translate-x-1/2" />
+            {/* Vertical line for desktop only (xl+) */}
+            <div className="hidden xl:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-[#2C3E50] transform -translate-x-1/2" />
 
-            {/* Mobile: Simple stacked layout */}
-            <div className="lg:hidden space-y-6 relative">
+            {/* Mobile & iPad Pro: Simple stacked layout (same as iPad Mini) */}
+            <div className="xl:hidden space-y-6 relative">
               {TIMELINE_EVENTS.map((event, idx) => (
                 <div key={idx} className="relative">
                   {/* Connecting line to next card */}
@@ -258,21 +258,21 @@ export default function AboutPage() {
                   >
                   {/* Header with step number, date, and title/emoji */}
                   <div className="flex items-start justify-between mb-3">
-                    <div className="text-6xl lg:text-5xl font-extrabold text-gray-800/30">
+                    <div className="text-6xl font-extrabold text-gray-800/30">
                       {idx + 1}
                     </div>
                     <div className="pt-1 sm:pt-0 flex flex-col items-end gap-1 text-right">
-                      <div className="inline-block text-[11px] sm:text-[14px] font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
+                      <div className="inline-block text-[11px] sm:text-[14px] lg:text-[15px] font-bold text-gray-600 bg-white/70 px-3 py-1 rounded-full">
                         {event.date}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{event.icon}</span>
-                        <h3 className="text-lg sm:text-xl sm:mt-2 sm:mb-2 font-bold text-gray-800">{event.title}</h3>
+                        <h3 className="text-lg sm:text-xl lg:text-2xl sm:mt-2 sm:mb-2 font-bold text-gray-800">{event.title}</h3>
                       </div>
                     </div>
                   </div>
                   
-                  <p className="text-sm sm:text-lg text-gray-700 leading-relaxed">
+                  <p className="text-sm sm:text-lg lg:text-xl text-gray-700 leading-relaxed">
                     {event.description}
                   </p>
                 </div>
@@ -280,8 +280,8 @@ export default function AboutPage() {
               ))}
             </div>
 
-            {/* Desktop: Alternating layout */}
-            <div className="hidden lg:block space-y-12">
+            {/* Desktop: Alternating layout (xl+) */}
+            <div className="hidden xl:block space-y-12">
               {TIMELINE_EVENTS.map((event, idx) => (
                 <div
                   key={idx}
