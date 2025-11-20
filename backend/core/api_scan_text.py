@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import io, os, re, json
+import io
+import json
+import os
+import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
+from ninja import File, Router, Schema
 from ninja.errors import HttpError
+from ninja.files import UploadedFile
 
 try:  # pragma: no cover - optional dependency
     import cv2
@@ -32,23 +37,34 @@ try:  # pragma: no cover - optional dependency
     import pytesseract
 except ImportError:
     pytesseract = None  # type: ignore
-from ninja import File, Router, Schema
-from ninja.files import UploadedFile
 
 try:
     import google.generativeai as genai
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
     genai = None
 
-API_KEY = os.getenv("GOOGLE_API_KEY")
-if genai is not None and API_KEY:
-    genai.configure(api_key=API_KEY)
-
-from .utils_ocr import preprocess_for_ocr
-from .text_cleaner import clean_ocr_text
 from .api_scan import scan_router as _legacy_scan_router
+from .text_cleaner import clean_ocr_text
+from .utils_ocr import preprocess_for_ocr
 
 scan_text_router = Router(tags=["scan-text"])
+
+
+def _genai_ready() -> bool:
+    """
+    Evaluate readiness at call time so env changes in tests or runtime apply
+    without requiring module reload.
+    """
+    if genai is None:
+        return False
+    key = os.getenv("GOOGLE_API_KEY")
+    if not key:
+        return False
+    already_configured = getattr(_genai_ready, "_configured_key", None) == key
+    if not already_configured:
+        genai.configure(api_key=key)
+        _genai_ready._configured_key = key
+    return True
 
 
 def _ensure_ocr_stack_ready() -> None:
@@ -57,6 +73,7 @@ def _ensure_ocr_stack_ready() -> None:
             503,
             "OCR dependencies (Pillow, pytesseract, opencv-python, numpy) are not installed.",
         )
+
 EXAMPLE_JSON = {
     "benefits": [
         "Hydration: Provides deep moisture to keep skin plump.",
@@ -350,89 +367,95 @@ _GEMINI_MODELS = [
     "gemini-1.5-flash",
 ]
 
+def _extract_raw_text(resp) -> str | None:
+    raw = getattr(resp, "text", None)
+    if raw:
+        return raw
+    if getattr(resp, "candidates", None):
+        cand = resp.candidates[0]
+        parts = getattr(cand, "content", None)
+        if parts and getattr(parts, "parts", None):
+            chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
+            raw = "\n".join(chunks).strip()
+    return raw or None
+
+
+def _parse_llm_payload(raw: str | None) -> dict | None:
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except Exception:
+        print("[LLM] JSON parse failed, raw:", raw[:400])
+        return None
+    if "confidence" not in data and "ai_confidence" in data:
+        data["confidence"] = data["ai_confidence"]
+    return data if _shape_guard(data) else None
+
+
+def _invoke_model_json(
+    model_name: str,
+    sys_msg: str,
+    user_prompt: str,
+    gen_cfg: dict,
+    *,
+    safety_settings: dict | None = None,
+) -> dict | None:
+    if not _genai_ready():
+        return None
+    try:
+        model = genai.GenerativeModel(
+            model_name,
+            system_instruction=sys_msg,
+            generation_config={**gen_cfg, "response_mime_type": "application/json"},
+            **({"safety_settings": safety_settings} if safety_settings else {}),
+        )
+        resp = model.generate_content(user_prompt)
+    except Exception as e:
+        print(f"[LLM] Model {model_name} API call failed: {type(e).__name__}: {str(e)}")
+        return None
+
+    raw = _extract_raw_text(resp)
+    return _parse_llm_payload(raw)
+
+
 # ---------------- LLM call (English prompt) # With Description ----------------
 def _call_gemini_for_json(ocr_text: str) -> dict | None:
-    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+    if not _genai_ready():
         return None
 
     sys_msg, user_prompt, gen_cfg = _build_llm_prompt(ocr_text)
 
     for model_name in _GEMINI_MODELS:
-        try:
-            model = genai.GenerativeModel(model_name, system_instruction=sys_msg, generation_config=gen_cfg)
-            resp = model.generate_content(user_prompt)
-            raw = getattr(resp, "text", None)
-            if not raw and hasattr(resp, "candidates"):
-                cand = resp.candidates[0]
-                parts = getattr(cand, "content", None)
-                if parts and getattr(parts, "parts", None):
-                    chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-                    raw = "\n".join(chunks).strip()
-
-            if not raw:
-                continue
-
-            data = json.loads(raw)
-            for k in ["benefits", "actives", "concerns", "notes", "confidence"]:
-                if k not in data:
-                    raise ValueError(f"Missing key: {k}")
-            return data
-        except Exception as e:
-            print(f"[LLM analyze] {model_name} failed: {e}")
-            continue
+        payload = _invoke_model_json(model_name, sys_msg, user_prompt, gen_cfg)
+        if payload:
+            return payload
     return None
 
 def _shape_guard(d: dict) -> bool:
     keys = {"benefits", "actives", "concerns", "notes", "confidence"}
     return isinstance(d, dict) and keys.issubset(set(d.keys()))
 
+
+_GEMINI_SAFETY_SETTINGS = {
+    "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+    "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+    "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+}
+
+
 def _call_one_model(model_name: str, user_prompt: str, sys_msg: str, gen_cfg: dict) -> dict | None:
-    try:
-        # --- 1 Force Gemini to output JSON ---
-        model = genai.GenerativeModel(
-            model_name,
-            system_instruction=sys_msg,
-            generation_config={
-                **gen_cfg,
-                "response_mime_type": "application/json",  # ← ensures Gemini replies in strict JSON only
-            },
-        )
-        # --- 2 Run the model safely ---
-        resp = model.generate_content(user_prompt, safety_settings = {"HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",})
-    except Exception as e:
-        print(f"[LLM] Model {model_name} API call failed: {type(e).__name__}: {str(e)}")
-        return None
-
-    # --- 3 Extract raw text (Gemini SDK differences) ---
-    raw = getattr(resp, "text", None)
-    if not raw and getattr(resp, "candidates", None):
-        cand0 = resp.candidates[0]
-        parts = getattr(cand0, "content", None)
-        if parts and getattr(parts, "parts", None):
-            chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-            raw = "\n".join(chunks).strip()
-
-    if not raw:
-        return None
-
-    try:
-        data = json.loads(raw)
-    except Exception as e:
-        print("[LLM] JSON parse failed, raw:", raw[:400])
-        return None
-
-    # --- 5 Normalize confidence key (ai_confidence → confidence) ---
-    if "confidence" not in data and "ai_confidence" in data:
-        data["confidence"] = data["ai_confidence"]
-
-    # --- ⑥ Return only if it has required shape ---
-    return data if _shape_guard(data) else None
+    return _invoke_model_json(
+        model_name,
+        sys_msg,
+        user_prompt,
+        gen_cfg,
+        safety_settings=_GEMINI_SAFETY_SETTINGS,
+    )
 
 def _call_gemini_ensemble(ocr_text: str) -> dict | None:
-    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+    if not _genai_ready():
         return None
 
     sys_msg, user_prompt, gen_cfg = _build_llm_prompt(ocr_text)
