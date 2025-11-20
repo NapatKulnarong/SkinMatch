@@ -187,6 +187,7 @@ Adjust values per environment; keep the stricter settings anywhere public traffi
 - **Document RTO/RPO:** Keep a runbook (e.g., `docs/runbooks/disaster-recovery.md`) that states Recovery Time Objective (target: < 2 hours to restore DB + media) and Recovery Point Objective (target: < 24 hours of data loss). Note who is on-call for DR, where credentials live, and how to escalate if restore windows are exceeded.
 
 ### Security Testing
+
 - **Automated scans:** Schedule a weekly GitHub Actions workflow (e.g., cron `0 3 * * Mon`) that reuses the Bandit + pip-audit steps plus `npm audit` for the frontend. Augment with OWASP ZAP baseline scan against staging: `docker run -t owasp/zap2docker-stable zap-baseline.py -t https://staging.skinmatch.com -r zap-report.html`. Publish results as workflow artifacts.
 - **Penetration tests:** At least twice a year, have an internal engineer or third party run a lightweight pentest focusing on authentication flows, admin access, and customer data exfiltration. Capture findings in Jira with severity labels and remediation owners.
 - **OWASP Top 10 validation:** Map each risk (A01 injection, A02 auth, etc.) to concrete test cases. For example, use Burp/ZAP to fuzz inputs for SQLi/XSS, verify rate limiting for brute-force, check S3 buckets for misconfigurations (A05 security misconfiguration), and confirm sensitive data exposure protections (A03).
