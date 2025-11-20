@@ -67,16 +67,16 @@ SkinMatch includes comprehensive test suites for both backend and frontend. For 
 
 ```bash
 cd backend
-python manage.py test
-# or using pytest
 pytest
+# or from repo root
+make test-pytest
 ```
 
 **Frontend:**
 
 ```bash
 cd frontend
-npm test
+npm test -- --runInBand
 # Watch mode
 npm run test:watch
 # E2E tests
@@ -89,29 +89,45 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
 
 ## ⚙️ Setup & Deployment
 
-1. **Clone repo**  
+1. **Clone repo** 
+   ```bash
    git clone https://github.com/your-username/skinmatch.git
    cd skinmatch
+   ```
+2. **Backend Setup (Local Dev)**
 
-2. **run Docker Compose**
-   docker-compose up --build
-
-3. **Verify everything is running**
-   Backend API: http://localhost:8000
-   Frontend: http://localhost:3000
-
-4. **(Optional) Load the sample product catalog for local testing**
-
+3. **Download Environment File**
+   download .env.demo*
    ```bash
-   cd backend
-   python manage.py load_sample --reset
+   cp .env.demo .env
+   ```
+   then set ADMIN_ALLOWED_IPS= your ip address
+
+4. **Create Superuser for Admin**
+   ```bash
+   python manage.py createsuperuser
    ```
 
+5. **Load Sample Data**
+   ```bash
+   python manage.py load_sample --reset
+   ```
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
 
-5. **(Optional) Export / import curated Skin Facts**
+6. **Run Everything with Docker**
+   ```bash
+   cd ..
+   docker-compose up --build
+   ```
+
+ึึ7. **Verify everything is running**
+   Backend API: http://localhost:8000
+   Frontend: http://localhost:3000
+
+
+8. **(Optional) Export / import curated Skin Facts**
 
    We keep the Skin Facts topics (and their hero/block images) under `./data`. Use these commands to refresh or seed another environment:
 

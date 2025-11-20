@@ -368,16 +368,36 @@ _GEMINI_MODELS = [
 ]
 
 def _extract_raw_text(resp) -> str | None:
-    raw = getattr(resp, "text", None)
+    """
+    Safely extract text from a GenerativeModel response.
+    Guards against missing candidates/parts to avoid ValueError when response.text is absent.
+    """
+    if not resp:
+        return None
+
+    try:
+        raw = getattr(resp, "text", None)
+    except Exception:
+        raw = None
+
     if raw:
         return raw
-    if getattr(resp, "candidates", None):
-        cand = resp.candidates[0]
-        parts = getattr(cand, "content", None)
-        if parts and getattr(parts, "parts", None):
-            chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-            raw = "\n".join(chunks).strip()
-    return raw or None
+
+    candidates = getattr(resp, "candidates", None) or []
+    try:
+        for cand in candidates:
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if not parts:
+                continue
+            chunks = [getattr(part, "text", "") for part in parts if getattr(part, "text", "")]
+            text_joined = "\n".join(chunks).strip()
+            if text_joined:
+                return text_joined
+    except Exception as e:
+        print(f"[LLM] Unable to extract candidate text: {type(e).__name__}: {e}")
+
+    return None
 
 
 def _parse_llm_payload(raw: str | None) -> dict | None:
