@@ -26,6 +26,7 @@ jobs:
       DJANGO_SECRET_KEY: dummy
       DJANGO_DEBUG: "False"
       DJANGO_SECURE_SSL_REDIRECT: "False"
+      API_REQUIRE_KEY_FOR_ANONYMOUS: "False"
       GOOGLE_TEST_MODE: "1"    
       SITE_ID: 2
 
