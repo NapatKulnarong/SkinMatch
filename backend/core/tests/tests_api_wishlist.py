@@ -3,16 +3,14 @@ from decimal import Decimal
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from ninja.testing import TestClient
+from rest_framework.test import APIClient
 
-from core.api import api
 from core.auth import create_access_token
 from core.models import WishlistItem
 from quiz.models import Product
 
 
 User = get_user_model()
-client = TestClient(api)
 
 
 @pytest.fixture
@@ -25,9 +23,14 @@ def user(db):
 
 
 @pytest.fixture
-def auth_header(user):
+def api_client():
+    return APIClient()
+
+
+@pytest.fixture
+def auth_headers(user):
     token = create_access_token(user)
-    return {"Authorization": f"Bearer {token}"}
+    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 @pytest.fixture
@@ -54,19 +57,20 @@ def make_product(db):
 
 
 @pytest.mark.django_db
-def test_wishlist_initially_empty(auth_header):
-    response = client.get("/api/wishlist", headers=auth_header)
+def test_wishlist_initially_empty(api_client, auth_headers):
+    response = api_client.get("/api/wishlist", **auth_headers)
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.django_db
-def test_add_product_to_wishlist(user, auth_header, make_product):
+def test_add_product_to_wishlist(api_client, user, auth_headers, make_product):
     product = make_product()
-    response = client.post(
+    response = api_client.post(
         "/api/wishlist/add",
-        json={"product_id": str(product.id)},
-        headers=auth_header,
+        data={"product_id": str(product.id)},
+        format="json",
+        **auth_headers,
     )
     assert response.status_code == 200
     assert response.json() == {"ok": True, "status": "added"}
@@ -74,52 +78,54 @@ def test_add_product_to_wishlist(user, auth_header, make_product):
 
 
 @pytest.mark.django_db
-def test_add_product_twice_returns_already_saved(auth_header, make_product):
+def test_add_product_twice_returns_already_saved(api_client, auth_headers, make_product):
     product = make_product()
 
-    first = client.post(
+    first = api_client.post(
         "/api/wishlist/add",
-        json={"product_id": str(product.id)},
-        headers=auth_header,
+        data={"product_id": str(product.id)},
+        format="json",
+        **auth_headers,
     )
     assert first.status_code == 200
 
-    second = client.post(
+    second = api_client.post(
         "/api/wishlist/add",
-        json={"product_id": str(product.id)},
-        headers=auth_header,
+        data={"product_id": str(product.id)},
+        format="json",
+        **auth_headers,
     )
     assert second.status_code == 200
     assert second.json() == {"ok": True, "status": "already_saved"}
 
 
 @pytest.mark.django_db
-def test_remove_product_from_wishlist(user, auth_header, make_product):
+def test_remove_product_from_wishlist(api_client, user, auth_headers, make_product):
     product = make_product()
     WishlistItem.objects.create(user=user, product=product)
 
-    response = client.delete(f"/api/wishlist/{product.id}", headers=auth_header)
+    response = api_client.delete(f"/api/wishlist/{product.id}", **auth_headers)
     assert response.status_code == 200
     assert response.json() == {"ok": True, "status": "removed"}
     assert not WishlistItem.objects.filter(user=user, product=product).exists()
 
 
 @pytest.mark.django_db
-def test_delete_nonexistent_product_is_idempotent(auth_header):
+def test_delete_nonexistent_product_is_idempotent(api_client, auth_headers):
     random_id = uuid4()
-    response = client.delete(f"/api/wishlist/{random_id}", headers=auth_header)
+    response = api_client.delete(f"/api/wishlist/{random_id}", **auth_headers)
     assert response.status_code == 200
     assert response.json() == {"ok": True, "status": "not_present"}
 
 
 @pytest.mark.django_db
-def test_list_returns_serialized_product_fields(user, auth_header, make_product):
+def test_list_returns_serialized_product_fields(api_client, user, auth_headers, make_product):
     product_one = make_product(name="Bright Serum")
     product_two = make_product(name="Calm Cream")
     WishlistItem.objects.create(user=user, product=product_one)
     WishlistItem.objects.create(user=user, product=product_two)
 
-    response = client.get("/api/wishlist", headers=auth_header)
+    response = api_client.get("/api/wishlist", **auth_headers)
     assert response.status_code == 200
 
     payload = response.json()
@@ -141,12 +147,12 @@ def test_list_returns_serialized_product_fields(user, auth_header, make_product)
 
 
 @pytest.mark.django_db
-def test_wishlist_endpoints_require_auth(make_product):
+def test_wishlist_endpoints_require_auth(api_client, make_product):
     product = make_product()
 
-    assert client.get("/api/wishlist").status_code == 401
+    assert api_client.get("/api/wishlist").status_code == 401
     assert (
-        client.post("/api/wishlist/add", json={"product_id": str(product.id)}).status_code
+        api_client.post("/api/wishlist/add", data={"product_id": str(product.id)}, format="json").status_code
         == 401
     )
-    assert client.delete(f"/api/wishlist/{product.id}").status_code == 401
+    assert api_client.delete(f"/api/wishlist/{product.id}").status_code == 401

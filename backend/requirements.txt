@@ -21,6 +21,7 @@ python-dotenv>=1.0.1
 pytesseract
 pyzbar
 requests>=2.32.0,<3.0
+pillow-heif>=0.14.0
 uvicorn[standard]>=0.30.0,<0.31.0
 whitenoise==6.7.0
 pyzbar

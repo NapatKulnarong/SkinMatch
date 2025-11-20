@@ -125,7 +125,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-[#1f2d26]">
               <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              <span>Checking local UV & air quality…</span>
+              <span>Checking local UV levels…</span>
             </div>
           ) : error ? (
             <div className="rounded-2xl border-2 border-[#B9375D] bg-[#fdecec] p-3 text-sm text-[#7b1c32]">
@@ -159,7 +159,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
                 <span>You&apos;re all clear</span>
               </div>
               <p className="mt-1 text-xs text-[#1f2d26]/70">
-                We&apos;ll ping you when UV or air quality needs extra care.
+                We&apos;ll ping you when UV needs extra care.
               </p>
             </div>
           )}

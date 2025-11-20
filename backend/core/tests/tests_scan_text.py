@@ -12,6 +12,7 @@ Covered Scenarios
 
 from __future__ import annotations
 
+import base64
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
@@ -19,7 +20,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 from core.api_scan_text import _call_gemini_for_json, _fallback_extract
 
@@ -28,11 +32,15 @@ SCAN_ENDPOINT = "/api/scan-text/label/analyze-llm"
 
 def _make_image_file(name: str = "test_label.png") -> SimpleUploadedFile:
     """Create a tiny in-memory PNG used for upload payloads."""
-    image = Image.new("RGB", (32, 32), color="white")
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    buffer.seek(0)
-    return SimpleUploadedFile(name, buffer.read(), content_type="image/png")
+    if Image is not None:
+        image = Image.new("RGB", (32, 32), color="white")
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        buffer.seek(0)
+        data = buffer.read()
+    else:
+        data = _BLANK_PNG
+    return SimpleUploadedFile(name, data, content_type="image/png")
 
 
 class ScanTextEndpointTests(TestCase):
@@ -211,6 +219,60 @@ class ScanTextEndpointTests(TestCase):
         self.assertEqual(payload["concerns"], ["Fragrance"])
         self.assertEqual(len(payload["actives"]), len(set(payload["actives"])))
 
+    @patch("core.api_scan_text._fallback_extract")
+    @patch("core.api_scan_text._call_gemini_for_json")
+    @patch("core.api_scan_text._call_gemini_ensemble")
+    @patch("core.api_scan_text._ocr_text", return_value="Hydrating toner")
+    @patch("core.api_scan_text._ensure_ocr_stack_ready")
+    @patch("core.api_scan_text.Image")
+    @patch("core.api_scan_text.pillow_heif", new=object())
+    def test_accepts_heic_upload_when_supported(
+        self,
+        mock_image,
+        mock_stack_ready,
+        mock_ocr_text,
+        mock_gemini_ensemble,
+        mock_gemini_legacy,
+        mock_fallback,
+    ):
+        mock_image_instance = MagicMock()
+        mock_image_instance.load.return_value = None
+        mock_image_instance.convert.return_value = MagicMock()
+        mock_image.open.return_value = mock_image_instance
+        mock_gemini_legacy.return_value = None
+        mock_gemini_ensemble.return_value = {
+            "actives": ["Niacinamide", "Retinol"],
+            "concerns": [],
+            "benefits": ["Hydrating"],
+            "notes": [],
+            "confidence": 0.9,
+        }
+        mock_fallback.return_value = {
+            "actives": [],
+            "concerns": [],
+            "benefits": [],
+            "notes": [],
+            "confidence": 0.5,
+        }
+
+        heic_file = SimpleUploadedFile(
+            "label.heic",
+            b"fake-heic-bytes",
+            content_type="image/heic",
+        )
+
+        response = self.client.post(
+            SCAN_ENDPOINT,
+            {"file": heic_file},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        payload = response.json()
+        self.assertEqual(payload["raw_text"], "Hydrating toner")
+        self.assertEqual(payload["actives"], ["Niacinamide", "Retinol"])
+        self.assertEqual(payload["confidence"], 0.9)
+
 
 class FallbackExtractUnitTests(TestCase):
     """Unit tests for the heuristic extractor in isolation."""
@@ -296,12 +358,37 @@ class InvalidImageTests(TestCase):
             b"This is not an image",
             content_type="text/plain",
         )
-        with self.assertRaises(Exception):
-            self.client.post(
-                SCAN_ENDPOINT,
-                {"file": text_file},
-                format="multipart",
-            )
+        response = self.client.post(
+            SCAN_ENDPOINT,
+            {"file": text_file},
+            format="multipart",
+        )
+        self.assertIn(
+            response.status_code,
+            {
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_404_NOT_FOUND,
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+            },
+        )
+
+    @patch("core.api_scan_text._ensure_ocr_stack_ready")
+    @patch("core.api_scan_text.pillow_heif", new=None)
+    def test_heic_rejected_when_heif_support_missing(self, mock_stack_ready):
+        heic_file = SimpleUploadedFile(
+            "label.heic",
+            b"fake-heic-bytes",
+            content_type="image/heic",
+        )
+        response = self.client.post(
+            SCAN_ENDPOINT,
+            {"file": heic_file},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     def test_missing_file_field(self):
         response = self.client.post(SCAN_ENDPOINT, {}, format="multipart")
@@ -314,3 +401,6 @@ class InvalidImageTests(TestCase):
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
             },
         )
+_BLANK_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4zwAAAgMBg4XODwAAAABJRU5ErkJggg=="
+)

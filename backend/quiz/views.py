@@ -743,40 +743,6 @@ def quiz_history(request):
     ]
 
 
-@router.delete("/history/{history_id}", response=HistoryDeleteAck)
-def delete_history_item(request, history_id: uuid.UUID):
-    user = _resolve_request_user(request)
-    if not user or not user.is_authenticated:
-        raise HttpError(401, "Authentication required")
-
-    profile = (
-        SkinProfile.objects.filter(user=user, id=history_id).first()
-        or SkinProfile.objects.filter(user=user, session_id=history_id).first()
-    )
-    if not profile:
-        raise HttpError(404, "Match history item not found")
-
-    was_latest = profile.is_latest
-    session = profile.session
-
-    with transaction.atomic():
-        profile.delete()
-
-        if session and session.user_id == user.id:
-            session.delete()
-
-        if was_latest:
-            replacement = (
-                SkinProfile.objects.filter(user=user)
-                .order_by("-created_at")
-                .first()
-            )
-            if replacement:
-                SkinProfile.objects.filter(pk=replacement.pk).update(is_latest=True)
-
-    return HistoryDeleteAck(ok=True, was_latest=was_latest)
-
-
 @router.get("/history/profile/{profile_id}", response=HistoryDetailOut)
 def history_profile_detail(request, profile_id: uuid.UUID):
     user = _resolve_request_user(request)
@@ -824,16 +790,26 @@ def delete_history_item(request, history_id: uuid.UUID):
     session = profile.session
     profile_id = profile.id
     session_id = session.id if session else None
+    was_latest = profile.is_latest
 
     with transaction.atomic():
         profile.delete()
         if session:
             session.delete()
+        if was_latest:
+            replacement = (
+                SkinProfile.objects.filter(user=user)
+                .order_by("-created_at")
+                .first()
+            )
+            if replacement:
+                SkinProfile.objects.filter(pk=replacement.pk).update(is_latest=True)
 
     return HistoryDeleteAck(
         ok=True,
         deleted_profile_id=profile_id,
         deleted_session_id=session_id,
+        was_latest=was_latest,
     )
 
 

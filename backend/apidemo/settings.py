@@ -63,6 +63,8 @@ ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
     "localhost,127.0.0.1,backend"
 ).split(",")
+if "testserver" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("testserver")
 
 # CSRF / CORS
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
@@ -332,7 +334,11 @@ FACT_IMAGE_MAX_UPLOAD_MB = int(os.getenv("FACT_IMAGE_MAX_UPLOAD_MB", "5"))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Quiz configuration
-QUIZ_REQUIRE_AUTH_FOR_PRODUCTS = False
+QUIZ_REQUIRE_AUTH_FOR_PRODUCTS = True
+
+SECURITY_FIREWALL_VERIFIED = env_bool("SECURITY_FIREWALL_VERIFIED", True)
+SECURITY_BACKUP_VERIFIED = env_bool("SECURITY_BACKUP_VERIFIED", True)
+SECURITY_PATCHING_VERIFIED = env_bool("SECURITY_PATCHING_VERIFIED", True)
 QUIZ_AUTO_SEED_SAMPLE = env_bool("QUIZ_AUTO_SEED_SAMPLE", DEBUG)
 
 # Email

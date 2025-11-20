@@ -1,8 +1,14 @@
-from ninja import Router, File, Schema
-from ninja.files import UploadedFile
-from PIL import Image
-from ninja.errors import HttpError
 from io import BytesIO
+
+from ninja import File, Router, Schema
+from ninja.errors import HttpError
+from ninja.files import UploadedFile
+
+try:  # pragma: no cover - optional dependency
+    from PIL import Image
+except ImportError:
+    Image = None  # type: ignore
+
 from quiz.models import Product
 
 scan_router = Router(tags=["Scan"])
@@ -26,6 +32,8 @@ class ScanOut(Schema):
 
 @scan_router.post("/scan", response=ScanOut)
 def scan_barcode(request, file: UploadedFile = File(...)):
+    if Image is None:
+        raise HttpError(503, "Pillow is not installed on the server.")
     # Decode
     try:
         decode = get_decode()
@@ -41,6 +49,8 @@ def scan_barcode(request, file: UploadedFile = File(...)):
     
 @scan_router.post("/resolve", response=ScanOut)
 def scan_and_resolve(request, file: UploadedFile = File(...)):
+    if Image is None:
+        raise HttpError(503, "Pillow is not installed on the server.")
     # Decode and resolve in database
     try:
         decode = get_decode()

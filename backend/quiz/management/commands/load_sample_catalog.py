@@ -2498,18 +2498,32 @@ def _ensure_reference_data():
     return concern_map, skin_type_map, restriction_map, ingredient_map
 
 
+def _product_field_limit(field_name: str) -> int | None:
+    field = Product._meta.get_field(field_name)
+    return getattr(field, "max_length", None)
+
+
+def _truncate_for_product(value: str | None, field_name: str) -> str:
+    if not value:
+        return ""
+    limit = _product_field_limit(field_name)
+    if limit:
+        return value[:limit]
+    return value
+
+
 def _product_defaults(seed: ProductSeed) -> dict:
     return {
-        "brand": seed.brand,
-        "name": seed.name,
+        "brand": _truncate_for_product(seed.brand, "brand"),
+        "name": _truncate_for_product(seed.name, "name"),
         "origin_country": seed.origin,
         "category": seed.category,
-        "summary": seed.summary,
-        "hero_ingredients": seed.hero_ingredients,
+        "summary": _truncate_for_product(seed.summary, "summary"),
+        "hero_ingredients": _truncate_for_product(seed.hero_ingredients, "hero_ingredients"),
         "price": Decimal(seed.price),
         "currency": seed.currency,
         "rating": seed.rating,
-        "product_url": seed.product_url or "",
+        "product_url": _truncate_for_product(seed.product_url or "", "product_url"),
         "image": seed.image or "",
         "is_active": True,
     }
@@ -2596,8 +2610,12 @@ class Command(BaseCommand):
             raise RuntimeError("PRODUCTS dataset is empty; populate it before running the command.")
 
         created, updated = 0, 0
+        slug_limit = _product_field_limit("slug")
+
         for seed in PRODUCTS:
             slug = slugify(f"{seed.brand} {seed.name}")
+            if slug_limit:
+                slug = slug[:slug_limit]
             defaults = _product_defaults(seed)
             product, is_created = Product.objects.update_or_create(
                 slug=slug,

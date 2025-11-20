@@ -476,6 +476,9 @@ function LoginContent() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Signup failed. Please try again.";
       setSignupError(message);
+      if (typeof message === "string" && message.toLowerCase().includes("username already")) {
+        setUsernameAvailable(false);
+      }
     } finally {
       setSignupLoading(false);
     }

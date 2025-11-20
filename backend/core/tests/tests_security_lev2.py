@@ -20,6 +20,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.test import override_settings
+from rest_framework.test import APIClient
 
 from core.auth import create_access_token
 from quiz.models import QuizSession
@@ -167,6 +168,8 @@ def test_error_responses_do_not_expose_stack_traces(client, settings):
 
     client.raise_request_exception = False
 
+    from django.urls import clear_url_caches, set_urlconf
+
     response = client.get(FORCE_ERROR_URL)
 
     assert 500 <= response.status_code < 600, (
@@ -177,13 +180,16 @@ def test_error_responses_do_not_expose_stack_traces(client, settings):
     assert "Traceback" not in body, "Stack trace leaked in error response."
     assert "django" not in body.lower(), "Framework internals leaked in error response."
 
+    clear_url_caches()
+    set_urlconf(None)
+
 
 # ------------------------------------------------------------------------------
 # 4. RATE LIMITING / BRUTE FORCE SLOWDOWN
 # ------------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_login_has_basic_rate_limiting_or_consistent_failure(client):
+def test_login_has_basic_rate_limiting_or_consistent_failure():
     """
     Level 2 – Security Testing / API Security:
 
@@ -195,12 +201,13 @@ def test_login_has_basic_rate_limiting_or_consistent_failure(client):
     """
     payload = {"identifier": "unknown_user@example.com", "password": "wrongpassword"}
 
+    api_client = APIClient()
     last_response = None
     for _ in range(12):
-        last_response = client.post(
+        last_response = api_client.post(
             LOGIN_URL,
-            data=json.dumps(payload),
-            content_type="application/json",
+            data=payload,
+            format="json",
         )
 
     assert last_response is not None, "Login endpoint did not respond."
@@ -216,7 +223,7 @@ def test_login_has_basic_rate_limiting_or_consistent_failure(client):
 # ------------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_user_cannot_escalate_privileges_via_profile_update(client):
+def test_user_cannot_escalate_privileges_via_profile_update():
     """
     Level 2 – Advanced Access Control:
 
@@ -240,11 +247,12 @@ def test_user_cannot_escalate_privileges_via_profile_update(client):
         "is_staff": True,
     }
 
-    response = client.put(
+    api_client = APIClient()
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    response = api_client.put(
         PROFILE_URL,
-        data=json.dumps(malicious_payload),
-        content_type="application/json",
-        HTTP_AUTHORIZATION=f"Bearer {token}",
+        data=malicious_payload,
+        format="json",
     )
 
     # The API should accept the update but ignore forbidden fields.
@@ -255,4 +263,3 @@ def test_user_cannot_escalate_privileges_via_profile_update(client):
     user.refresh_from_db()
     assert user.is_superuser is False, "User was able to set is_superuser=True via API."
     assert user.is_staff is False, "User was able to set is_staff=True via API."
-

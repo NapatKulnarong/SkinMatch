@@ -194,7 +194,7 @@ export function ProductScanner() {
                 <div className="space-y-2">
                   <SparklesIcon className="mx-auto h-6 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
                   <p className="text-sm font-semibold text-[#5a4230]">Drop a photo or tap to browse</p>
-                  <p className="text-xs text-[#5a4230]/70">PNG / JPG up to 10MB</p>
+                  <p className="text-xs text-[#5a4230]/70">PNG / JPG / HEIC up to 10MB</p>
                 </div>
               )}
             </label>

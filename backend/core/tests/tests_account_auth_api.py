@@ -75,6 +75,27 @@ class AccountAuthAPITests(TestCase):
         self.assertFalse(data["ok"])
         self.assertIn("Email already in use", data["message"])
 
+    def test_signup_rejects_duplicate_username_case_insensitively(self):
+        existing = User.objects.create_user(
+            username="GlowUser",
+            email="unique@example.com",
+            password="DummyPass123!",
+        )
+        existing.username = "GlowUser"
+        existing.save(update_fields=["username"])
+
+        payload = self._signup_payload(username="glowuser", email="another@example.com")
+        response = self.client.post(
+            self.signup_url,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["ok"])
+        self.assertIn("Username already taken", data["message"])
+
     def test_token_login_with_email_returns_jwt(self):
         password = "Sup3r!Secure"
         user = User.objects.create_user(

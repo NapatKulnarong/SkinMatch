@@ -1,6 +1,6 @@
 export type EnvironmentAlert = {
   id: string;
-  category: "uv" | "air_quality" | string;
+  category: "uv" | string;
   severity: string;
   title: string;
   message: string;
@@ -16,22 +16,12 @@ export type UVSummary = {
   message: string;
 };
 
-export type AirQualitySummary = {
-  pm25: number;
-  pm10: number;
-  aqi: number;
-  level: string;
-  levelLabel: string;
-  message: string;
-};
-
 export type EnvironmentAlertResponse = {
   generatedAt: string;
   latitude: number;
   longitude: number;
   locationLabel?: string | null;
   uv: UVSummary;
-  airQuality: AirQualitySummary;
   alerts: EnvironmentAlert[];
   sourceName: string;
   sourceUrl: string;
@@ -41,15 +31,6 @@ export type EnvironmentAlertResponse = {
 type RawUvSummary = {
   index?: number;
   max_index?: number;
-  level?: string;
-  level_label?: string;
-  message?: string;
-};
-
-type RawAirQuality = {
-  pm25?: number;
-  pm10?: number;
-  aqi?: number;
   level?: string;
   level_label?: string;
   message?: string;
@@ -71,7 +52,6 @@ type RawEnvironmentAlertResponse = {
   longitude?: number;
   location_label?: string | null;
   uv?: RawUvSummary;
-  air_quality?: RawAirQuality;
   alerts?: RawEnvironmentAlertItem[];
   source_name?: string;
   source_url?: string;
@@ -125,14 +105,6 @@ const mapAlertResponse = (payload: RawEnvironmentAlertResponse): EnvironmentAler
     level: payload.uv?.level ?? "unknown",
     levelLabel: payload.uv?.level_label ?? "Unknown",
     message: payload.uv?.message ?? "",
-  },
-  airQuality: {
-    pm25: payload.air_quality?.pm25 ?? 0,
-    pm10: payload.air_quality?.pm10 ?? 0,
-    aqi: payload.air_quality?.aqi ?? 0,
-    level: payload.air_quality?.level ?? "unknown",
-    levelLabel: payload.air_quality?.level_label ?? "Unknown",
-    message: payload.air_quality?.message ?? "",
   },
   alerts: Array.isArray(payload.alerts)
     ? payload.alerts.map((item) => ({

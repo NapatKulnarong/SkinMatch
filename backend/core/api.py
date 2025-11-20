@@ -226,15 +226,6 @@ class UVSummaryOut(Schema):
     message: str
 
 
-class AirQualitySummaryOut(Schema):
-    pm25: float
-    pm10: float
-    aqi: int
-    level: str
-    level_label: str
-    message: str
-
-
 class AlertItemOut(Schema):
     id: str
     category: str
@@ -251,7 +242,6 @@ class EnvironmentAlertResponse(Schema):
     longitude: float
     location_label: Optional[str] = None
     uv: UVSummaryOut
-    air_quality: AirQualitySummaryOut
     alerts: List[AlertItemOut]
     source_name: str
     source_url: str

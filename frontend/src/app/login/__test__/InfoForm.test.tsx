@@ -17,6 +17,19 @@ jest.mock("next/navigation", () => ({
   usePathname: jest.fn(() => "/login"),
 }));
 
+jest.mock("@/lib/api.auth", () => ({
+  signup: jest.fn(),
+  checkUsername: jest.fn(),
+  login: jest.fn(),
+  fetchProfile: jest.fn(),
+  createAdminSession: jest.fn(),
+}));
+
+const { signup, checkUsername } = jest.requireMock("@/lib/api.auth") as {
+  signup: jest.Mock;
+  checkUsername: jest.Mock;
+};
+
 describe("LoginPage - Signup Validation", () => {
   // Suppress console logs during tests
   beforeAll(() => {
@@ -102,6 +115,13 @@ describe("LoginPage - Signup Validation", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (signup as jest.Mock).mockReset();
+    (checkUsername as jest.Mock).mockReset();
+    (signup as jest.Mock).mockResolvedValue({ ok: true, message: "Signup successful" });
+    (checkUsername as jest.Mock).mockResolvedValue({
+      available: true,
+      message: "Username is available",
+    });
   });
 
   describe("Password validation", () => {
@@ -239,6 +259,33 @@ describe("LoginPage - Signup Validation", () => {
           screen.getByText(/you must agree to the privacy policy/i)
         ).toBeInTheDocument();
       });
+    });
+  });
+  
+  describe("Username availability + backend collision", () => {
+    it("shows username taken message when backend rejects duplicate username", async () => {
+      jest.useFakeTimers();
+      await renderSignupForm();
+      await fillValidForm();
+      const usernameInput = screen.getByPlaceholderText("Pick a username");
+      await act(async () => {
+        fireEvent.change(usernameInput, { target: { value: "glowgetter" } });
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+      await waitFor(() => {
+        expect(checkUsername).toHaveBeenCalledWith("glowgetter");
+      });
+      (signup as jest.Mock).mockRejectedValueOnce(new Error("Username already taken"));
+      const { confirmButton } = getFormElements();
+      await act(async () => {
+        fireEvent.click(confirmButton);
+      });
+      await waitFor(() => {
+        expect(screen.getAllByText(/username already taken/i).length).toBeGreaterThan(0);
+      });
+      jest.useRealTimers();
     });
   });
 });

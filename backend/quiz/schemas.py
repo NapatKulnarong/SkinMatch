@@ -87,6 +87,7 @@ class HistoryDeleteAck(Schema):
     ok: bool
     deleted_profile_id: uuid.UUID | None = None
     deleted_session_id: uuid.UUID | None = None
+    was_latest: bool = False
 
 
 class SkinProfileOut(Schema):
@@ -297,11 +298,6 @@ class FeedbackOut(Schema):
 
 class FeedbackAck(Schema):
     ok: bool
-
-
-class HistoryDeleteAck(Schema):
-    ok: bool
-    was_latest: bool = False
 
 
 class EmailSummaryIn(Schema):

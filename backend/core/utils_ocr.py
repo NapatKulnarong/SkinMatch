@@ -1,9 +1,31 @@
 import math
-import cv2
-import numpy as np
-from PIL import Image
+from typing import Any
 
-def _deskew(gray: np.ndarray) -> np.ndarray:
+try:  # pragma: no cover - optional dependency
+    import cv2
+except ImportError:
+    cv2 = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from PIL import Image
+except ImportError:
+    Image = None  # type: ignore
+
+NDArray = np.ndarray if np is not None else Any
+PILImage = Image if Image is not None else Any
+
+
+def _ensure_ocr_dependencies() -> None:
+    if cv2 is None or np is None or Image is None:
+        raise RuntimeError("OpenCV, NumPy, and Pillow are required for OCR preprocessing.")
+
+def _deskew(gray: NDArray) -> NDArray:
+    _ensure_ocr_dependencies()
     # Estimate skew via Hough lines; fall back to original if nothing found
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
     lines = cv2.HoughLines(edges, 1, np.pi/180, 120)
@@ -23,7 +45,8 @@ def _deskew(gray: np.ndarray) -> np.ndarray:
     M = cv2.getRotationMatrix2D((w//2, h//2), angle, 1.0)
     return cv2.warpAffine(gray, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
 
-def preprocess_for_ocr(pil_img: Image.Image) -> Image.Image:
+def preprocess_for_ocr(pil_img: PILImage) -> PILImage:
+    _ensure_ocr_dependencies()
     # upscale a bit
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
     img = cv2.resize(img, None, fx=1.8, fy=1.8, interpolation=cv2.INTER_CUBIC)
