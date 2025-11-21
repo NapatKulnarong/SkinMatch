@@ -21,6 +21,7 @@ import {
 import { redirectTo } from "./redirect";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
 import { UsernameRequirements } from "@/components/UsernameRequirements";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Mode = "intro" | "signup" | "login" | "forgot";
 
@@ -787,8 +788,7 @@ function LoginContent() {
                 </div>
 
                 <Field label="Password" colSpan={2}>
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="password"
                     value={signup.password}
                     onChange={onSignupChange}
@@ -802,8 +802,7 @@ function LoginContent() {
                 </Field>
 
                 <Field label="Confirm Password" colSpan={2}>
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="confirmPassword"
                     value={signup.confirmPassword}
                     onChange={onSignupChange}
@@ -893,13 +892,13 @@ function LoginContent() {
               </Field>
 
               <Field label="Password" colSpan={2}>
-                <input
-                  type="password"
+                <PasswordInput
                   name="password"
                   value={login.password}
                   onChange={onLoginChange}
                   className="w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-black focus:outline-none"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
               </Field>
 

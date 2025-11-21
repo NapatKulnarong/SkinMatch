@@ -6,6 +6,7 @@ import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { resetPassword } from "@/lib/api.auth";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type ResetStatus = "idle" | "submitting" | "success" | "error";
 
@@ -120,9 +121,8 @@ function ResetPasswordContent() {
                 <label className="text-sm font-semibold text-[#2C2533]" htmlFor="new-password">
                   New password
                 </label>
-                <input
+                <PasswordInput
                   id="new-password"
-                  type="password"
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
@@ -145,9 +145,8 @@ function ResetPasswordContent() {
                 <label className="text-sm font-semibold text-[#2C2533]" htmlFor="confirm-password">
                   Confirm new password
                 </label>
-                <input
+                <PasswordInput
                   id="confirm-password"
-                  type="password"
                   value={confirm}
                   onChange={(event) => {
                     setConfirm(event.target.value);
