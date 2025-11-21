@@ -426,6 +426,9 @@ def ingredient_quick_search(
             price_value = to_float(product.price)
             if price_value == 0:
                 price_value = None
+            rating_value = to_float(product.rating)
+            if rating_value is None:
+                rating_value = 0.0
             product_entries.append(
                 {
                     "product_id": product.id,
@@ -439,7 +442,7 @@ def ingredient_quick_search(
                     "ingredient_highlight": bool(link.highlight),
                     "price": price_value,
                     "currency": product.currency,
-                    "average_rating": to_float(product.rating),
+                    "average_rating": rating_value,
                     "review_count": product.review_count,
                     "image_url": image_url,
                     "image": product.image or None,
@@ -978,13 +981,12 @@ def session_detail(request, session_id: uuid.UUID):
         product = pick.product
         image_url = pick.image_url
         product_url = pick.product_url
-        average_rating = None
+        average_rating = 0.0
         review_count = 0
         if product:
             image_url = image_url or _product_image_url(product)
             product_url = product_url or _sanitize_product_url(product.product_url)
-            average_rating = _decimal_to_float(product.rating)
-            review_count = product.review_count
+            average_rating, review_count = _derive_review_stats(product)
 
         picks.append(
             MatchPickOut(
@@ -1250,6 +1252,7 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
             display_currency = product.currency or Product.Currency.USD
             image_url = _product_image_url(product)
             purchase_url = _sanitize_product_url(product.product_url)
+            average_rating_value, review_count = _derive_review_stats(product)
             MatchPick.objects.create(
                 session=session,
                 product=product,
@@ -1283,8 +1286,8 @@ def calculate_results(session: QuizSession, *, include_products: bool) -> dict:
                     "ingredients": recommendation.ingredients,
                     "rationale": recommendation.rationale,
                     "brand_name": product.brand,
-                    "average_rating": _decimal_to_float(product.rating),
-                    "review_count": product.review_count,
+                    "average_rating": average_rating_value,
+                    "review_count": review_count,
                 }
             )
 
@@ -1400,8 +1403,13 @@ def _derive_review_stats(product: Product) -> tuple[float | None, int]:
     community_count = getattr(product, "community_review_count", None)
     if isinstance(community_count, int) and community_count > 0:
         community_avg = getattr(product, "community_avg_rating", None)
-        return _decimal_to_float(community_avg), community_count
+        average_value = _decimal_to_float(community_avg)
+        if average_value is None:
+            average_value = 0.0
+        return average_value, community_count
     fallback_average = _decimal_to_float(product.rating)
+    if fallback_average is None:
+        fallback_average = 0.0
     fallback_count = int(getattr(product, "review_count", 0) or 0)
     return fallback_average, fallback_count
 
@@ -1686,6 +1694,10 @@ def _map_history_summary(raw: dict | None) -> QuizResultSummary:
 def _serialize_pick(pick: MatchPick) -> MatchPickOut:
     product = getattr(pick, "product", None)
     image_url = pick.image_url or (_product_image_url(product) if product else None)
+    average_rating = 0.0
+    review_count = 0
+    if product:
+        average_rating, review_count = _derive_review_stats(product)
     return MatchPickOut(
         product_id=str(pick.product_id),
         slug=pick.product_slug,
@@ -1700,12 +1712,15 @@ def _serialize_pick(pick: MatchPick) -> MatchPickOut:
         rationale=pick.rationale or {},
         image_url=image_url,
         product_url=getattr(product, "product_url", None),
-        average_rating=_decimal_to_float(getattr(product, "rating", None)),
-        review_count=getattr(product, "review_count", 0) or 0,
+        average_rating=average_rating,
+        review_count=review_count,
     )
 
 
 def _serialize_pick_from_payload(payload: dict) -> MatchPickOut:
+    stored_average = _decimal_to_float(payload.get("average_rating"))
+    if stored_average is None:
+        stored_average = 0.0
     return MatchPickOut(
         product_id=str(payload.get("product_id", "")),
         slug=str(payload.get("slug", "")),
@@ -1720,7 +1735,7 @@ def _serialize_pick_from_payload(payload: dict) -> MatchPickOut:
         rationale=payload.get("rationale") or {},
         image_url=payload.get("image_url"),
         product_url=payload.get("product_url"),
-        average_rating=_decimal_to_float(payload.get("average_rating")),
+        average_rating=stored_average,
         review_count=int(payload.get("review_count", 0) or 0),
     )
 

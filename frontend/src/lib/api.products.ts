@@ -107,7 +107,10 @@ const mapSummary = (raw: RawSkincareProductSummary): SkincareProductSummary => (
   heroIngredients: Array.isArray(raw.hero_ingredients) ? raw.hero_ingredients : [],
   price: typeof raw.price === "number" ? raw.price : null,
   currency: raw.currency,
-  averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+  averageRating:
+    typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
+      ? raw.average_rating
+      : 0,
   reviewCount: typeof raw.review_count === "number" ? raw.review_count : 0,
   imageUrl: raw.image_url ?? null,
   productUrl: raw.product_url ?? null,

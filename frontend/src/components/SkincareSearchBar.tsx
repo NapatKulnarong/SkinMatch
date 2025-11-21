@@ -298,14 +298,17 @@ export function SkincareSearchBar({
           {suggestions.length ? (
             <ul className="divide-y divide-black/5">
               {suggestions.map((item, index) => {
+                const reviewCount = item.reviewCount ?? 0;
+                const hasReviews = reviewCount > 0;
                 const ratingLabel =
-                  typeof item.averageRating === "number"
+                  hasReviews && typeof item.averageRating === "number"
                     ? ratingFormatter.format(item.averageRating)
                     : null;
-                const reviewsText =
-                  item.reviewCount === 1
+                const reviewsText = hasReviews
+                  ? reviewCount === 1
                     ? "1 review"
-                    : `${item.reviewCount} reviews`;
+                    : `${reviewCount} reviews`
+                  : "No reviews yet";
                 const isActive = index === activeIndex;
                 return (
                   <li key={item.productId}>

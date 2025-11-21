@@ -100,9 +100,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const ratingLabel = formatRating(product.averageRating);
-  const reviewLabel =
-    product.reviewCount === 1 ? "1 review" : `${product.reviewCount} reviews`;
+  const reviewCount = product.reviewCount ?? 0;
+  const hasReviews = reviewCount > 0;
+  const ratingLabel = hasReviews ? formatRating(product.averageRating) : null;
+  const reviewLabel = hasReviews
+    ? reviewCount === 1
+      ? "1 review"
+      : `${reviewCount} reviews`
+    : "No reviews yet";
   const priceLabel =
     typeof product.price === "number"
       ? formatCurrency(product.price, product.currency)

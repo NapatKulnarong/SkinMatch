@@ -409,7 +409,10 @@ const mapRecommendation = (raw: RawRecommendation): QuizRecommendation => ({
   ingredients: raw.ingredients ?? [],
   rationale: raw.rationale ?? {},
   brandName: raw.brand_name ?? raw.brand ?? null,
-  averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+  averageRating:
+    typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
+      ? raw.average_rating
+      : 0,
   reviewCount: raw.review_count ?? 0,
 });
 
@@ -457,7 +460,10 @@ const mapProductDetail = (raw: RawProductDetail): ProductDetail => {
     restrictions: sanitizeList(raw.restrictions),
     price: typeof raw.price === "number" ? raw.price : null,
     currency: raw.currency,
-    averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+    averageRating:
+      typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
+        ? raw.average_rating
+        : 0,
     reviewCount: typeof raw.review_count === "number" ? raw.review_count : 0,
     imageUrl: resolveMediaUrl(raw.image_url),
     productUrl: raw.product_url ?? null,
@@ -593,7 +599,10 @@ const mapPick = (raw: RawMatchPick): QuizMatchPick => ({
   rationale: raw.rationale ?? {},
   imageUrl: raw.image_url ?? null,
   productUrl: raw.product_url ?? null,
-  averageRating: typeof raw.average_rating === "number" ? raw.average_rating : null,
+  averageRating:
+    typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
+      ? raw.average_rating
+      : 0,
   reviewCount: raw.review_count ?? 0,
 });
 

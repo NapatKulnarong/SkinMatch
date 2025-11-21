@@ -38,12 +38,17 @@ export function SkincareProductSummaryCard({
 }: CardProps) {
   const isHorizontal = variant === "horizontal";
 
+  const reviewCount = product.reviewCount ?? 0;
+  const hasReviews = reviewCount > 0;
   const ratingLabel =
-    typeof product.averageRating === "number"
+    hasReviews && typeof product.averageRating === "number"
       ? ratingFormatter.format(product.averageRating)
       : null;
-  const reviewsLabel =
-    product.reviewCount === 1 ? "1 review" : `${product.reviewCount} reviews`;
+  const reviewsLabel = hasReviews
+    ? reviewCount === 1
+      ? "1 review"
+      : `${reviewCount} reviews`
+    : "No reviews yet";
   const heroLabel =
     product.heroIngredients.length > 0
       ? product.heroIngredients.slice(0, 3).join(" • ")
