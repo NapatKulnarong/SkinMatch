@@ -762,7 +762,7 @@ KOREAN_PRODUCTS: list[ProductSeed] = [
         ingredients=["fermented-yeast", "oryza-sativa-extract", "hyaluronic-acid"],
         skin_types=["normal", "dry", "combination"],
         restrictions=["alcohol-free"],
-        product_url="https://shopee.co.th/NEOGEN-DERMALOGY-Real-Ferment-Micro-Essence-150ml-i.1001282379.26056670545",
+        product_url="https://thebeautyspy.com/cdn/shop/products/1_e74cf549-6b70-431e-be23-aa94b2bf75ff_1080x.png?v=1615913274",
         image="https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/ngd/ngd44893/l/50.jpg",
     ),
     ProductSeed(

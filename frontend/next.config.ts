@@ -67,6 +67,11 @@ const nextConfig: NextConfig = {
         hostname: "www.essentials.lk",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "cloudinary.images-iherb.com",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {
