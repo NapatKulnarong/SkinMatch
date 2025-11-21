@@ -249,7 +249,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="grid items-start gap-6 lg:grid-cols-2">
+        <section className="grid items-start gap-5 lg:grid-cols-2">
           <div className="space-y-6 rounded-[28px] border-2 border-black bg-white/90 p-5 md:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)] h-full">
             <div className="space-y-4">
               <h2 className="text-xl font-black text-[#1f2d26]">Product overview</h2>
