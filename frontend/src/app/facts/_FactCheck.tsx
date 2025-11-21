@@ -232,7 +232,7 @@ function EmptyTimelineState() {
         We&apos;re lining up the most-requested myths. Tell us what to investigate next!
       </p>
       <Link
-        href="mailto:hello@skinmatch.co"
+        href="mailto:skinmatch.contact@gmail.com"
         className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white px-5 py-2 text-sm font-semibold text-[#102320] shadow-[0_4px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px]"
       >
         Suggest a myth
