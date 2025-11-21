@@ -130,7 +130,7 @@ class Product(models.Model):
         default="",
         help_text="Optional relative media path or absolute URL for the product image.",
     )
-    product_url = models.URLField(blank=True)
+    product_url = models.URLField(blank=True, max_length=1024)
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -382,7 +382,7 @@ class MatchPick(models.Model):
     currency = models.CharField(max_length=3, default="USD")
     rationale = models.JSONField(default=dict, blank=True)
     image_url = models.TextField(blank=True, default="")
-    product_url = models.URLField(blank=True)
+    product_url = models.URLField(blank=True, max_length=1024)
     created_at = models.DateTimeField(default=timezone.now, blank=True)
 
     class Meta:
