@@ -6,12 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
 
 import { QUIZ_COMPLETED_EVENT } from "@/app/quiz/_QuizContext";
-import { getAuthToken } from "@/lib/auth-storage";
+import { PROFILE_EVENT, getAuthToken, getStoredProfile } from "@/lib/auth-storage";
 
 export type NotificationLink = {
   label: string;
@@ -53,8 +54,52 @@ const generateId = () => {
   return `notif_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 };
 
+type StoredNotification = Omit<NotificationItem, "createdAt"> & {
+  createdAt: string;
+};
+
+const NOTIFICATION_STORAGE_PREFIX = "sm_notifications";
+
+const getNotificationStorageKey = (userId: string) =>
+  `${NOTIFICATION_STORAGE_PREFIX}_${userId}`;
+
+const loadNotificationsForUser = (userId: string): NotificationItem[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const raw = localStorage.getItem(getNotificationStorageKey(userId));
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as StoredNotification[];
+    return parsed
+      .map((item) => ({
+        ...item,
+        createdAt: new Date(item.createdAt),
+      }))
+      .filter((item) => !Number.isNaN(item.createdAt.getTime()));
+  } catch (error) {
+    console.warn("Failed to load notifications", error);
+    return [];
+  }
+};
+
+const persistNotificationsForUser = (userId: string, notifications: NotificationItem[]) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const payload: StoredNotification[] = notifications.map(({ createdAt, ...rest }) => ({
+    ...rest,
+    createdAt: createdAt.toISOString(),
+  }));
+  localStorage.setItem(getNotificationStorageKey(userId), JSON.stringify(payload));
+};
+
 export function NotificationCenterProvider({ children }: PropsWithChildren) {
+  const [userId, setUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const lastPersistedUserRef = useRef<string | null>(null);
 
   const addNotification = useCallback((input: NotificationInput) => {
     setNotifications((prev) => {
@@ -84,6 +129,45 @@ export function NotificationCenterProvider({ children }: PropsWithChildren) {
   const dismiss = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((item) => item.id !== id));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const syncUserFromProfile = () => {
+      const profile = getStoredProfile();
+      setUserId(profile?.u_id ?? null);
+    };
+    syncUserFromProfile();
+    window.addEventListener(PROFILE_EVENT, syncUserFromProfile);
+    return () => window.removeEventListener(PROFILE_EVENT, syncUserFromProfile);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!userId) {
+      setNotifications([]);
+      return;
+    }
+    setNotifications(loadNotificationsForUser(userId));
+  }, [userId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!userId) {
+      lastPersistedUserRef.current = null;
+      return;
+    }
+    if (lastPersistedUserRef.current !== userId) {
+      lastPersistedUserRef.current = userId;
+      return;
+    }
+    persistNotificationsForUser(userId, notifications);
+  }, [notifications, userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
