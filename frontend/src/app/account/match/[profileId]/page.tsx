@@ -975,9 +975,9 @@ function renderRecommendations(
                     href={item.productUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
-                    Shop
+                    Shopee
                   </a>
                 )}
               </div>
