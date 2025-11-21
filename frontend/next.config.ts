@@ -67,6 +67,11 @@ const nextConfig: NextConfig = {
         hostname: "www.essentials.lk",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "down-th.img.susercontent.com",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {

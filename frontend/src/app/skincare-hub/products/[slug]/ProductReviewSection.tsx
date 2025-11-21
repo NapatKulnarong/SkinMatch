@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import clsx from "clsx";
 import {
   FormEvent,
   useCallback,
@@ -9,7 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { StarIcon } from "@heroicons/react/24/solid";
+import { ChatBubbleOvalLeftEllipsisIcon, StarIcon } from "@heroicons/react/24/solid";
 
 import {
   deleteProductReview,
@@ -33,6 +34,8 @@ const MAX_REVIEWS = 20;
 
 export function ProductReviewSection({ productId, productName }: ProductReviewSectionProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [loginHref, setLoginHref] = useState("/login");
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,19 +182,25 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
     }
   }, [productId, token]);
 
-  const loginHref = `/login?next=${encodeURIComponent(pathname || "/")}`;
+  useEffect(() => {
+    const search = searchParams?.toString() || "";
+    const pathWithQuery = `${pathname}${search ? `?${search}` : ""}`;
+    let nextValue = pathWithQuery || "/";
+    if (typeof window !== "undefined") {
+      nextValue = window.location.pathname + window.location.search + window.location.hash;
+    }
+    setLoginHref(`/login?redirect=${encodeURIComponent(nextValue)}`);
+  }, [pathname, searchParams]);
+  const isAuthed = Boolean(profile);
 
   return (
-    <section
-      id="reviews"
-      className="space-y-6 rounded-[28px] border-2 border-black bg-white p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
-    >
+    <section id="reviews" className="relative h-full space-y-6 overflow-hidden rounded-[24px]">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
             Community voices
           </p>
-          <h2 className="text-2xl font-black text-[#1f2d26]">
+          <h2 className="text-2xl font-black text-[#1f2d26] leading-snug">
             Reviews for {productName}
           </h2>
         </div>
@@ -199,21 +208,17 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
           <p className="text-sm text-[#1f2d26]/60">
             Signed in as <span className="font-semibold">{profile.username}</span>
           </p>
-        ) : (
-          <Link
-            href={loginHref}
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#1f2d26] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5"
-          >
-            Sign in to review
-          </Link>
-        )}
+        ) : null}
       </div>
 
-      <div className="space-y-6">
-        <div className="rounded-[22px] border border-dashed border-black/30 bg-[#f9faf8] p-5 lg:p-6">
-          <h3 className="text-lg font-bold text-[#1f2d26]">Your review</h3>
+      <div className="space-y-6 max-h-[720px] overflow-y-auto pr-1 relative">
+        <div className="space-y-4 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center gap-2">
+            <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5 text-[#1f2d26]" />
+            <h3 className="text-lg font-bold text-[#1f2d26]">Your review</h3>
+          </div>
           {profile ? (
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#1f2d26]/80">
                   Optional star rating
@@ -244,7 +249,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
                   })}
                 </div>
               </div>
-              <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-black/40 bg-white/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-black/30 bg-white/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#1f2d26]">Post anonymously</p>
                   <p className="text-xs text-[#1f2d26]/70">
@@ -308,16 +313,17 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
               </div>
             </form>
           ) : (
-            <p className="mt-4 text-sm text-[#1f2d26]/70">
+            <p className="text-sm text-[#1f2d26]/70">
               Log in to add your voice. Reviews from real members help the
               SkinMatch community understand how products fit different routines.
             </p>
           )}
         </div>
-        <div className="space-y-3">
-          <h3 className="text-lg font-bold text-[#1f2d26]">
-            Community feedback
-          </h3>
+        <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center gap-2">
+            <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5 text-[#1f2d26]" />
+            <h3 className="text-lg font-bold text-[#1f2d26]">Community feedback</h3>
+          </div>
           {loading ? (
             <p className="text-sm text-[#1f2d26]/70">Loading reviews…</p>
           ) : error ? (
@@ -329,7 +335,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
               {reviews.map((review) => (
                 <li
                   key={review.id}
-                  className="rounded-[18px] border border-black/10 bg-[#f7f9f5] p-4"
+                  className="rounded-[14px] border border-black/10 bg-[#f7f9f5] p-4"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-sm font-semibold text-[#1f2d26]">
@@ -378,6 +384,28 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
           )}
         </div>
       </div>
+
+      {!isAuthed ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-[1px] px-4">
+          <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/15 bg-white px-6 py-7 text-center shadow-[0_10px_24px_rgba(0,0,0,0.08)] max-w-md w-full">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#1f2d26]/60">
+              Please sign in
+            </p>
+            <p className="text-lg font-bold text-[#1f2d26]">Sign in to read and share reviews</p>
+            <p className="text-sm text-[#1f2d26]/70">
+              Log in to view community feedback and add your own experience with this product.
+            </p>
+            <div className="flex justify-center">
+              <Link
+                href={loginHref}
+                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#1f2d26] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                Sign in
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

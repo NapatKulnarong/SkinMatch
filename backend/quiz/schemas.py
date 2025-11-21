@@ -257,6 +257,12 @@ class IngredientSummaryOut(Schema):
     top_concerns: List[str] = Field(default_factory=list)
 
 
+class IngredientBenefitOut(Schema):
+    ingredient: str
+    benefit: Optional[str] = None
+    source: str
+
+
 class IngredientProductOut(Schema):
     product_id: uuid.UUID
     slug: str

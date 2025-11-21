@@ -80,10 +80,11 @@ class GoogleOAuthCallbackView(View):
         return HttpResponseRedirect(self._build_frontend_redirect(params))
 
     def _build_frontend_redirect(self, params: dict) -> str:
-    # Always redirect to account page after successful auth
-        base = "http://localhost:3000/account"
+    # Redirect to login page after successful auth so it can handle redirect parameter
+    # The login page will then redirect to account or the stored redirect URL
+        base = "http://localhost:3000/login"
     
-    # If there's an error, redirect to login page with error
+    # If there's an error, also redirect to login page with error
         if params.get("error"):
             base = "http://localhost:3000/login"
     

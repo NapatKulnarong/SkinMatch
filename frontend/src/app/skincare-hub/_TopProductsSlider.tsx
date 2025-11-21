@@ -11,11 +11,16 @@ type TopProductsSliderProps = {
 
 const AUTO_SCROLL_INTERVAL = 4500;
 const RESET_DELAY = 450;
+const PAUSE_AFTER_USER_SCROLL_MS = 1000;
 
 export function TopProductsSlider({ products }: TopProductsSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
+  const isPausedRef = useRef(false);
+  const pauseTimeoutRef = useRef<number | null>(null);
+  const autoScrollIntervalRef = useRef<number | null>(null);
+  const isProgrammaticScrollRef = useRef(false);
 
   const loopedProducts = useMemo(() => {
     if (!products.length) return [];
@@ -33,11 +38,64 @@ export function TopProductsSlider({ products }: TopProductsSliderProps) {
     const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotionQuery.matches) return;
 
-    const id = window.setInterval(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, AUTO_SCROLL_INTERVAL);
+    const startAutoScroll = () => {
+      if (autoScrollIntervalRef.current) {
+        window.clearInterval(autoScrollIntervalRef.current);
+      }
+      autoScrollIntervalRef.current = window.setInterval(() => {
+        if (!isPausedRef.current) {
+          setCurrentIndex((prev) => prev + 1);
+        }
+      }, AUTO_SCROLL_INTERVAL);
+    };
 
-    return () => window.clearInterval(id);
+    const pauseAutoScroll = () => {
+      isPausedRef.current = true;
+      if (autoScrollIntervalRef.current) {
+        window.clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+    };
+
+    const resumeAutoScroll = () => {
+      isPausedRef.current = false;
+      startAutoScroll();
+    };
+
+    const handleScroll = () => {
+      // Ignore programmatic scrolling from auto-scroll
+      if (isProgrammaticScrollRef.current) {
+        isProgrammaticScrollRef.current = false;
+        return;
+      }
+      
+      pauseAutoScroll();
+      
+      if (pauseTimeoutRef.current) {
+        window.clearTimeout(pauseTimeoutRef.current);
+      }
+      
+      pauseTimeoutRef.current = window.setTimeout(() => {
+        resumeAutoScroll();
+        pauseTimeoutRef.current = null;
+      }, PAUSE_AFTER_USER_SCROLL_MS);
+    };
+
+    const container = trackRef.current;
+    if (!container) return;
+
+    startAutoScroll();
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      if (autoScrollIntervalRef.current) {
+        window.clearInterval(autoScrollIntervalRef.current);
+      }
+      if (pauseTimeoutRef.current) {
+        window.clearTimeout(pauseTimeoutRef.current);
+      }
+      container.removeEventListener("scroll", handleScroll);
+    };
   }, [products.length]);
 
   useEffect(() => {
@@ -53,10 +111,10 @@ export function TopProductsSlider({ products }: TopProductsSliderProps) {
     
     if (target) {
       // Use scrollTo on the container instead of scrollIntoView to prevent page scrolling
-      // Calculate scroll position relative to container's current scroll position
-      const containerScrollLeft = container.scrollLeft;
       const targetOffsetLeft = target.offsetLeft;
       
+      // Mark as programmatic scroll to avoid triggering pause
+      isProgrammaticScrollRef.current = true;
       container.scrollTo({
         left: targetOffsetLeft,
         behavior,
@@ -99,7 +157,7 @@ export function TopProductsSlider({ products }: TopProductsSliderProps) {
         return (
           <div
             key={`${product.productId}-${index}`}
-            className="flex-none w-[280px] sm:w-[420px] lg:w-[480px] snap-start h-full"
+            className="flex-none w-[280px] sm:w-[420px] lg:w-[480px] snap-start h-[240px]"
             aria-hidden={isClone ? true : undefined}
           >
             <SkincareProductSummaryCard

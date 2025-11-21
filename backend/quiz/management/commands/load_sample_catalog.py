@@ -2423,6 +2423,226 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         product_url="https://shopee.co.th/%F0%9F%92%A5%E0%B8%9E%E0%B8%A3%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%AA%E0%B9%88%E0%B8%87%F0%9F%92%A5(Exp-12-26)Pixi-Glow-tonic-%E0%B8%82%E0%B8%99%E0%B8%B2%E0%B8%94-250ml-(%E0%B8%82%E0%B8%A7%E0%B8%94%E0%B8%8B%E0%B8%B5%E0%B8%A5%E0%B8%9B%E0%B8%81%E0%B8%95%E0%B8%B4)-i.984491.40726235948?extraParams=%7B%22display_model_id%22:405091275676,%22model_selection_logic%22:3%7D&sp_atk=17bd63a4-6ee1-408c-8fa8-82e8e83bf9a3&xptdk=17bd63a4-6ee1-408c-8fa8-82e8e83bf9a3",
         image="https://mcgrocer.com/cdn/shop/files/pixi-glow-tonic-250ml-40437632270574.jpg?v=1745459136",
     ),
+    ProductSeed(
+        brand="CURECODE",
+        name="ULTRA SOOTHING RADIANCE GEL 80ML",
+        origin="South Korea",
+        category="moisturizer",
+        price="1299.00",
+        currency="THB",
+        summary="A lightweight, non-greasy moisturizer for sensitive, oily, and combination skin that strengthens the skin barrier, soothes irritation, and brightens complexion using patented Neuromide® and Tri-biotics technology.",
+        hero_ingredients="Neuromide®, Centella Asiatica",
+        rating=4.6,
+        concerns=["sensitive", "dehydrated-skin", "damaged-skin-barrier"],
+        ingredients=["niacinamide","centella"],
+        skin_types=["normal", "combination", "oily"],
+        restrictions=["cruelty-free"] ,
+        product_url="https://shopee.co.th/%E0%B9%80%E0%B8%88%E0%B8%A5%E0%B8%81%E0%B8%B9%E0%B9%89%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B8%A1%E0%B8%B1%E0%B8%99-%E0%B8%82%E0%B8%B2%E0%B8%94%E0%B8%99%E0%B9%89%E0%B8%B3-%E0%B9%83%E0%B8%AB%E0%B9%89%E0%B8%81%E0%B8%A5%E0%B8%B1%E0%B8%9A%E0%B8%A1%E0%B8%B2%E0%B8%89%E0%B9%88%E0%B8%B3%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87%E0%B8%AA%E0%B8%B8%E0%B8%82%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%94%E0%B8%B5-CURECODE-ULTRA-SOOTHING-RADIANCE-GEL-i.892144781.25965942034?extraParams=%7B%22display_model_id%22:197338180122%7D",
+        image="https://down-th.img.susercontent.com/file/th-11134207-7ra0h-md3598kld0ta82",
+    ),
+    ProductSeed(
+    brand="CURECODE",
+    name="DOUBLE BARRIER CREAM 80ML",
+    origin="South Korea",
+    category="moisturizer",
+    price="1099.00",
+    currency="THB",
+    summary=(
+        "A barrier-repair cream designed to strengthen and rebuild the skin’s protective layer "
+        "using Neuromide®, Tri-biotics technology and key ingredients like grape seed oil and ceramide to soothe irritation, restore microbiome balance, and deliver long-lasting hydration."
+    ),
+    hero_ingredients="Neuromide®, Ceramide NP, Vitis Vinifera Seed Oil",
+    rating=None,
+    concerns=[
+        "damaged-skin-barrier",
+        "sensitivity",
+        "dryness"
+    ],
+    ingredients=[
+        "ceramides",
+        "resveratrol",
+        "squalane"
+    ],
+    skin_types=[
+        "normal",
+        "dry",
+        "sensitive"
+    ],
+    restrictions=[],
+    product_url="https://shopee.co.th/%E0%B8%84%E0%B8%A3%E0%B5%8B%E0%B9%80%E0%B8%81%E0%B8%B9%E0%B9%89%E0%B8%9C%E0%B8%B4%E0%B7%8A%E0%B8%A7%E0%B8%A1-%E0%B8%82%E0%B8%B2%E0%B8%94%E0%B8%99%E0%B9%89%E0%B8%B3-%E0%B9%83%E0%B8%AB%E0%B9%89%E0%B8%81%E0%B8%A5%E0%B8%B1%E0%B8%9A%E0%B8%A1%E0%B8%B2%E0%B8%89%E0%B9%88%E0%B8%B3-%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87-CURECODE-DOUBLE-BARRIER-CREAM-80ML-i.892144781.22412113684?extraParams=%7B%22display_model_id%22:117849354796%7D",
+    image="https://curecode-th.com/wp-content/uploads/2025/08/CURECODE-DOUBLE-BARRIER-CREAM-600x600.jpg",
+),
+ProductSeed(
+    brand="SKIN1004",
+    name="Madagascar Centella Probio-Cica Intensive Ampoule 50ml",
+    origin="South Korea",
+    category="serum",
+    price="890.00",
+    currency="THB",
+    summary=(
+        "A soothing, barrier-repair ampoule formulated with Centella Asiatica Extract, "
+        "Probio-Cica™, and TECA to calm irritation, strengthen the skin barrier, and improve "
+        "hydration while supporting a healthier microbiome for sensitive and damaged skin."
+    ),
+    hero_ingredients="Centella Asiatica Extract, Probio-Cica™, TECA, Ceramides",
+    rating=None,
+    concerns=["sensitive-skin", "damaged-skin-barrier", "redness", "dehydrated-skin"],
+    ingredients=["centella-asiatica-extract", "ceramides", "beta-glucan"],
+    skin_types=["normal", "dry", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/SKIN1004-Madagascar-Centella-Probio-Cica-Intensive-Ampoule-50ml-i.304046042.19647266910",
+    image="https://s3.konvy.com/static/team/2024/1022/17295968018545.jpg",
+),
+ProductSeed(
+    brand="INGU",
+    name="Green Tea Deep Repair Cream Biome Balance",
+    origin="South Korea",
+    category="moisturizer",
+    price="490.00",
+    currency="THB",
+    summary=(
+        "A repairing moisturizer formulated with Green Tea Extract, probiotic complexes, "
+        "and barrier-strengthening ingredients to soothe irritation, calm redness, "
+        "restore moisture, and support a balanced skin microbiome—ideal for oily, acne-prone, "
+        "and sensitive skin types needing gentle recovery."
+    ),
+    hero_ingredients="Green Tea Extract, Probiotic Complex, Ceramides",
+    rating=None,
+    concerns=["redness", "sensitive-skin", "damaged-skin-barrier", "acne-breakouts"],
+    ingredients=["green-tea", "ceramides", "beta-glucan", "lactobacillus-ferment"],
+    skin_types=["oily", "combination", "sensitive", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/INGU-Green-Tea-Deep-Repair-Cream-Biome-Balance-%E0%B8%A1%E0%B8%AD%E0%B8%A2%E0%B8%8B%E0%B9%8C%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%84%E0%B8%A3%E0%B9%80%E0%B8%8B%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%99%E0%B8%B7%E0%B9%89%E0%B8%AD%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%A1%E0%B8%82%E0%B9%89%E0%B8%99-%E0%B8%AA%E0%B8%B3%E0%B8%AB%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%AB%E0%B9%89%E0%B8%87-i.770604218.24800973241",
+    image="https://www.konvy.com/static/team/2025/1022/17611305343960_600x600.jpg",
+),
+ProductSeed(
+    brand="INGU",
+    name="Vitamin C AOX Glowing Serum 30ml",
+    origin="South Korea",
+    category="serum",
+    price="590.00",
+    currency="THB",
+    summary=(
+        "A brightening antioxidant serum featuring Vitamin C derivatives, Ferulic Acid, "
+        "and Niacinamide to improve radiance, fade dark spots, even skin tone, and protect "
+        "against environmental stress for a glowing, healthier complexion."
+    ),
+    hero_ingredients="Vitamin C Derivatives, Niacinamide, Ferulic Acid",
+    rating=None,
+    concerns=["dull-skin", "dark-spots", "uneven-skin-tone", "hyperpigmentation"],
+    ingredients=["ascorbyl-glucoside", "niacinamide", "ferulic-acid"],
+    skin_types=["normal", "combination", "oily"],
+    restrictions=[],
+    product_url="https://shopee.co.th/(รับ-Vit-C-5ml)INGU-Vitamin-C-AOX-Glowing-Serum-30ml-อิงกุ-เซรั่มวิตามินซี-i.770604218.40619138846",
+    image="https://medias.watsons.co.th/publishing/WTCTH-321519-side-zoom.jpg?version=1759777813",
+),
+ProductSeed(
+    brand="COSRX",
+    name="The Alpha Arbutin 2% Discoloration Care Serum 50ml",
+    origin="South Korea",
+    category="serum",
+    price="790.00",
+    currency="THB",
+    summary=(
+        "A discoloration-targeting serum powered by 2% Alpha Arbutin, Niacinamide, and "
+        "Hyaluronic Acid to fade dark spots, brighten uneven skin tone, and improve overall "
+        "radiance while maintaining skin hydration and supporting a healthier complexion."
+    ),
+    hero_ingredients="Alpha Arbutin 2%, Niacinamide, Hyaluronic Acid",
+    rating=None,
+    concerns=["dark-spots", "hyperpigmentation", "uneven-skin-tone", "dull-skin"],
+    ingredients=["alpha-arbutin", "niacinamide", "hyaluronic-acid"],
+    skin_types=["normal", "dry", "combination", "oily"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-COSRX-OFFICIAL-Grace’s-PICK-The-Alpha-Arbutin-2-Discoloration-Care-Serum-50ml-i.134962775.24386845053",
+    image="https://www.konvy.com/static/team/2025/0922/17585149739059_600x600.jpg",
+),
+ProductSeed(
+    brand="COSRX",
+    name="Ultra-Light Invisible Sunscreen SPF50 PA+++ 50ml",
+    origin="South Korea",
+    category="sunscreen",
+    price="890.00",
+    currency="THB",
+    summary=(
+        "A feather-light, invisible mineral-hybrid sunscreen offering broad-spectrum SPF50 protection, "
+        "resistant to sweat and sebum, designed for all skin types including oily and combination, "
+        "and leaving a matte-velvet finish."
+    ),
+    hero_ingredients="Mineral-Hybrid UV Filters, Niacinamide, Centella Asiatica",
+    rating=None,
+    concerns=["sun-protection", "uneven-skin-tone", "large-pores", "oily-skin"],
+    ingredients=["zinc-oxide", "niacinamide", "centella-asiatica-extract"],
+    skin_types=["normal","combination","oily","sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-COSRX-OFFICIAL-Ultra-Light-Invisible-Sunscreen-SPF50-PA-50ml-i.134962775.26602729843",
+    image="https://hbytala.com/cdn/shop/files/Ultra-Light-Invisible-Sunscreen-COSRX.jpg?v=1743674352&width=2048",
+),
+ProductSeed(
+    brand="COSRX",
+    name="The 6 Peptide Skin Booster Serum",
+    origin="South Korea",
+    category="serum",
+    price="690.00",
+    currency="THB",
+    summary=(
+        "A lightweight peptide-infused serum formulated with 6 types of peptides to refine pores, "
+        "improve skin texture, control excess oil, and support firmness for smoother, clearer skin."
+    ),
+    hero_ingredients="6 Peptide Complex, Niacinamide, Hyaluronic Acid",
+    rating=None,
+    concerns=["large-pores", "uneven-skin-texture", "oily-skin", "dull-skin"],
+    ingredients=["peptides", "niacinamide", "hyaluronic-acid"],
+    skin_types=["oily", "combination", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-COSRX-OFFICIAL-The-6-Peptide-skin-booster-serum-i.134962775.24652723035",
+    image="https://www.jeban.com/uploads/reviews/product/110749/111668_f795fd54c6.jpg",
+),
+ProductSeed(
+    brand="ILLIYOON",
+    name="Ceramide Ato Cream Concentrate 200ml",
+    origin="South Korea",
+    category="moisturizer",
+    price="650.00",
+    currency="THB",
+    summary=(
+        "A rich, deeply repairing moisturizer formulated with Ceramide Skin Complex™, "
+        "soybean ferment extract, and barrier-strengthening ingredients to soothe irritation, "
+        "restore moisture, and support long-term skin barrier resilience—ideal for dry, sensitive, "
+        "and eczema-prone skin."
+    ),
+    hero_ingredients="Ceramide Skin Complex™, Soybean Ferment Extract",
+    rating=None,
+    concerns=["dryness", "flakiness", "damaged-skin-barrier", "sensitive-skin"],
+    ingredients=["ceramides", "lactobacillus-ferment", "beta-glucan"],
+    skin_types=["dry", "sensitive", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-ผลิตภัณฑ์ครีมบำรุงผิว-ILLIYOON-CERAMIDE-ATO-CREAM-CONCENTRATE-CREAM-200ML-i.602020673.26212782283",
+    image="https://down-th.img.susercontent.com/file/th-11134207-7qul2-lk2og46g9maue2",
+),
+ProductSeed(
+    brand="Dr.Althea",
+    name="345 Relief 147 Barrier Cream 50ml",
+    origin="South Korea",
+    category="moisturizer",
+    price="690.00",
+    currency="THB",
+    summary=(
+        "A soothing barrier-repair cream formulated with Panthenol, Centella Asiatica, "
+        "and Ceramides to calm irritation, strengthen the skin barrier, and replenish moisture—"
+        "ideal for sensitive, dry, and compromised skin."
+    ),
+    hero_ingredients="Panthenol, Centella Asiatica, Ceramides",
+    rating=None,
+    concerns=["sensitive-skin", "redness", "damaged-skin-barrier", "dryness"],
+    ingredients=["panthenol", "centella-asiatica-extract", "ceramides"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Dr.Althea-Cream-ด๊อกเตอร์อัลเทีย-ครีมบำรุงผิวหน้า-50ml-(345-Relief-147-Barrier)-i.70998059.40607143635",
+    image="https://i5.walmartimages.com/seo/Dr-Althea-147-Barrier-Cream-50ml_c79af17e-e42d-4c12-8867-513905fe0ebb.acaff303ae93863f1ef823f4abb334eb.jpeg",
+)
+
+
 ]
 
 PRODUCTS: list[ProductSeed] = (
@@ -2498,18 +2718,70 @@ def _ensure_reference_data():
     return concern_map, skin_type_map, restriction_map, ingredient_map
 
 
+def _clip(value: str | None, max_length: int) -> str:
+    if not value:
+        return ""
+    trimmed = value.strip()
+    if len(trimmed) <= max_length:
+        return trimmed
+    return trimmed[:max_length]
+
+
+def _normalize_origin(value: str | None) -> str:
+    if not value:
+        return Product.Origin.OTHER
+
+    raw = value.strip()
+    if not raw:
+        return Product.Origin.OTHER
+
+    direct = raw.upper()
+    valid = {choice.value for choice in Product.Origin}
+    if direct in valid:
+        return direct
+
+    normalized = direct.replace(" ", "").replace("-", "")
+    mapper = {
+        "SOUTHKOREA": Product.Origin.SOUTH_KOREA,
+        "KOREA": Product.Origin.SOUTH_KOREA,
+        "KOR": Product.Origin.SOUTH_KOREA,
+        "REPUBLICOFKOREA": Product.Origin.SOUTH_KOREA,
+        "JAPAN": Product.Origin.JAPAN,
+        "JPN": Product.Origin.JAPAN,
+        "USA": Product.Origin.UNITED_STATES,
+        "UNITEDSTATES": Product.Origin.UNITED_STATES,
+        "UNITEDSTATE": Product.Origin.UNITED_STATES,
+        "US": Product.Origin.UNITED_STATES,
+        "UK": Product.Origin.UNITED_KINGDOM,
+        "UNITEDKINGDOM": Product.Origin.UNITED_KINGDOM,
+        "GBR": Product.Origin.UNITED_KINGDOM,
+        "ENG": Product.Origin.UNITED_KINGDOM,
+        "ENGLAND": Product.Origin.UNITED_KINGDOM,
+        "FRANCE": Product.Origin.FRANCE,
+        "FRA": Product.Origin.FRANCE,
+        "CANADA": Product.Origin.CANADA,
+        "CAN": Product.Origin.CANADA,
+        "THAILAND": Product.Origin.THAI,
+        "THAI": Product.Origin.THAI,
+        "CHINA": Product.Origin.CHINA,
+        "CHN": Product.Origin.CHINA,
+        "CN": Product.Origin.CHINA,
+    }
+    return mapper.get(normalized, Product.Origin.OTHER)
+
+
 def _product_defaults(seed: ProductSeed) -> dict:
     return {
-        "brand": seed.brand,
-        "name": seed.name,
-        "origin_country": seed.origin,
+        "brand": _clip(seed.brand, Product._meta.get_field("brand").max_length),
+        "name": _clip(seed.name, Product._meta.get_field("name").max_length),
+        "origin_country": _normalize_origin(seed.origin),
         "category": seed.category,
-        "summary": seed.summary,
-        "hero_ingredients": seed.hero_ingredients,
+        "summary": _clip(seed.summary, Product._meta.get_field("summary").max_length),
+        "hero_ingredients": _clip(seed.hero_ingredients, Product._meta.get_field("hero_ingredients").max_length),
         "price": Decimal(seed.price),
         "currency": seed.currency,
         "rating": seed.rating,
-        "product_url": seed.product_url or "",
+        "product_url": _clip(seed.product_url, Product._meta.get_field("product_url").max_length),
         "image": seed.image or "",
         "is_active": True,
     }
@@ -2597,7 +2869,7 @@ class Command(BaseCommand):
 
         created, updated = 0, 0
         for seed in PRODUCTS:
-            slug = slugify(f"{seed.brand} {seed.name}")
+            slug = _clip(slugify(f"{seed.brand} {seed.name}"), Product._meta.get_field("slug").max_length)
             defaults = _product_defaults(seed)
             product, is_created = Product.objects.update_or_create(
                 slug=slug,

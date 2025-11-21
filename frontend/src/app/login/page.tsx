@@ -161,13 +161,38 @@ function LoginContent() {
           .then((profile) => {
             console.log("Profile fetched:", profile);
             saveProfile(profile);
-            console.log("Redirecting to /account...");
-            router.replace("/account");
+            
+            // Check for redirect parameter in URL or sessionStorage
+            const redirectParam = searchParams.get("redirect");
+            const storedRedirect = typeof window !== "undefined" 
+              ? sessionStorage.getItem("login_redirect") 
+              : null;
+            const redirectTo = redirectParam || storedRedirect || "/account";
+            
+            // Clear stored redirect
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem("login_redirect");
+            }
+            
+            console.log("Redirecting to:", redirectTo);
+            router.replace(redirectTo);
           })
           .catch((profileError) => {
             console.warn("Unable to load profile after Google login", profileError);
-            console.log("Redirecting to /account (profile load failed)...");
-            router.replace("/account");
+            
+            // Check for redirect parameter even on error
+            const redirectParam = searchParams.get("redirect");
+            const storedRedirect = typeof window !== "undefined" 
+              ? sessionStorage.getItem("login_redirect") 
+              : null;
+            const redirectTo = redirectParam || storedRedirect || "/account";
+            
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem("login_redirect");
+            }
+            
+            console.log("Redirecting to:", redirectTo, "(profile load failed)");
+            router.replace(redirectTo);
           })
           .finally(() => {
             setGoogleLoading(false);
@@ -250,6 +275,13 @@ function LoginContent() {
     }
 
     console.log("Starting Google OAuth flow...");
+    
+    // Store redirect parameter in sessionStorage before OAuth redirect
+    const redirectParam = searchParams.get("redirect");
+    if (redirectParam && typeof window !== "undefined") {
+      sessionStorage.setItem("login_redirect", redirectParam);
+      console.log("Stored redirect parameter:", redirectParam);
+    }
     
     const redirectUri = 'http://localhost:8000/api/auth/google/callback'; 
     const scope = 'email profile';
@@ -411,7 +443,13 @@ function LoginContent() {
         console.warn("Unable to load profile after signup", profileError);
       }
 
-      router.push("/account");
+      // Check for redirect parameter
+      const redirectParam = searchParams.get("redirect");
+      if (redirectParam) {
+        router.push(redirectParam);
+      } else {
+        router.push("/account");
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Signup failed. Please try again.";
       setSignupError(message);
