@@ -62,8 +62,8 @@ export function SkincareProductSummaryCard({
   return (
     <article
       className={clsx(
-        "flex h-full flex-col overflow-hidden rounded-[22px] border-2 border-black bg-white shadow-[4px_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-1 sm:items-stretch",
-        isHorizontal ? "min-h-[300px] sm:flex-row" : "min-h-[420px]",
+        "mt-1 flex h-full flex-col overflow-hidden rounded-[22px] border-2 border-black bg-white shadow-[4px_5px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-1 sm:items-stretch",
+        isHorizontal ? "h-[240px] sm:flex-row" : "min-h-[420px]",
         className
       )}
     >
@@ -113,7 +113,7 @@ export function SkincareProductSummaryCard({
             <span className="font-semibold text-[#1f2d26]/80">{product.productName}</span>
           </h3>
         </div>
-        <p className="text-sm text-[#1f2d26]/70 line-clamp-3">
+        <p className="text-sm text-[#1f2d26]/70 line-clamp-2">
           {product.summary || heroLabel}
         </p>
         <div className="text-xs font-semibold text-[#1f2d26]/60">{heroLabel}</div>

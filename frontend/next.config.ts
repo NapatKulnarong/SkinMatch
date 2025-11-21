@@ -69,7 +69,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "cloudinary.images-iherb.com",
+        hostname: "down-th.img.susercontent.com",
         pathname: "/**",
       },
     ],

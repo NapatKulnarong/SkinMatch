@@ -530,140 +530,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Ingredient Search */}
-        <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
-          <div className="mx-auto max-w-3xl space-y-5">
-            <div className="sm:hidden space-y-2">
-              <div className="flex items-center gap-2">
-                <GlobeAltIcon className="h-8 w-8 text-[#4a6b47]" />
-                <h2 className="text-xl font-extrabold text-[#2d4a2b] leading-tight">
-                  Ingredient Quick Search
-                </h2>
-              </div>
-              <p className="text-sm text-[#2d4a2b]/70">
-                Swipe through trending actives or enter a hero ingredient to see matching formulas.
-              </p>
-            </div>
-
-            <div className="hidden sm:block lg:text-center space-y-2">
-              <div className="flex items-center lg:justify-center gap-2 lg:gap-3">
-                <GlobeAltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#4a6b47]" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#2d4a2b]">Ingredient Quick Search</h2>
-              </div>
-              <p className="text-sm sm:text-base text-[#2d4a2b]/70">
-                Discover what&apos;s inside your favorite products
-              </p>
-            </div>
-
-            <form onSubmit={handleIngredientSearch} className="relative mx-auto max-w-2xl w-full">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                onKeyDown={handleInputKeyDown}
-                placeholder="Search any ingredient (e.g., hyaluronic acid)..."
-                aria-label="Search skincare ingredients"
-                autoComplete="off"
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={shouldShowSuggestions}
-                aria-controls={SUGGESTION_LIST_ID}
-                aria-activedescendant={activeSuggestionId}
-                className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
-              />
-              <button
-                type="submit"
-                className="absolute right-1 lg:right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
-                          sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[21px]  hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
-              >
-                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </button>
-              {shouldShowSuggestions && (
-                <div
-                  id={SUGGESTION_LIST_ID}
-                  role="listbox"
-                  className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:shadow-[0_8px_0_rgba(0,0,0,0.2)]"
-                >
-                  {isSuggestionLoading && !hasSuggestions ? (
-                    <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
-                  ) : hasSuggestions ? (
-                    <ul className="max-h-72 overflow-y-auto py-1">
-                      {suggestions.map((item, index) => {
-                        const label = getSuggestionLabel(item);
-                        const meta = formatSuggestionMeta(item.productCount);
-                        const isActive = index === activeSuggestionIndex;
-                        const optionId = `${SUGGESTION_LIST_ID}-${index}`;
-                        return (
-                          <li key={`${item.key}-${index}`}>
-                            <button
-                              type="button"
-                              id={optionId}
-                              onMouseDown={(event) => event.preventDefault()}
-                              onClick={() => handleSuggestionSelect(item)}
-                              onMouseEnter={() => setActiveSuggestionIndex(index)}
-                              className={`flex w-full items-center gap-3 px-4 py-2 text-left transition ${
-                                isActive ? "bg-[#e8f4e3]" : "hover:bg-[#f1f7ec]"
-                              } focus:outline-none focus-visible:bg-[#e8f4e3]`}
-                              aria-selected={isActive}
-                              role="option"
-                            >
-                              <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-[#4a6b47]" />
-                              <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-sm font-semibold text-[#2d4a2b]">
-                                  {label}
-                                </span>
-                                {item.inciName && item.inciName !== label && (
-                                  <span className="truncate text-xs text-[#2d4a2b]/60">
-                                    {item.inciName}
-                                  </span>
-                                )}
-                              </div>
-                              {meta && (
-                                <span className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-[#2d4a2b]/50">
-                                  {meta}
-                                </span>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-[#2d4a2b]/60">
-                      No matching ingredients yet. Try another keyword.
-                    </div>
-                  )}
-                </div>
-              )}
-            </form>
-
-          <div className="flex gap-1.5 overflow-x-auto pb-1 md:flex-wrap md:justify-center md:overflow-visible sm:gap-2">
-            {TRENDING_INGREDIENTS.map((ingredient) => (
-              <button
-                key={ingredient.name}
-                type="button"
-                onClick={() => handleTrendingSelect(ingredient.name)}
-                className="flex-none rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
-                          hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
-              >
-                {ingredient.name}
-              </button>
-            ))}
-          </div>
-          </div>
-        </section>
-
-        {/* Product Scanner */}
-        <ProductScanner />
-
         {/* Skincare Hub promo */}
         <section className="rounded-[26px] border-2 border-black bg-gradient-to-br from-[#fef8ef] to-[#f4f9ee] p-5 sm:p-6 lg:p-8 shadow-[4px_5px_0_rgba(0,0,0,0.25)]">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-3">
               <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#1f2d26]">
-                <SparklesIcon className="h-5 w-5 text-[#1f2d26]" />
+                <SparklesIcon className="h-5 w-5 lg:h-7 lg:w-7 text-[#1f2d26]" />
                 <span>Skincare Hub</span>
               </h2>
               <p className="text-sm sm:text-base text-[#1f2d26]/70">
@@ -685,7 +557,7 @@ export default function HomePage() {
               </ul>
             </div>
             <div className="relative space-y-4">
-              <div className="pointer-events-none absolute -top-52 -right-10">
+              <div className="hidden lg:block pointer-events-none absolute -top-52 -right-10">
                 <Image
                   src="/img/mascot/matchy_skincare.png"
                   alt="Matchy the mascot holding skincare products"
@@ -703,10 +575,11 @@ export default function HomePage() {
                 showHelperHint={false}
                 variant="pill"
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-7 mt-3">
+                <p className="mt-3 text-base sm:text-lg text-black/70 font-semibold">or</p>
                 <Link
                   href="/skincare-hub"
-                  className="mt-3 inline-flex items-center gap-3 rounded-full border-2 border-black bg-white px-7 py-3 text-sm font-semibold text-[#1f2d26] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
+                  className="mt-3 inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#e1e4df] px-7 py-3 text-sm font-semibold text-[#1f2d26] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
                 >
                   Enter the hub
                   <ArrowRightIcon className="h-4 w-4" />
@@ -715,6 +588,138 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Ingredient Search */}
+        <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="space-y-3">
+              <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#2d4a2b]">
+                <GlobeAltIcon className="h-5 w-5 sm:h-8 sm:w-8 text-[#4a6b47]" />
+                <span>Ingredient Quick Search</span>
+              </h2>
+              <p className="text-sm sm:text-base text-[#2d4a2b]/70">
+                Search any active ingredient to discover which products contain it, understand its benefits, and find formulas that match your skin goals.
+              </p>
+              <ul className="space-y-2 text-sm text-[#2d4a2b]">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+                  <span>Instant product matches for any ingredient</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+                  <span>Explore trending actives and their benefits</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+                  <span>See product counts and ingredient details</span>
+                </li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <form onSubmit={handleIngredientSearch} className="relative w-full">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder="Search any ingredient (e.g., hyaluronic acid)..."
+                  aria-label="Search skincare ingredients"
+                  autoComplete="off"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={shouldShowSuggestions}
+                  aria-controls={SUGGESTION_LIST_ID}
+                  aria-activedescendant={activeSuggestionId}
+                  className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 lg:right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
+                            sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[21px]  hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
+                >
+                  <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+                {shouldShowSuggestions && (
+                  <div
+                    id={SUGGESTION_LIST_ID}
+                    role="listbox"
+                    className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:shadow-[0_8px_0_rgba(0,0,0,0.2)]"
+                  >
+                    {isSuggestionLoading && !hasSuggestions ? (
+                      <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
+                    ) : hasSuggestions ? (
+                      <ul className="max-h-72 overflow-y-auto py-1">
+                        {suggestions.map((item, index) => {
+                          const label = getSuggestionLabel(item);
+                          const meta = formatSuggestionMeta(item.productCount);
+                          const isActive = index === activeSuggestionIndex;
+                          const optionId = `${SUGGESTION_LIST_ID}-${index}`;
+                          return (
+                            <li key={`${item.key}-${index}`}>
+                              <button
+                                type="button"
+                                id={optionId}
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => handleSuggestionSelect(item)}
+                                onMouseEnter={() => setActiveSuggestionIndex(index)}
+                                className={`flex w-full items-center gap-3 px-4 py-2 text-left transition ${
+                                  isActive ? "bg-[#e8f4e3]" : "hover:bg-[#f1f7ec]"
+                                } focus:outline-none focus-visible:bg-[#e8f4e3]`}
+                                aria-selected={isActive}
+                                role="option"
+                              >
+                                <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-[#4a6b47]" />
+                                <div className="flex min-w-0 flex-col">
+                                  <span className="truncate text-sm font-semibold text-[#2d4a2b]">
+                                    {label}
+                                  </span>
+                                  {item.inciName && item.inciName !== label && (
+                                    <span className="truncate text-xs text-[#2d4a2b]/60">
+                                      {item.inciName}
+                                    </span>
+                                  )}
+                                </div>
+                                {meta && (
+                                  <span className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-[#2d4a2b]/50">
+                                    {meta}
+                                  </span>
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-[#2d4a2b]/60">
+                        No matching ingredients yet. Try another keyword.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
+              <div className="w-full overflow-hidden">
+                <div className="flex flex-nowrap gap-1.5 sm:gap-2">
+                  {TRENDING_INGREDIENTS.map((ingredient) => (
+                    <button
+                      key={ingredient.name}
+                      type="button"
+                      onClick={() => handleTrendingSelect(ingredient.name)}
+                      className="flex-none whitespace-nowrap rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
+                                hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
+                    >
+                      {ingredient.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Product Scanner */}
+        <ProductScanner />
 
         {/* Environment Alerts */}
         <EnvironmentAlertPanel />

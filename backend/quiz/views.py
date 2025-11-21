@@ -37,7 +37,7 @@ from .models import (
     SkinConcern,
     SkinTypeTag,
 )
-from .ai import generate_strategy_notes
+from .ai import generate_ingredient_benefit, generate_strategy_notes
 from .catalog_loader import ensure_sample_catalog
 from .recommendations import recommend_products
 from .schemas import (
@@ -51,6 +51,7 @@ from .schemas import (
     FeedbackAck,
     FeedbackIn,
     FeedbackOut,
+    IngredientBenefitOut,
     IngredientSearchOut,
     IngredientSuggestionResponse,
     MatchPickOut,
@@ -468,6 +469,40 @@ def ingredient_quick_search(
         )
 
     return {"query": query, "results": results_payload}
+
+
+@router.get("/ingredients/benefit", response=IngredientBenefitOut)
+def ingredient_benefit_lookup(request, name: str):
+    cleaned = (name or "").strip()
+    if not cleaned:
+        raise HttpError(400, "Ingredient name cannot be blank.")
+
+    slug_candidate = slugify(cleaned)
+    ingredient = (
+        Ingredient.objects.filter(
+            Q(common_name__iexact=cleaned)
+            | Q(inci_name__iexact=cleaned)
+            | Q(key__iexact=cleaned)
+            | Q(key__iexact=slug_candidate)
+        )
+        .first()
+    )
+
+    if ingredient:
+        benefit_text = (ingredient.benefits or "").strip()
+        if benefit_text:
+            return {
+                "ingredient": ingredient.common_name,
+                "benefit": benefit_text,
+                "source": "catalog",
+            }
+
+    ai_benefit = generate_ingredient_benefit(cleaned)
+    return {
+        "ingredient": ingredient.common_name if ingredient else cleaned,
+        "benefit": ai_benefit,
+        "source": "gemini" if ai_benefit else "fallback",
+    }
 
 
 @router.get("/products/suggest", response=ProductSuggestionResponse)

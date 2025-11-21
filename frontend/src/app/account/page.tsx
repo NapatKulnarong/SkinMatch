@@ -92,6 +92,18 @@ function AccountContent() {
         setAuthTokenState(tokenToUse);
 
         if (tokenFromQuery) {
+          // Check for redirect parameter in sessionStorage (set before OAuth)
+          const storedRedirect = typeof window !== "undefined" 
+            ? sessionStorage.getItem("login_redirect") 
+            : null;
+          
+          if (storedRedirect) {
+            console.log("Found redirect parameter, redirecting to:", storedRedirect);
+            sessionStorage.removeItem("login_redirect");
+            router.replace(storedRedirect);
+            return;
+          }
+          
           console.log("Cleaning OAuth callback URL");
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('token');

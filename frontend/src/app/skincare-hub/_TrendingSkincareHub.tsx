@@ -84,7 +84,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
 
   if (loading) {
     return (
-      <section id={sectionId} className="space-y-5 rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
+      <section id={sectionId} className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
             Editor picks
@@ -107,7 +107,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
 
   if (error) {
     return (
-      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
+      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
         <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70 text-center">
           {error}
         </div>
@@ -117,7 +117,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
 
   if (!topics.length) {
     return (
-      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
+      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
         <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70 text-center">
           No trending skincare topics found yet.
         </div>
@@ -128,7 +128,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
   return (
     <section
       id={sectionId}
-      className="space-y-5 rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
+      className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
     >
       <div className="space-y-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">

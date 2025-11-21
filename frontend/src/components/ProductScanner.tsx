@@ -139,13 +139,13 @@ export function ProductScanner() {
 
   return (
     <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
-      <div className="hidden lg:block absolute -top-4 right-4 sm:-top-6 sm:right-8 md:-top-48 md:-right-8 z-10 pointer-events-none">
+      <div className="hidden lg:block absolute md:-top-42 md:-right-2 z-10 pointer-events-none">
         <Image
-          src="/img/mascot/matchy_scan.png"
+          src="/img/mascot/matchy_cam.png"
           alt="Matchy with camera"
-          width={320}
-          height={320}
-          className="h-auto w-[190px] sm:w-[220px] md:w-[280px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
+          width={300}
+          height={300}
+          className="h-auto w-[190px] sm:w-[220px] md:w-[275px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
           priority
         />
       </div>
@@ -153,8 +153,8 @@ export function ProductScanner() {
       <div className="relative px-6 py-5 sm:px-10 sm:py-6 pt-6 sm:pt-10">
         <div className="mx-auto w-full max-w-7xl space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 lg:justify-start lg:gap-3">
-              <CameraIcon className="h-7 w-7 md:h-10 md:w-10 sm:h-10 sm:w-10 text-[#8C1007]" />
+            <div className="flex items-center gap-2 lg:justify-start">
+              <CameraIcon className="h-5 w-5 md:h-8 md:w-8 sm:h-6 sm:w-6 text-[#8C1007]" />
               <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007] text-left">
                 Instant Product Scanner
               </h2>  

@@ -75,10 +75,10 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
   const hasSearchResults = searchResults.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#f2f5f0] text-[#1f2d26]">
+    <main className="min-h-screen bg-[#e7eae5] text-[#1f2d26]">
       <Navbar />
       <PageContainer className="pt-36 lg:pt-32 pb-16 space-y-10">
-        <section className="rounded-[32px] border-2 border-black bg-white p-6 lg:p-10 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[32px] border-2 border-black bg-[#fbfff9] p-6 py-3 lg:p-10 lg:py-6 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
           <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div className="space-y-6">
               <div className="space-y-5">
@@ -100,12 +100,13 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
                   buttonLabel="Search hub"
                   suggestionLabel="Popular picks"
                   showHelperHint={false}
+                  variant="pill"
                 />
               </div>
             </div>
             <div className="hidden lg:flex lg:items-center lg:justify-center ps-13">
               <Image
-                src="/img/mascot/matchy_lab_2.png"
+                src="/img/mascot/matchy_research.png"
                 alt="Matchy Lab"
                 width={550}
                 height={550}
@@ -117,7 +118,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
 
         <section
           id="top-picks"
-          className="space-y-5 rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
+          className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
         >
           <div className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">

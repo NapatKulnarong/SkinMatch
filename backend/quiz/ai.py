@@ -129,6 +129,100 @@ def generate_strategy_notes(
     return fallback
 
 
+def generate_ingredient_benefit(ingredient: str) -> str | None:
+    """
+    Return a concise, consumer-friendly benefit for a single ingredient using Gemini when available.
+    """
+    name = _clean_text(ingredient)
+    if not name:
+        return None
+
+    _ensure_configured()
+    if _genai is None:
+        return None
+
+    prompt = (
+        f"In one short sentence (max 22 words), describe the skincare benefit of the ingredient '{name}'. "
+        "Be precise, avoid marketing fluff, and keep it understandable to shoppers."
+    )
+
+    generation_config = {
+        "temperature": 0.15,
+        "max_output_tokens": 120,
+        "candidate_count": 1,
+    }
+
+    generation_kwargs = {}
+    if _SAFETY_SETTINGS:
+        generation_kwargs["safety_settings"] = _SAFETY_SETTINGS
+
+    configured_model = (os.getenv("GOOGLE_GEMINI_MODEL") or "").strip()
+    candidate_models = [
+        "gemini-2.0-flash-exp",
+        configured_model or None,
+        "gemini-1.5-flash-002",
+        "gemini-1.5-flash",
+    ]
+
+    tried: set[str] = set()
+    for model_name in candidate_models:
+        if not model_name or model_name in tried:
+            continue
+        tried.add(model_name)
+        try:
+            model = _genai.GenerativeModel(model_name, generation_config=generation_config)
+            response = model.generate_content(prompt, **generation_kwargs)
+            benefit = _extract_first_line(response)
+            if benefit:
+                logger.info("Generated Gemini benefit for ingredient '%s' using %s", name, model_name)
+                return benefit
+            logger.warning("Gemini model '%s' returned no benefit for ingredient '%s'", model_name, name)
+        except Exception as exc:
+            if _ModelNotFound and isinstance(exc, _ModelNotFound):
+                logger.warning("Gemini model '%s' not found for ingredient benefit.", model_name)
+                continue
+            exc_str = str(exc)
+            if "429" in exc_str or "quota" in exc_str.lower() or "rate limit" in exc_str.lower():
+                logger.warning("Gemini model '%s' quota exceeded for ingredient benefit.", model_name)
+                continue
+            logger.exception("Gemini ingredient benefit failed on model %s", model_name)
+            continue
+
+    logger.warning("Gemini unavailable for ingredient '%s'; falling back to catalog or default placeholder.", name)
+    return None
+
+
+def _extract_first_line(response) -> str | None:
+    if response is None:
+        return None
+
+    chunks: list[str] = []
+    text_attr = getattr(response, "text", None)
+    if isinstance(text_attr, str):
+        chunks.append(text_attr)
+
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        finish_reason = getattr(candidate, "finish_reason", None)
+        finish_reason_str = str(finish_reason)
+        if finish_reason in (2, 3, "SAFETY", "BLOCKED") or "SAFETY" in finish_reason_str:
+            continue
+
+        content = getattr(candidate, "content", None)
+        parts_iterable = getattr(content, "parts", None) or getattr(candidate, "parts", None) or []
+        for part in parts_iterable:
+            text_fragment = getattr(part, "text", None)
+            if text_fragment:
+                chunks.append(text_fragment)
+
+    for chunk in chunks:
+        for raw_line in chunk.splitlines():
+            cleaned = raw_line.strip().lstrip("-•*0123456789. \t").strip()
+            if cleaned:
+                return cleaned
+    return None
+
+
 def _extract_notes(response) -> List[str]:
     if response is None:
         return []

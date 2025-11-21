@@ -30,7 +30,13 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
     setMessage("Opening your email app so you can send the myth to our team.");
 
     const body = encodeURIComponent(`Skin myth question:\n\n${trimmed}`);
-    window.location.href = `mailto:skinmatch.contact@gmail.com?subject=Skin%20Myth%20Suggestion&body=${body}`;
+    const href = `mailto:hello@skinmatch.co?subject=Skin%20Myth%20Suggestion&body=${body}`;
+    const opener = typeof window !== "undefined" ? window.open : null;
+    if (opener) {
+      opener(href, "_self");
+    } else if (typeof window !== "undefined") {
+      window.location.href = href;
+    }
   };
 
   return (

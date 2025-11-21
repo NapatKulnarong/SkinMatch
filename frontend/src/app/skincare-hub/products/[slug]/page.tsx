@@ -1,17 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, StarIcon, BookOpenIcon, SparklesIcon } from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, StarIcon, SparklesIcon } from "@heroicons/react/24/solid";
 
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
 import SiteFooter from "@/components/SiteFooter";
 import { ProductReviewSection } from "./ProductReviewSection";
+import { fetchIngredientBenefit } from "@/lib/api.ingredients";
 import { fetchProductDetailBySlug, type ProductDetail } from "@/lib/api.quiz";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
+
+type IngredientBenefitMap = Record<string, string | null>;
 
 const currencyCache = new Map<string, Intl.NumberFormat>();
 const formatCurrency = (value: number, currency: string) => {
@@ -90,6 +93,56 @@ const getIngredientBenefit = (ingredient: string): string | null => {
   return null;
 };
 
+const resolveHeroIngredientBenefits = async (
+  ingredients: string[]
+): Promise<IngredientBenefitMap> => {
+  const benefits: IngredientBenefitMap = {};
+  if (!ingredients.length) {
+    return benefits;
+  }
+
+  const missingMap = new Map<string, string[]>();
+
+  for (const name of ingredients) {
+    const trimmed = name.trim();
+    if (!trimmed) continue;
+
+    const localBenefit = getIngredientBenefit(trimmed);
+    if (localBenefit) {
+      benefits[name] = localBenefit;
+      continue;
+    }
+
+    const normalized = trimmed.toLowerCase();
+    const mapped = missingMap.get(normalized) || [];
+    mapped.push(name);
+    missingMap.set(normalized, mapped);
+  }
+
+  if (!missingMap.size) {
+    return benefits;
+  }
+
+  await Promise.all(
+    Array.from(missingMap.values()).map(async (originalNames) => {
+      const lookupName = originalNames[0];
+      try {
+        const response = await fetchIngredientBenefit(lookupName);
+        const benefit = response.benefit?.trim() || null;
+        originalNames.forEach((key) => {
+          benefits[key] = benefit;
+        });
+      } catch (error) {
+        originalNames.forEach((key) => {
+          benefits[key] = null;
+        });
+      }
+    })
+  );
+
+  return benefits;
+};
+
 export default async function ProductDetailPage({ params }: PageProps) {
   const slug = (await params).slug;
   let product: ProductDetail;
@@ -113,6 +166,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       ? formatCurrency(product.price, product.currency)
       : null;
   const heroIngredients = product.heroIngredients;
+  const heroBenefits = await resolveHeroIngredientBenefits(heroIngredients);
   const purchaseUrl = product.affiliateUrl || product.productUrl;
 
   return (
@@ -155,9 +209,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 {product.categoryLabel || product.category}
               </p>
               <div>
-                <h1 className="text-3xl font-black text-[#1f2d26]">
-                  {product.brand}{" "}
-                  <span className="font-semibold text-[#1f2d26]/80">
+                <h1 className="text-3xl font-black text-[#1f2d26] leading-tight">
+                  <span className="block">{product.brand}</span>
+                  <span className="block font-semibold text-[#1f2d26]/80">
                     {product.productName}
                   </span>
                 </h1>
@@ -213,15 +267,22 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="grid gap-6 rounded-[28px] border-2 border-black bg-white/90 p-5 lg:grid-cols-2 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
-          <div className="space-y-4">
-            <h2 className="text-xl font-black text-[#1f2d26]">Product overview</h2>
-            <InfoList title="Best for concerns" items={product.concerns} />
-            <InfoList title="Skin types" items={product.skinTypes} />
-            <InfoList title="Notable tags" items={product.restrictions} />
+        <section className="grid items-start gap-6 lg:grid-cols-2">
+          <div className="space-y-6 rounded-[28px] border-2 border-black bg-white/90 p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)] h-full">
+            <div className="space-y-4">
+              <h2 className="text-xl font-black text-[#1f2d26]">Product overview</h2>
+              <InfoList title="Best for concerns" items={product.concerns} />
+              <InfoList title="Skin types" items={product.skinTypes} />
+              <InfoList title="Notable tags" items={product.restrictions} />
+            </div>
             {heroIngredients.length > 0 ? (
               <div className="space-y-3">
-                <h2 className="text-xl font-black text-[#1f2d26]">Hero ingredients</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-black text-[#1f2d26]">Hero ingredients</h2>
+                  <span className="mt-1 text-xs font-semibold tracking-[0.2em] text-[#1f2d26]/50">
+                    powered by Gemini AI
+                  </span>
+                </div>
                 <div className="rounded-2xl border border-black/20 bg-white overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-[#f7f9f5] text-xs uppercase tracking-[0.2em] text-[#1f2d26]/60">
@@ -232,7 +293,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     </thead>
                     <tbody>
                       {heroIngredients.map((item) => {
-                        const benefit = getIngredientBenefit(item);
+                        const benefit = heroBenefits[item] ?? null;
                         return (
                         <tr key={item} className="border-t border-black/10 hover:bg-[#f7f9f5]/50 transition-colors">
                           <td className="px-4 py-3 font-semibold text-[#1f2d26]">{item}</td>
@@ -247,37 +308,40 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 </div>
               </div>
             ) : null}
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-black/20 bg-[#f7f9f5] p-5">
-              <span className="inline-flex gap-2 text-xl text-[#1f2d26]">
-                <span><SparklesIcon className="w-6 h-6" /></span>
-                <span className="text-xl font-bold">Smart Review</span>
-              </span>
-              <div className="mt-3 rounded-2xl border border-black/20 border-dashed bg-white p-4">
-                <ul className="space-y-3">
-                  <li className="text-sm text-[#1f2d26]/80 leading-relaxed">
-                    {product.summary
-                      ? product.summary
-                      : "Balanced formula designed to handle day-to-day hydration and barrier support."}
-                  </li>
-                  {heroIngredients.slice(0, 3).map((ingredient) => (
-                    <li key={ingredient} className="text-sm text-[#1f2d26]/80 leading-relaxed">
-                      {ingredient} gets a nod for how it complements the rest of the actives without
-                      overwhelming sensitive routines.
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-black/20 bg-[#f7f9f5] p-5">
+                <span className="inline-flex gap-2 text-xl text-[#1f2d26]">
+                  <span><SparklesIcon className="w-6 h-6" /></span>
+                  <span className="text-xl font-bold">Smart Review</span>
+                </span>
+                <div className="mt-3 rounded-2xl border border-black/20 border-dashed bg-white p-4">
+                  <ul className="space-y-3">
+                    <li className="text-sm text-[#1f2d26]/80 leading-relaxed">
+                      {product.summary
+                        ? product.summary
+                        : "Balanced formula designed to handle day-to-day hydration and barrier support."}
                     </li>
-                  ))}
-                </ul>
+                    {heroIngredients.slice(0, 3).map((ingredient) => (
+                      <li key={ingredient} className="text-sm text-[#1f2d26]/80 leading-relaxed">
+                        {ingredient} gets a nod for how it complements the rest of the actives without
+                        overwhelming sensitive routines.
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="mt-3 mr-1 text-xs text-[#1f2d26]/60 text-right">powered by Gemini AI</p>
               </div>
-              <p className="mt-3 mr-1 text-xs text-[#1f2d26]/60 text-right">powered by Gemini AI</p>
+            </div>
+          </div>
+          <div className="lg:pl-2 h-full">
+            <div className="rounded-[28px] border-2 border-black bg-white/95 p-4 lg:p-6 shadow-[5px_6px_0_rgba(0,0,0,0.2)] h-full">
+              <ProductReviewSection
+                productId={product.productId}
+                productName={`${product.brand} ${product.productName}`}
+              />
             </div>
           </div>
         </section>
-
-        <ProductReviewSection
-          productId={product.productId}
-          productName={`${product.brand} ${product.productName}`}
-        />
       </PageContainer>
       <SiteFooter />
     </main>
