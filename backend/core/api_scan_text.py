@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple
+import logging
+from typing import List, Optional, Tuple
 
 from ninja import File, Router, Schema
 from ninja.errors import HttpError
@@ -22,9 +24,10 @@ except ImportError:
     np = None  # type: ignore
 
 try:  # pragma: no cover - optional dependency
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 except ImportError:
     Image = None  # type: ignore
+    UnidentifiedImageError = OSError  # type: ignore[misc,assignment]
 
 try:  # pragma: no cover - optional dependency
     import pillow_heif  # type: ignore
@@ -46,6 +49,8 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
 from .api_scan import scan_router as _legacy_scan_router
 from .text_cleaner import clean_ocr_text
 from .utils_ocr import preprocess_for_ocr
+
+logger = logging.getLogger(__name__)
 
 scan_text_router = Router(tags=["scan-text"])
 
@@ -218,10 +223,6 @@ def _preprocess(image: Image.Image) -> Image.Image:
         return preprocess_for_ocr(image)
     return image
 
-def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
-    _ensure_ocr_stack_ready()
-    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-
 def _ocr_text(pil_img: Image.Image) -> str:
     """Run preprocess → cv2 conversion → OCR (Thai/English)."""
     _ensure_ocr_stack_ready()
@@ -241,28 +242,6 @@ def cv2_to_text(img: np.ndarray) -> str:
     return pytesseract.image_to_string(img, lang="tha+eng")
 
 # ---------------- Fallback extractor (English/Thai keywords) ----------------
-_ACTIVE_RULES = [
-    (r"\bniacinamide\b", "niacinamide", "Niacinamide helps support tone and barrier resilience."),
-    (r"\burea\b", "urea", "Urea is a humectant (NMF) that locks in water."),
-    (r"saccharide\s+isomerate", "saccharide isomerate", "Saccharide Isomerate binds moisture for long-lasting hydration."),
-    (r"\bceramide", "ceramide complex", "Ceramides replenish the barrier."),
-    (r"beta\s*glucan|oat\s*extract|avena\s+sativa", "avena sativa (oat) extract", None),
-    (r"\bpanthenol\b", "panthenol", None),
-    (r"tocopheryl\s*acetate|vitamin\s*e", "vitamin e", None),
-    (r"oryza\s+sativa.*bran\s*oil", "rice bran oil", None),
-    (r"aloe\s+barbadensis", "aloe barbadensis leaf juice", None),
-    (r"\bglycerin\b", "glycerin", None),
-    (r"centella|asiatica", "centella asiatica extract", None),
-    (r"hyaluronic\s+acid|sodium\s+hyaluronate", "hyaluronic acid", None),
-    (r"trehalose", "trehalose", None),
-    (r"sorbitol", "sorbitol", None),
-]
-
-_FREE_FROM_REMOVALS = [
-    (r"\balcohol[-\s]?free\b|free\s+from\s+alcohol", "drying alcohol"),
-    (r"\bparaben[-\s]?free\b|free\s+from\s+parabens?", "parabens"),
-]
-
 def _fallback_extract(text: str) -> dict:
     t = text.lower()
     def has(p: str) -> bool:
@@ -530,16 +509,6 @@ def _call_gemini_ensemble(ocr_text: str) -> dict | None:
     }
 
 # ---------------- utilities ----------------
-def _derive_free_from(notes: List[str]) -> List[str]:
-    out: list[str] = []
-    for n in notes:
-        m = re.search(r"free\s*from[:\s]+(.+)", n, flags=re.I) or re.search(r"\b([\w\s/,-]+)-free\b", n, flags=re.I)
-        if m:
-            tail = m.group(1) if m.lastindex else n
-            toks = re.split(r"[,/|]| and ", tail, flags=re.I)
-            out.extend([t.strip() for t in toks if t.strip()])
-    return sorted(set(out))
-
 def norm_list(values) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
@@ -651,7 +620,11 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
-    text = _ocr_text_from_file(file)
+    try:
+        text = _ocr_text_from_file(file)
+    except (UnidentifiedImageError, OSError) as exc:
+        logger.warning("Rejected label scan upload due to unreadable image: %s", exc)
+        raise HttpError(400, "Please upload a valid image file (PNG, JPG, or WebP).")
     combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(

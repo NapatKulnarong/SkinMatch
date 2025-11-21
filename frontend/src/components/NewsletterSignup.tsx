@@ -74,7 +74,7 @@ export default function NewsletterSignup({
     .join(" ");
 
   const buttonClass =
-    "rounded-[5px] lg:rounded-full border-2 border-black bg-[#7db5d0] lg:bg-white/50  px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-black/80 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#7db5d0] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
+    "rounded-[5px] lg:rounded-full border-2 border-black bg-[#7db5d0] lg:bg-[#9ed0da]  px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-black/80 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#7db5d0] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className={sharedWrapper} aria-live="polite" aria-atomic="true">

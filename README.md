@@ -103,12 +103,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
    ```
    then set ADMIN_ALLOWED_IPS= your ip address
 
-4. **Create Superuser for Admin**
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-5. **Load Sample Data**
+4. **Load Sample Data**
    ```bash
    python manage.py load_sample --reset
    ```
@@ -116,18 +111,18 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
 
-6. **Run Everything with Docker**
+5. **Run Everything with Docker**
    ```bash
    cd ..
    docker-compose up --build
    ```
 
-ึึ7. **Verify everything is running**
+ึึ6. **Verify everything is running**
    Backend API: http://localhost:8000
    Frontend: http://localhost:3000
 
 
-8. **(Optional) Export / import curated Skin Facts**
+7. **(Optional) Export / import curated Skin Facts**
 
    We keep the Skin Facts topics (and their hero/block images) under `./data`. Use these commands to refresh or seed another environment:
 

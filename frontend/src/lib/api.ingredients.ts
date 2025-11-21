@@ -121,7 +121,7 @@ const mapProduct = (raw: RawIngredientProduct): IngredientSearchProduct => ({
   averageRating:
     typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
       ? raw.average_rating
-      : null,
+      : 0,
   reviewCount: raw.review_count ?? 0,
   imageUrl: resolveMediaUrl(raw.image_url),
   image: raw.image ?? null,
