@@ -189,6 +189,10 @@ class ProductReview(models.Model):
     )
     comment = models.TextField()
     is_public = models.BooleanField(default=True)
+    is_anonymous = models.BooleanField(
+        default=False,
+        help_text="When true, the review hides the reviewer's identity publicly.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:

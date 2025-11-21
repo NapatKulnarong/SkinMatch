@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io, os, re, json
 from pathlib import Path
+import logging
 from typing import List, Optional, Tuple
 
 from ninja.errors import HttpError
@@ -47,6 +48,8 @@ if genai is not None and API_KEY:
 from .utils_ocr import preprocess_for_ocr
 from .text_cleaner import clean_ocr_text
 from .api_scan import scan_router as _legacy_scan_router
+
+logger = logging.getLogger(__name__)
 
 scan_text_router = Router(tags=["scan-text"])
 
@@ -608,7 +611,11 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
-    text = _ocr_text_from_file(file)
+    try:
+        text = _ocr_text_from_file(file)
+    except (UnidentifiedImageError, OSError) as exc:
+        logger.warning("Rejected label scan upload due to unreadable image: %s", exc)
+        raise HttpError(400, "Please upload a valid image file (PNG, JPG, or WebP).")
     combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(
