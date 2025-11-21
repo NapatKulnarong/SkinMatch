@@ -6,6 +6,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PasswordInput } from "@/components/PasswordInput";
 import {
   fetchProfile,
   updateProfile,
@@ -600,8 +601,7 @@ export default function AccountSettingsPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800 sm:col-span-2">
                 Current password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.current}
                   onChange={handlePasswordFieldChange("current")}
                   autoComplete="current-password"
@@ -613,8 +613,7 @@ export default function AccountSettingsPage() {
 
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
                 New password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.next}
                   onChange={handlePasswordFieldChange("next")}
                   autoComplete="new-password"
@@ -630,8 +629,7 @@ export default function AccountSettingsPage() {
 
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
                 Confirm new password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.confirm}
                   onChange={handlePasswordFieldChange("confirm")}
                   autoComplete="new-password"
@@ -671,12 +669,12 @@ export default function AccountSettingsPage() {
               </button>
             </div>
           </form>
-          <div className="absolute -bottom-43 -right-32 hidden lg:block">
+          <div className="absolute -bottom-43 -right-32 hidden lg:block pointer-events-none select-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
             src="/img/mascot/matchy_set.png"
             alt = "Matchy Mascot (Settings)"
-            className="w-120 h-120 md:w-150 md:h-150 lg:w-170 lg:h-170 xl:w-190 xl:h-190 object-contain"
+            className="w-120 h-120 md:w-150 md:h-150 lg:w-170 lg:h-170 xl:w-190 xl:h-190 object-contain pointer-events-none select-none"
             />
           </div>
         </section>
