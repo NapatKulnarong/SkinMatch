@@ -202,7 +202,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
           </p>
           <h2 className="text-lg font-black  leading-snug">
             <span className="block text-[#1f2d26]">Reviews for :</span>
-            <span className="block text-[#6F826A]">{productName}</span>
+            <span className="block text-[#5a7a9a]">{productName}</span>
           </h2>
         </div>
       </div>
@@ -258,7 +258,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
                   aria-checked={postAnonymously}
                   onClick={() => setPostAnonymously((prev) => !prev)}
                   className={`relative inline-flex h-8 w-16 items-center rounded-full border-2 border-black transition ${
-                    postAnonymously ? "bg-[#bbd0b7]" : "bg-white"
+                    postAnonymously ? "bg-[#a8c8e8]" : "bg-[#e8f4ff]"
                   }`}
                 >
                   <span className="sr-only">
@@ -292,7 +292,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#bbd0b7] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#999] disabled:text-black/70"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#a8c8e8] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#999] disabled:text-black/70"
                 >
                   {submitting ? "Saving…" : ownerReview ? "Update review" : "Post review"}
                 </button>

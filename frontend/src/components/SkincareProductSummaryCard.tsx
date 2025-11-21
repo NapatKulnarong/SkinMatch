@@ -109,8 +109,8 @@ export function SkincareProductSummaryCard({
       <div
         className={clsx(
           "flex flex-1 flex-col",
-          // MOBILE: entire section with green background, rounded bottom corners
-          "gap-2 rounded-b-[22px] bg-[#e8f5e9] -mx-1 -mb-0 px-4 pt-4 pb-3",
+          // MOBILE: entire section with blue background, rounded bottom corners
+          "gap-2 rounded-b-[22px] bg-[#e8f4ff] -mx-1 -mb-0 px-4 pt-4 pb-3",
           // DESKTOP: original unchanged
           isHorizontal ? "sm:gap-4 sm:p-5 sm:bg-white sm:rounded-none sm:mx-0 sm:mb-0 md:gap-2 md:p-4 lg:p-6 lg:gap-4" : "sm:gap-3 sm:p-4 sm:bg-white sm:rounded-none sm:mx-0 sm:mb-0"
         )}
@@ -161,7 +161,7 @@ export function SkincareProductSummaryCard({
           </div>
           <Link
             href={productUrl}
-            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#f3fce6] px-4 py-2 text-sm font-semibold text-[#1f2d26] shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#e8f4ff] px-4 py-2 text-sm font-semibold text-[#1f2d26] shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-white"
           >
             View
             <ArrowRightIcon className="h-4 w-4" />

@@ -27,6 +27,7 @@ type SkincareSearchBarProps = {
   suggestionLabel?: string;
   showHelperHint?: boolean;
   variant?: "default" | "pill";
+  buttonBgColor?: string;
 };
 
 const SUGGESTION_LIST_ID = "skincare-search-suggestions";
@@ -42,6 +43,7 @@ export function SkincareSearchBar({
   suggestionLabel = "Suggestions",
   showHelperHint = true,
   variant = "default",
+  buttonBgColor = "#a8c8e8",
 }: SkincareSearchBarProps) {
   const isPill = variant === "pill";
   const router = useRouter();
@@ -268,16 +270,17 @@ export function SkincareSearchBar({
         />
         <button
           type="submit"
+          style={isPill ? { backgroundColor: buttonBgColor } : undefined}
           className={
             isPill
-              ? "-mr-2 lg:-mr-0 flex sm:h-10 sm:w-10 h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-[#1f2d26]/30 text-black shadow-[0_4px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2d26]"
-              : "flex-none rounded-full bg-[#2d4a2b] px-4 py-1.5 text-xs sm:text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#245322] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2d4a2b]"
+              ? "-mr-2 lg:-mr-0 flex sm:h-10 sm:w-10 h-8 w-8 items-center justify-center rounded-full border-2 border-black text-black shadow-[0_4px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2d26]"
+              : "flex-none rounded-full bg-[#5a7a9a] px-4 py-1.5 text-xs sm:text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#4a6a8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#5a7a9a]"
           }
         >
           {isPill ? (
             <>
               <span className="sr-only">{buttonLabel}</span>
-              <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
             </>
           ) : (
             buttonLabel

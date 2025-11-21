@@ -574,6 +574,7 @@ export default function HomePage() {
                 suggestionLabel="Instant matches"
                 showHelperHint={false}
                 variant="pill"
+                buttonBgColor="#d1d5db"
               />
               <div className="flex items-center justify-end sm:gap-5 gap-4 mt-3">
                 <p className="sm:mt-3 mt-1.5 text-base sm:text-lg text-black/70 font-semibold">or</p>
@@ -590,27 +591,27 @@ export default function HomePage() {
         </section>
 
         {/* Ingredient Search */}
-        <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
+        <section className="rounded-[28px] border-2 border-black bg-gradient-to-br from-[#f0f9f6] via-[#e8f7f2] to-[#d4f1e8] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e8f7f2] sm:via-[#d4f1e8] sm:to-[#b8e6d4] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
           <div className="grid gap-3 sm:gap-1 lg:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-3">
-              <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#2d4a2b]">
-                <GlobeAltIcon className="h-5 w-5 sm:h-8 sm:w-8 text-[#4a6b47]" />
+              <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#2d5a4a]">
+                <GlobeAltIcon className="h-5 w-5 sm:h-8 sm:w-8 text-[#3a6b5a]" />
                 <span>Ingredient Quick Search</span>
               </h2>
-              <p className="text-sm sm:text-base text-[#2d4a2b]/70 max-w-xs md:max-w-none">
+              <p className="text-sm sm:text-base text-[#2d5a4a]/70 max-w-xs md:max-w-none">
                 Search any active ingredient to discover which products contain it, understand its benefits, and find formulas that match your skin goals.
               </p>
-              <ul className="space-y-2 text-sm text-[#2d4a2b]">
-                <li className="hidden lg:block flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+              <ul className="space-y-2 text-sm text-[#2d5a4a]">
+                <li className="hidden lg:flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#3a6b5a]" />
                   <span>Instant product matches for any ingredient</span>
                 </li>
-                <li className="hidden lg:block flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+                <li className="hidden lg:flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#3a6b5a]" />
                   <span>Explore trending actives and their benefits</span>
                 </li>
-                <li className="hidden lg:block flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
+                <li className="hidden lg:flex items-start gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#3a6b5a]" />
                   <span>See product counts and ingredient details</span>
                 </li>
               </ul>
@@ -632,20 +633,19 @@ export default function HomePage() {
                   aria-expanded={shouldShowSuggestions}
                   aria-controls={SUGGESTION_LIST_ID}
                   aria-activedescendant={activeSuggestionId}
-                  className="w-[340px] md:w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
+                  className="w-[340px] md:w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d5a4a]"
                 />
                 <button
   type="submit"
   className="
     absolute
-    right-1                        
-    sm:right-2 lg:right-1           
+    right-2                               
     top-1/2 -translate-y-1/2
+    flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center
     rounded-full border-2 border-black
-    bg-[#4a6b47] p-2 sm:p-2.5
-    text-white shadow-[0_3px_0_rgba(0,0,0,0.2)]
+    bg-[#3a6b5a] text-white shadow-[0_3px_0_rgba(0,0,0,0.2)]
     transition hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.3)]
-    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]
+    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d5a4a]
   "
 >
   <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -657,7 +657,7 @@ export default function HomePage() {
                     className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-[18px] border-2 border-black bg-white shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:shadow-[0_8px_0_rgba(0,0,0,0.2)]"
                   >
                     {isSuggestionLoading && !hasSuggestions ? (
-                      <div className="px-4 py-3 text-sm text-[#2d4a2b]/70">Searching…</div>
+                      <div className="px-4 py-3 text-sm text-[#2d5a4a]/70">Searching…</div>
                     ) : hasSuggestions ? (
                       <ul className="max-h-72 overflow-y-auto py-1">
                         {suggestions.map((item, index) => {
@@ -674,24 +674,24 @@ export default function HomePage() {
                                 onClick={() => handleSuggestionSelect(item)}
                                 onMouseEnter={() => setActiveSuggestionIndex(index)}
                                 className={`flex w-full items-center gap-3 px-4 py-2 text-left transition ${
-                                  isActive ? "bg-[#e8f4e3]" : "hover:bg-[#f1f7ec]"
-                                } focus:outline-none focus-visible:bg-[#e8f4e3]`}
+                                  isActive ? "bg-[#d4f1e8]" : "hover:bg-[#c8f0e0]"
+                                } focus:outline-none focus-visible:bg-[#d4f1e8]`}
                                 aria-selected={isActive}
                                 role="option"
                               >
-                                <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-[#4a6b47]" />
+                                <MagnifyingGlassIcon className="h-4 w-4 flex-shrink-0 text-[#3a6b5a]" />
                                 <div className="flex min-w-0 flex-col">
-                                  <span className="truncate text-sm font-semibold text-[#2d4a2b]">
+                                  <span className="truncate text-sm font-semibold text-[#2d5a4a]">
                                     {label}
                                   </span>
                                   {item.inciName && item.inciName !== label && (
-                                    <span className="truncate text-xs text-[#2d4a2b]/60">
+                                    <span className="truncate text-xs text-[#2d5a4a]/60">
                                       {item.inciName}
                                     </span>
                                   )}
                                 </div>
                                 {meta && (
-                                  <span className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-[#2d4a2b]/50">
+                                  <span className="ml-auto text-[11px] font-semibold uppercase tracking-wide text-[#2d5a4a]/50">
                                     {meta}
                                   </span>
                                 )}
@@ -701,7 +701,7 @@ export default function HomePage() {
                         })}
                       </ul>
                     ) : (
-                      <div className="px-4 py-3 text-sm text-[#2d4a2b]/60">
+                      <div className="px-4 py-3 text-sm text-[#2d5a4a]/60">
                         No matching ingredients yet. Try another keyword.
                       </div>
                     )}
@@ -711,7 +711,7 @@ export default function HomePage() {
               <div className="w-full">
   <div
     className="
-      mx-auto flex w-fit flex-wrap justify-center
+      sm:pt-1 sm:pb-1 mx-auto flex w-fit flex-wrap justify-center
       gap-1.5 sm:gap-2
       max-h-14 overflow-hidden
       sm:max-h-none sm:flex-nowrap sm:w-full sm:justify-center
@@ -722,10 +722,10 @@ export default function HomePage() {
         key={ingredient.name}
         type="button"
         onClick={() => handleTrendingSelect(ingredient.name)}
-        className="flex-none whitespace-nowrap rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47]
+        className="flex-none whitespace-nowrap rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#3a6b5a]
                    shadow-[0_3px_0_rgba(0,0,0,0.15)] transition
-                   hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8]
-                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]
+                   hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebfffc]
+                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d5a4a]
                    sm:px-3 sm:py-1.5 sm:text-[11px]"
       >
         {ingredient.name}
@@ -797,7 +797,7 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-5 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#F5E6D3] via-[#F0DFC8] to-[#E8D4B8] p-5 lg:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <NewsletterSignup
             source="homepage"
             variant="full"

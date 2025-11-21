@@ -23,8 +23,8 @@ export default function Navbar() {
 
   const activeStyles: Record<string, string> = {
     orange: "bg-[#f4bc78] text-black",
-    green:  "bg-[#afe3a3] text-black",
-    blue:   "bg-[#94c6ef] text-black",
+    green:  "bg-[#b3e3b8] text-black",
+    blue:   "bg-[#afcbef] text-black",
   };
 
   // Hover styles for each color
@@ -37,9 +37,9 @@ export default function Navbar() {
   const inactive = "bg-gray-200 text-black";
 
   const links = [
-    { href: "/",      label: "Home",       color: "orange" as const },
-    { href: "/facts", label: "Skin Facts", color: "green"  as const },
-    { href: "/about", label: "About Us",   color: "blue"   as const },
+    { href: "/",            label: "Home",        color: "orange" as const },
+    { href: "/facts",       label: "Skin Facts",  color: "green"  as const },
+    { href: "/skincare-hub", label: "Skincare Hub", color: "blue"   as const },
   ];
 
   const isActive = (href: string) => {
@@ -252,38 +252,24 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="order-2 hidden items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:flex sm:h-14">
-          <Link
-            href={loginHref}
-            aria-current={isActive(loginHref) ? "page" : undefined}
-            className={`${pillBase} hidden whitespace-nowrap sm:flex ${
-              isActive(loginHref)
-                ? "bg-[#c7b6ea] text-black"
-                : "bg-gray-200 text-black hover:bg-[#c7b6ea]"
+        <NotificationBell className="order-2 hidden sm:flex" />
+        
+        <Link
+          href={loginHref}
+          aria-current={isActive(loginHref) ? "page" : undefined}
+          aria-label={loginAriaLabel}
+          className="order-3 hidden h-12 w-12 sm:h-[3.5rem] sm:w-[3.5rem] flex-shrink-0 sm:block"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={avatarError ? "/default-profile.png" : avatarSrc}
+            alt="Profile avatar"
+            className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
+              isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
             }`}
-          >
-            {loginLabel}
-          </Link>
-
-          <Link
-            href={loginHref}
-            aria-current={isActive(loginHref) ? "page" : undefined}
-            aria-label={loginAriaLabel}
-            className="hidden h-10 w-10 flex-shrink-0 sm:block"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarError ? "/default-profile.png" : avatarSrc}
-              alt="Profile avatar"
-              className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
-                isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
-              }`}
-              onError={() => setAvatarError(true)}
-            />
-          </Link>
-        </div>
-
-        <NotificationBell className="order-3 hidden sm:flex" />
+            onError={() => setAvatarError(true)}
+          />
+        </Link>
       </div>
     </header>
   );

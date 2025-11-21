@@ -76,10 +76,10 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
   const hasSearchResults = searchResults.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#e7eae5] text-[#1f2d26]">
+    <main className="min-h-screen bg-[#e5e9f0] text-[#1f2d26]">
       <Navbar />
       <PageContainer className="pt-40 sm:pt-32 pb-16 space-y-6 md:space-y-7 lg:space-y-10">
-        <section className="rounded-[32px] border-2 border-black bg-[#fbfff9] p-6 lg:p-10 lg:py-6 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
+        <section className="rounded-[32px] border-2 border-black bg-[#f5f9ff] p-6 lg:p-10 lg:py-6 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
           <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div className="space-y-6">
               <div className="space-y-3 lg:space-y-5">
@@ -120,7 +120,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
 
         <section
           id="top-picks"
-          className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
+          className="space-y-5 rounded-[28px] border-2 border-black bg-[#f5f9ff] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
         >
           <div className="space-y-2">
             <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
@@ -148,7 +148,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
 
         <section
           id="reviews"
-          className="grid gap-6 rounded-[28px] border-2 border-black bg-gradient-to-br from-[#fef3f2] to-[#e8f7ec] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)] lg:grid-cols-2"
+          className="grid gap-6 rounded-[28px] border-2 border-black bg-gradient-to-br from-[#e8f4ff] to-[#d6e8f5] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)] lg:grid-cols-2"
         >
           <div className="space-y-3">
             <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
@@ -186,7 +186,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
               updates the averages you see in the Top 5 list and highlights how
               products perform on real skin types.
             </p>
-            <div className="mt-4 rounded-2xl border border-dashed border-black/20 bg-[#f8faf5] px-4 py-3 text-sm text-[#1f2d26]/70">
+            <div className="mt-4 rounded-2xl border border-dashed border-black/20 bg-[#e8f4ff] px-4 py-3 text-sm text-[#1f2d26]/70">
               Tip: mention your skin type, routine, or how long you used the
               product to help others understand your results.
             </div>
