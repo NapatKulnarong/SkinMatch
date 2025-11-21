@@ -157,13 +157,13 @@ export function TopProductsSlider({ products }: TopProductsSliderProps) {
         return (
           <div
             key={`${product.productId}-${index}`}
-            className="flex-none w-[280px] sm:w-[420px] lg:w-[480px] snap-start h-[240px]"
+            className="flex-none w-[210px] sm:w-[420px] lg:w-[420px] snap-start"
             aria-hidden={isClone ? true : undefined}
           >
             <SkincareProductSummaryCard
               product={product}
               variant="horizontal"
-              className="h-full"
+              className="h-full sm:h-[220px] lg:h-[220px]"
             />
           </div>
         );

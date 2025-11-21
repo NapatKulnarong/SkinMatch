@@ -197,18 +197,14 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
     <section id="reviews" className="relative h-full space-y-6 overflow-hidden rounded-[24px]">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
             Community voices
           </p>
-          <h2 className="text-2xl font-black text-[#1f2d26] leading-snug">
-            Reviews for {productName}
+          <h2 className="text-lg font-black text-[#1f2d26] leading-snug">
+            <span className="block">Reviews for :</span>
+            <span className="block">{productName}</span>
           </h2>
         </div>
-        {profile ? (
-          <p className="text-sm text-[#1f2d26]/60">
-            Signed in as <span className="font-semibold">{profile.username}</span>
-          </p>
-        ) : null}
       </div>
 
       <div className="space-y-6 max-h-[720px] overflow-y-auto pr-1 relative">
@@ -319,7 +315,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
             </p>
           )}
         </div>
-        <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)]">
+        <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)] mb-8">
           <div className="flex items-center gap-2">
             <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5 text-[#1f2d26]" />
             <h3 className="text-lg font-bold text-[#1f2d26]">Community feedback</h3>

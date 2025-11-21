@@ -532,7 +532,7 @@ export default function HomePage() {
 
         {/* Skincare Hub promo */}
         <section className="rounded-[26px] border-2 border-black bg-gradient-to-br from-[#fef8ef] to-[#f4f9ee] p-5 sm:p-6 lg:p-8 shadow-[4px_5px_0_rgba(0,0,0,0.25)]">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="grid gap-0 sm:gap-0 lg:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-3">
               <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#1f2d26]">
                 <SparklesIcon className="h-5 w-5 lg:h-7 lg:w-7 text-[#1f2d26]" />
@@ -542,22 +542,22 @@ export default function HomePage() {
                 Search across verified formulas, see what the community is loving, and share your experience. Every hub product page now includes shoppable links plus review tools.
               </p>
               <ul className="space-y-2 text-sm text-[#1f2d26]">
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
                   <span>Instant suggestions for matching products</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
                   <span>Top 5 skincare picks refreshed from community reviews</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
                   <span>Read &amp; write reviews with one tap</span>
                 </li>
               </ul>
             </div>
-            <div className="relative space-y-4">
-              <div className="hidden lg:block pointer-events-none absolute -top-52 -right-10">
+            <div className="relative lg:space-y-4">
+              <div className="hidden md:block pointer-events-none absolute md:-top-75 md:-right-18 lg:-top-52 lg:-right-10">
                 <Image
                   src="/img/mascot/matchy_skincare.png"
                   alt="Matchy the mascot holding skincare products"
@@ -567,7 +567,7 @@ export default function HomePage() {
                   priority={false}
                 />
               </div>
-              <div className="pt-16 sm:pt-5" />
+              <div className="pt-0 lg:pt-5" />
               <SkincareSearchBar
                 className="max-w-none"
                 buttonLabel="Find skincare"
@@ -575,14 +575,14 @@ export default function HomePage() {
                 showHelperHint={false}
                 variant="pill"
               />
-              <div className="flex items-center justify-end gap-7 mt-3">
-                <p className="mt-3 text-base sm:text-lg text-black/70 font-semibold">or</p>
+              <div className="flex items-center justify-end sm:gap-5 gap-4 mt-3">
+                <p className="sm:mt-3 mt-1.5 text-base sm:text-lg text-black/70 font-semibold">or</p>
                 <Link
                   href="/skincare-hub"
-                  className="mt-3 inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#e1e4df] px-7 py-3 text-sm font-semibold text-[#1f2d26] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
+                  className="mt-1 sm:mt-3 inline-flex items-center gap-3 rounded-full border-2 border-black bg-[#e1e4df] sm:px-7 sm:py-3 px-5 py-1.5 sm:text-sm text-xs font-semibold text-[#1f2d26] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
                 >
                   Enter the hub
-                  <ArrowRightIcon className="h-4 w-4" />
+                  <ArrowRightIcon className="hidden sm:block h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -591,25 +591,25 @@ export default function HomePage() {
 
         {/* Ingredient Search */}
         <section className="rounded-[28px] border-2 border-black bg-[#e8f4e3] p-5 sm:rounded-[28px] sm:bg-gradient-to-br sm:from-[#e4e5ba] sm:to-[#8ec78d] sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[4px_6px_0_rgba(0,0,0,0.15)]">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="grid gap-3 sm:gap-1 lg:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-3">
               <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#2d4a2b]">
                 <GlobeAltIcon className="h-5 w-5 sm:h-8 sm:w-8 text-[#4a6b47]" />
                 <span>Ingredient Quick Search</span>
               </h2>
-              <p className="text-sm sm:text-base text-[#2d4a2b]/70">
+              <p className="text-sm sm:text-base text-[#2d4a2b]/70 max-w-xs md:max-w-none">
                 Search any active ingredient to discover which products contain it, understand its benefits, and find formulas that match your skin goals.
               </p>
               <ul className="space-y-2 text-sm text-[#2d4a2b]">
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
                   <span>Instant product matches for any ingredient</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
                   <span>Explore trending actives and their benefits</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="hidden lg:block flex items-start gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#4a6b47]" />
                   <span>See product counts and ingredient details</span>
                 </li>
@@ -632,15 +632,24 @@ export default function HomePage() {
                   aria-expanded={shouldShowSuggestions}
                   aria-controls={SUGGESTION_LIST_ID}
                   aria-activedescendant={activeSuggestionId}
-                  className="w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
+                  className="w-[340px] md:w-full rounded-full border-2 border-black bg-white px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-xs md:text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#2d4a2b]"
                 />
                 <button
-                  type="submit"
-                  className="absolute right-1 lg:right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#4a6b47] p-2 
-                            sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[21px]  hover:shadow-[0_4px_0_rgba(0,0,0,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]"
-                >
-                  <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
+  type="submit"
+  className="
+    absolute
+    right-1                        
+    sm:right-2 lg:right-1           
+    top-1/2 -translate-y-1/2
+    rounded-full border-2 border-black
+    bg-[#4a6b47] p-2 sm:p-2.5
+    text-white shadow-[0_3px_0_rgba(0,0,0,0.2)]
+    transition hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.3)]
+    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]
+  "
+>
+  <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+</button>
                 {shouldShowSuggestions && (
                   <div
                     id={SUGGESTION_LIST_ID}
@@ -699,21 +708,31 @@ export default function HomePage() {
                   </div>
                 )}
               </form>
-              <div className="w-full overflow-hidden">
-                <div className="flex flex-nowrap gap-1.5 sm:gap-2">
-                  {TRENDING_INGREDIENTS.map((ingredient) => (
-                    <button
-                      key={ingredient.name}
-                      type="button"
-                      onClick={() => handleTrendingSelect(ingredient.name)}
-                      className="flex-none whitespace-nowrap rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47] shadow-[0_3px_0_rgba(0,0,0,0.15)] transition 
-                                hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b] sm:px-3 sm:py-1.5 sm:text-[11px]"
-                    >
-                      {ingredient.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <div className="w-full">
+  <div
+    className="
+      mx-auto flex w-fit flex-wrap justify-center
+      gap-1.5 sm:gap-2
+      max-h-14 overflow-hidden
+      sm:max-h-none sm:flex-nowrap sm:w-full sm:justify-center
+    "
+  >
+    {TRENDING_INGREDIENTS.map((ingredient) => (
+      <button
+        key={ingredient.name}
+        type="button"
+        onClick={() => handleTrendingSelect(ingredient.name)}
+        className="flex-none whitespace-nowrap rounded-full border border-black/70 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4a6b47]
+                   shadow-[0_3px_0_rgba(0,0,0,0.15)] transition
+                   hover:-translate-y-0.5 hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:bg-[#ebffd8]
+                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2d4a2b]
+                   sm:px-3 sm:py-1.5 sm:text-[11px]"
+      >
+        {ingredient.name}
+      </button>
+    ))}
+  </div>
+</div>
             </div>
           </div>
         </section>

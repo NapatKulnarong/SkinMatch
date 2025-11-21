@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BeakerIcon } from "@heroicons/react/24/solid";
 
 import Navbar from "@/components/Navbar";
 import PageContainer from "@/components/PageContainer";
@@ -77,24 +78,25 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
   return (
     <main className="min-h-screen bg-[#e7eae5] text-[#1f2d26]">
       <Navbar />
-      <PageContainer className="pt-36 lg:pt-32 pb-16 space-y-10">
-        <section className="rounded-[32px] border-2 border-black bg-[#fbfff9] p-6 py-3 lg:p-10 lg:py-6 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
+      <PageContainer className="pt-40 sm:pt-32 pb-16 space-y-6 md:space-y-7 lg:space-y-10">
+        <section className="rounded-[32px] border-2 border-black bg-[#fbfff9] p-6 lg:p-10 lg:py-6 shadow-[5px_6px_0_rgba(0,0,0,0.25)]">
           <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div className="space-y-6">
-              <div className="space-y-5">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+              <div className="space-y-3 lg:space-y-5">
+                <p className="hidden lg:block text-[12px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
                   Your new skincare control center
                 </p>
-                <h1 className="text-3xl sm:text-4xl font-black text-[#1f2d26]">
-                  Discover the Skincare Hub
+                <h1 className="flex items-center gap-2 text-xl sm:text-3xl lg:text-4xl font-black text-[#1f2d26]">
+                  <BeakerIcon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-9 lg:w-9 text-[#1f2d26] flex-shrink-0" />
+                  <span>Discover the Skincare Hub</span>
                 </h1>
-                <p className="text-base text-[#1f2d26]/70 max-w-xl">
+                <p className="text-base text-[#1f2d26]/70 max-w-xl md:max-w-none">
                   Search by product, compare reviews, and shop smarter. The hub
                   blends ingredient intelligence with real community feedback so
                   you can trust every addition to your routine.
                 </p>
               </div>
-              <div className="max-w-xl">
+              <div className="max-w-xl md:max-w-none">
                 <SkincareSearchBar
                   initialQuery={queryValue}
                   buttonLabel="Search hub"
@@ -121,10 +123,10 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
           className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
         >
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+            <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
               Community pulse
             </p>
-            <h2 className="text-2xl font-black text-[#1f2d26]">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-[#1f2d26]">
               Top 5 skincare based on user reviews
             </h2>
             <p className="text-sm text-[#1f2d26]/70">
@@ -135,7 +137,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
           {topProducts.length ? (
             <TopProductsSlider products={topProducts} />
           ) : (
-            <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70">
+            <div className="mt-3 rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70">
               We&apos;re gathering the latest reviews. Check back soon for fresh
               favorites or use the search above to explore the catalog.
             </div>
@@ -149,30 +151,29 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
           className="grid gap-6 rounded-[28px] border-2 border-black bg-gradient-to-br from-[#fef3f2] to-[#e8f7ec] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)] lg:grid-cols-2"
         >
           <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+            <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
               Read / write product reviews
             </p>
-            <h2 className="text-2xl font-black text-[#1f2d26]">
+            <h2 className="text-xl lg:text-2xl font-black text-[#1f2d26]">
               Share your experience with the community
             </h2>
-            <p className="text-sm text-[#1f2d26]/70">
+            <p className="hidden lg:block text-sm text-[#1f2d26]/70">
               Every product page now includes a dedicated review panel. Rate a
               product, leave a detailed note, or update your take anytime as
               your routine evolves.
             </p>
-            <ul className="space-y-2 text-sm text-[#1f2d26]">
+            <ul className="ml-1 space-y-2 text-sm text-[#1f2d26] font-medium lg:font-normal">
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
-                Tap any product title above to open its detail page.
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
+                Search any product to open its detail page.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
-                Sign in to leave a star rating and personal review.
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
+                Sign in to leave a personal review.
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
-                Shop the formula directly from the detail page when you&apos;re
-                ready to restock.
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#1f2d26]" />
+                Shop the formula directly from the detail page.
               </li>
             </ul>
           </div>
