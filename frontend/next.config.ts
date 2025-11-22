@@ -12,6 +12,58 @@ const resolveBackendTarget = () => {
   return target.replace(/\/+$/, "");
 };
 
+// Build remote patterns for images
+const buildRemotePatterns = () => {
+  const patterns: Array<{
+    protocol: "http" | "https";
+    hostname: string;
+    port?: string;
+    pathname: string;
+  }> = [
+    {
+      protocol: "http",
+      hostname: "localhost",
+      port: "8000",
+      pathname: "/media/**",
+    },
+    {
+      protocol: "http",
+      hostname: "backend",
+      port: "8000",
+      pathname: "/media/**",
+    },
+    {
+      protocol: "http",
+      hostname: "localhost",
+      port: "3000",
+      pathname: "/media/**",
+    },
+    // Backend Render URL (production) - wildcard pattern
+    {
+      protocol: "https",
+      hostname: "*.onrender.com",
+      pathname: "/media/**",
+    },
+  ];
+
+  // Add backend URL from environment variable if available
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL;
+  if (backendUrl) {
+    try {
+      const url = new URL(backendUrl);
+      patterns.push({
+        protocol: url.protocol.replace(":", "") as "http" | "https",
+        hostname: url.hostname,
+        pathname: "/media/**",
+      });
+    } catch (e) {
+      // Invalid URL, skip
+    }
+  }
+
+  return patterns;
+};
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: currentDir,
@@ -19,24 +71,7 @@ const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: true,
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8000",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "http",
-        hostname: "backend",
-        port: "8000",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "3000",
-        pathname: "/media/**",
-      },
+      ...buildRemotePatterns(),
       {
         protocol: "https",
         hostname: "placehold.co",
@@ -70,17 +105,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "down-th.img.susercontent.com",
-        pathname: "/**",
-      },
-      // Wildcard fallbacks to cover newly added product image hosts
-      {
-        protocol: "https",
-        hostname: "**",
-        pathname: "/**",
-      },
-      {
-        protocol: "http",
-        hostname: "**",
         pathname: "/**",
       },
     ],
