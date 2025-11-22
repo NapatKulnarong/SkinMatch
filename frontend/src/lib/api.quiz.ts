@@ -846,8 +846,27 @@ export async function emailQuizSummary(sessionId: string, email?: string): Promi
   });
 
   if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(errorBody || "We couldn't email your summary just yet.");
+    let errorMessage = "We couldn't email your summary just yet.";
+    try {
+      const errorBody = await res.json();
+      if (errorBody?.detail) {
+        errorMessage = errorBody.detail;
+      } else if (typeof errorBody === "string") {
+        errorMessage = errorBody;
+      }
+    } catch {
+      // If JSON parsing fails, try text
+      const errorText = await res.text();
+      if (errorText) {
+        try {
+          const parsed = JSON.parse(errorText);
+          errorMessage = parsed.detail || errorText;
+        } catch {
+          errorMessage = errorText;
+        }
+      }
+    }
+    throw new Error(errorMessage);
   }
 }
 

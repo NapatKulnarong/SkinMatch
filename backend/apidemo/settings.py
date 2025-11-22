@@ -220,6 +220,7 @@ INSTALLED_APPS = [
 
     # 3rd-party
     "corsheaders",
+    "anymail",  # Email backend for Resend/SendGrid/etc
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -353,31 +354,52 @@ SECURITY_BACKUP_VERIFIED = env_bool("SECURITY_BACKUP_VERIFIED", True)
 SECURITY_PATCHING_VERIFIED = env_bool("SECURITY_PATCHING_VERIFIED", True)
 QUIZ_AUTO_SEED_SAMPLE = env_bool("QUIZ_AUTO_SEED_SAMPLE", DEBUG)
 
-# Email
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend",
-)
+# Email Configuration
+# Priority: Resend (API-based) > SMTP > Console
 
-if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
-    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-    # Gmail requires TLS on port 587
-    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True) if EMAIL_PORT == 587 else env_bool("EMAIL_USE_TLS", False)
-    EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
-    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10")) or 10  # Default 10 seconds timeout
-    
-    # Log email configuration (without password)
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f"Email backend configured: SMTP {EMAIL_HOST}:{EMAIL_PORT}, "
-        f"TLS={EMAIL_USE_TLS}, SSL={EMAIL_USE_SSL}, "
-        f"User={'*' * len(EMAIL_HOST_USER) if EMAIL_HOST_USER else 'not set'}"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")
+
+# Resend configuration (API-based, works on Render when SMTP is blocked)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+if RESEND_API_KEY:
+    try:
+        EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+        ANYMAIL = {
+            "RESEND_API_KEY": RESEND_API_KEY,
+        }
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("Email backend configured: Resend (API-based)")
+    except ImportError:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("RESEND_API_KEY is set but django-anymail is not installed. Install with: pip install django-anymail[resend]")
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    # Fallback to SMTP or console
+    EMAIL_BACKEND = os.getenv(
+        "EMAIL_BACKEND",
+        "django.core.mail.backends.console.EmailBackend",
     )
+
+    if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
+        EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+        EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+        EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+        EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+        # Gmail requires TLS on port 587
+        EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True) if EMAIL_PORT == 587 else env_bool("EMAIL_USE_TLS", False)
+        EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+        EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10")) or 10  # Default 10 seconds timeout
+        
+        # Log email configuration (without password)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            f"Email backend configured: SMTP {EMAIL_HOST}:{EMAIL_PORT}, "
+            f"TLS={EMAIL_USE_TLS}, SSL={EMAIL_USE_SSL}, "
+            f"User={'*' * len(EMAIL_HOST_USER) if EMAIL_HOST_USER else 'not set'}"
+        )
 
 # --- JWT config ---
 from datetime import timedelta
