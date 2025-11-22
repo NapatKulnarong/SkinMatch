@@ -94,16 +94,74 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
    git clone https://github.com/your-username/skinmatch.git
    cd skinmatch
    ```
-2. **Backend Setup (Local Dev)**
-
-3. **Download Environment File**
-   download .env.demo*
+2. **Download Environment File**
+   download .env.example*
    ```bash
-   cp .env.demo .env
+   cp .env.example .env
+   cd backend
+   cp .env.example .env
+   cd ..
+   cd frontend
+   cp .env.example .env
+   cd ..
    ```
-   then set ADMIN_ALLOWED_IPS= your ip address
 
-4. **Load Sample Data**
+3. **Setup Environment Secret Keys**
+   ### 🔸 Backend Secret Keys (./backend/.env)
+   DJANGO_SECRET_KEY
+   Used by Django for session signing, CSRF protection, password hashing, and cryptographic operations.
+   Source: Generate using Python:
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+   
+   Google OAuth Client Settings
+   ![Google OAuth Client Configuration Screenshot](/appendix/cloundconsolefallback.png)
+   GOOGLE_OAUTH_CLIENT_ID
+   OAuth Client ID for Google Sign-In (backend).
+   Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
+   GOOGLE_OAUTH_CLIENT_SECRET
+   OAuth Client Secret paired with the above Client ID.
+   Source: Google Cloud Console → OAuth 2.0 Client.
+   GOOGLE_API_KEY
+   API key for Google Gemini / Generative AI / Vision / other Google APIs.
+   Source: Google AI Studio or Google Cloud Console → API Keys.
+   
+   ADMIN_ALLOWED_IPS
+   This is used to restrict admin access for improved security.
+   Source: Use your own machine’s public IP address.
+   
+   EMAIL_HOST_USER
+   Email address used for sending outgoing system emails.
+   Source: Gmail account used as the email sender.
+   EMAIL_HOST_PASSWORD
+   SMTP password for the email sender.
+   Must use Gmail App Password.
+   Source: Google Account → Security → App Passwords.
+
+   ### 🔸 Frontend Secret Keys (./frontend/.env)
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID
+   OAuth Client ID for Google Sign-In on the frontend (browser).
+   Source: Google Cloud Console → OAuth 2.0 Client ID.
+
+   ### 🔸 Database & Admin Secrets (.env)
+   DB_PASSWORD
+   Password for connecting to the PostgreSQL database.
+   Source: Defined by the developer (local or docker-compose).
+   DB_USER
+   Username used to authenticate with PostgreSQL.
+   Source: Defined manually when setting up the database (or in docker-compose).
+   DB_NAME
+   Name of the PostgreSQL database used by the application.
+   Source: Set during database creation or defined in docker-compose.
+   PGADMIN_EMAIL
+   Email used to log into pgAdmin's web UI.
+   Source: Chosen by the developer (not a secret, but required for setup).
+   PGADMIN_PASSWORD
+   Password for logging into pgAdmin web UI.
+   Source: Chosen during pgAdmin setup.
+
+3. **Load Sample Data**
    ```bash
    python manage.py load_sample --reset
    ```
@@ -111,18 +169,27 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
 
-5. **Run Everything with Docker**
+   *Demo User*
+   | Role   | Username            | Password            |
+   |--------|---------------------|---------------------|
+   | Admin  | **skinmatch_admin** | **AdminPass#123**   |
+   | Member | **Testuser001**     | **GlowPass#123**    |
+   | Member | **Testuser002**     | **RoutinePass#123** |
+   | Member | **Testuser003**     | **FreshPass#123**   |
+
+
+4. **Run Everything with Docker**
    ```bash
    cd ..
    docker-compose up --build
    ```
 
-ึึ6. **Verify everything is running**
+ึึ5. **Verify everything is running**
    Backend API: http://localhost:8000
    Frontend: http://localhost:3000
 
 
-7. **(Optional) Export / import curated Skin Facts**
+6. **(Optional) Export / import curated Skin Facts**
 
    We keep the Skin Facts topics (and their hero/block images) under `./data`. Use these commands to refresh or seed another environment:
 
