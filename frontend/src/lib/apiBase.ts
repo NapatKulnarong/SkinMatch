@@ -55,7 +55,10 @@ const backendLikeOrigins = (() => {
 
   origins.add("http://backend:8000");
   origins.add("https://backend");
-  origins.add("http://localhost:8000");
+  // localhost:8000 is kept as fallback for local development when NEXT_PUBLIC_BACKEND_URL is not set
+  if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+    origins.add("http://localhost:8000");
+  }
 
   return origins;
 })();

@@ -89,7 +89,8 @@ export default function LoginPage() {
   );
 }
 export function buildGoogleAuthUrl(clientId: string) {
-  const redirectUri = "http://localhost:8000/api/auth/google/callback";
+  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const redirectUri = `${backendBase}/api/auth/google/callback`;
   const scope = "email profile";
 
   return (
@@ -308,10 +309,11 @@ function LoginContent() {
       console.log("Stored redirect parameter:", redirectParam);
     }
     
+    const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
     const redirectUri =
       process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
       process.env.NEXT_PUBLIC_GOOGLE_CALLBACK_URL ||
-      "http://localhost:8000/api/auth/google/callback";
+      `${backendBase}/api/auth/google/callback`;
     const scope = 'email profile';
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +

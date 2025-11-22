@@ -242,10 +242,11 @@ describe("Admin Login Flow", () => {
         is_staff: true,
       });
 
+      const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       (createAdminSession as jest.Mock).mockResolvedValue({
         ok: true,
         message: "Admin session available",
-        redirect_url: "http://localhost:8000/admin/",
+        redirect_url: `${expectedBackendUrl}/admin/`,
       });
 
       await navigateToLoginForm();
@@ -270,10 +271,11 @@ describe("Admin Login Flow", () => {
       });
 
       const adminSessionResult = await createAdminSession.mock.results[0].value;
+      const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       expect(adminSessionResult).toEqual({
         ok: true,
         message: "Admin session available",
-        redirect_url: "http://localhost:8000/admin/",
+        redirect_url: `${expectedBackendUrl}/admin/`,
       });
 
       await waitFor(() => {
@@ -285,13 +287,14 @@ describe("Admin Login Flow", () => {
       });
 
       // now check redirect logic
+      const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       await waitFor(() => {
         expect(mockPush).not.toHaveBeenCalled();
         expect(mockRedirectTo).toHaveBeenCalledWith(
-          "http://localhost:8000/admin/"
+          `${expectedBackendUrl}/admin/`
         );
       });
-      expect(locationHrefValue).toBe("http://localhost:8000/admin/");
+      expect(locationHrefValue).toBe(`${expectedBackendUrl}/admin/`);
     });
 
     it("should show error when admin session creation fails", async () => {

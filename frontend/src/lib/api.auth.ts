@@ -114,8 +114,9 @@ export async function createAdminSession(token: string, profile: StoredProfile) 
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
   let adminUrl = `${backendBase}/admin/`;
 
+  // Replace internal backend hostname with public backend URL if needed
   if (adminUrl.includes("backend:8000")) {
-    adminUrl = adminUrl.replace("backend:8000", "localhost:8000");
+    adminUrl = adminUrl.replace("backend:8000", new URL(backendBase).hostname || "localhost:8000");
   }
 
   return {

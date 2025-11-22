@@ -126,9 +126,10 @@ describe("LoginPage", () => {
       );
 
       // Check required parameters
+      const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       expect(url).toContain(`client_id=${clientId}`);
       expect(url).toContain(
-        encodeURIComponent("http://localhost:8000/api/auth/google/callback")
+        encodeURIComponent(`${expectedBackendUrl}/api/auth/google/callback`)
       );
       expect(url).toContain("response_type=code");
       expect(url).toContain("scope=");
