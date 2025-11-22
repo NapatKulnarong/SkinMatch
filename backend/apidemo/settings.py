@@ -68,11 +68,9 @@ if "testserver" not in ALLOWED_HOSTS:
 
 # CSRF / CORS
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
-CORS_ALLOWED_ORIGINS = [
-    os.getenv("FRONTEND_ORIGIN"),
-    "http://frontend:3000",  # Docker service name
-    "https://skinmatch-nu.vercel.app",
-]
+
+# Note: FRONTEND_ORIGIN is defined later in the file, so we'll set CORS_ALLOWED_ORIGINS after it
+# This will be set after FRONTEND_ORIGIN is defined
 CORS_ALLOW_CREDENTIALS = True
 
 # HTTPS / Cookie security
@@ -191,10 +189,22 @@ GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
     "GOOGLE_OAUTH_REDIRECT_URI",
     os.getenv("GOOGLE_REDIRECT_URI") or f"{BACKEND_URL}/api/auth/google/callback",
 )
+
+# Frontend configuration
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+FRONTEND_ACCOUNT_URL = os.getenv("FRONTEND_ACCOUNT_URL", f"{FRONTEND_ORIGIN}/account")
+FRONTEND_LOGIN_URL = os.getenv("FRONTEND_LOGIN_URL", f"{FRONTEND_ORIGIN}/login")
 FRONTEND_LOGIN_REDIRECT_URL = os.getenv(
     "FRONTEND_LOGIN_REDIRECT_URL",
-    os.getenv("FRONTEND_ORIGIN", "http://localhost:3000") + "/account"
+    FRONTEND_ACCOUNT_URL
 )
+
+# Set CORS_ALLOWED_ORIGINS after FRONTEND_ORIGIN is defined
+CORS_ALLOWED_ORIGINS = [
+    FRONTEND_ORIGIN,
+    "http://frontend:3000",  # Docker service name
+    "https://skinmatch-nu.vercel.app",
+]
 
 
 # Application definition
