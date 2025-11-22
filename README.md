@@ -91,8 +91,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
 
 1. **Clone repo** 
    ```bash
-   git clone https://github.com/your-username/skinmatch.git
-   cd skinmatch
+   git clone https://github.com/NapatKulnarong/SkinMatch.git
    ```
 2. **Download Environment File**
    download .env.example*
@@ -105,8 +104,14 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    cp .env.example .env
    cd ..
    ```
+3. **Setup Virtual Environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r backend/requirements.txt
+   ```
 
-3. **Setup Environment Secret Keys**
+4. **Setup Environment Secret Keys**
    ### 🔸 Backend Secret Keys (./backend/.env)
    DJANGO_SECRET_KEY
    Used by Django for session signing, CSRF protection, password hashing, and cryptographic operations.
@@ -165,7 +170,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    This value must match the OAuth Client created in Google Cloud Console.
    Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
 
-3. **Load Sample Data**
+5. **Load Sample Data**
    ```bash
    cd backend
    python manage.py load_sample --reset
@@ -185,31 +190,15 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    | Member | **Testuser003**     | **FreshPass#123**   |
 
 
-4. **Run Everything with Docker**
+6. **Run Everything with Docker**
    ```bash
    cd ..
    docker-compose up --build
    ```
 
-ึึ5. **Verify everything is running**
+ึึ7. **Verify everything is running**
    Backend API: http://localhost:8000
    Frontend: http://localhost:3000
-
-
-6. **(Optional) Export / import curated Skin Facts**
-
-   We keep the Skin Facts topics (and their hero/block images) under `./data`. Use these commands to refresh or seed another environment:
-
-   ```bash
-   # Export current topics + images to data/…
-   cd backend
-   python manage.py export_skinfact_seed
-
-   # Import them into a clean database (copies media back into ./media)
-   python manage.py import_skinfact_seed --reset
-   ```
-
-   Both commands default to `../data/skin_facts_seed.json` and `../data/skin_facts_media`, so everything stays in a single folder. Pass `--skip-missing` (export) or `--skip-missing-media` (import) if you want to skip topics whose images weren’t found.
 
 ---
 
