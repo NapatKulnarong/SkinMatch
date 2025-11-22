@@ -72,6 +72,17 @@ const nextConfig: NextConfig = {
         hostname: "down-th.img.susercontent.com",
         pathname: "/**",
       },
+      // Wildcard fallbacks to cover newly added product image hosts
+      {
+        protocol: "https",
+        hostname: "**",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {

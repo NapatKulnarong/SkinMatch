@@ -86,7 +86,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
     return (
       <section id={sectionId} className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+          <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
             Editor picks
           </p>
           <h2 className="text-2xl font-black text-[#1f2d26]">
@@ -117,7 +117,7 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
 
   if (!topics.length) {
     return (
-      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
+      <section id={sectionId} className="rounded-[28px] border-2 border-black bg-[#f5f9ff] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]">
         <div className="rounded-2xl border-2 border-dashed border-black/30 bg-white px-4 py-6 text-sm text-[#1f2d26]/70 text-center">
           No trending skincare topics found yet.
         </div>
@@ -128,13 +128,13 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
   return (
     <section
       id={sectionId}
-      className="space-y-5 rounded-[28px] border-2 border-black bg-[#fbfff9] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
+      className="space-y-5 rounded-[28px] border-2 border-black bg-[#f5f9ff] p-5 lg:p-8 shadow-[5px_6px_0_rgba(0,0,0,0.2)]"
     >
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+        <p className="hidden lg:block text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
           Editor picks
         </p>
-        <h2 className="text-2xl font-black text-[#1f2d26]">
+        <h2 className="text-xl lg:text-2xl font-black text-[#1f2d26]">
           Trending Skincare
         </h2>
         <p className="text-sm text-[#1f2d26]/70">
@@ -169,19 +169,9 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-4 p-5 text-[#1f2d26]">
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
-                      Trending metrics
-                    </p>
-                    <div className="space-y-2 text-xs uppercase tracking-[0.3em] text-[#1f2d26]/60">
-                      <span>{new Intl.NumberFormat().format(item.viewCount ?? 0)} reads</span>
-                      <span>Hype score {new Intl.NumberFormat().format(hypeScore)}</span>
-                      <span>Social buzz ↑</span>
-                    </div>
-                  </div>
                   <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#1f2d26]/60">
                     <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#1f2d26]">
-                      Read <span aria-hidden>↗</span>
+                      Read <span aria-hidden>→</span>
                     </span>
                   </div>
                 </div>

@@ -63,15 +63,15 @@ export default async function IngredientSearchPage({ searchParams }: PageProps) 
   const hasResults = result.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#eef3de] text-[#1f2d26]">
+    <main className="min-h-screen bg-gradient-to-br from-white via-[#e8f7f2] to-[#d4f1e8] text-[#1f2d26]">
       <Navbar />
       <PageContainer className="pt-44 lg:pt-32 pb-16 flex flex-col gap-5 md:gap-8">
-      <section className="bg-transparent p-6 md:p-7 lg:rounded-[28px] lg:border-2 lg:border-black lg:bg-gradient-to-br lg:from-[#e7f5d9] lg:to-[#f3f9e8] lg:p-8 lg:shadow-[5px_6px_0_rgba(0,0,0,0.22)]">
+      <section className="bg-transparent p-6 md:p-7 lg:rounded-[28px] lg:border-2 lg:border-black lg:bg-gradient-to-br lg:from-white lg:via-[#e8f7f2] lg:to-[#d4f1e8] lg:p-8 lg:shadow-[5px_6px_0_rgba(0,0,0,0.22)]">
       <div className="mx-auto max-w-3xl space-y-5 text-center">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#3f6b3a]/30 bg-[#3f6b3a]/10 px-3 py-1">
-                <SparklesIcon className="h-3 w-3 text-[#3f6b3a]" />
-                <span className="text-[9px] lg:text-[11px] font-bold uppercase tracking-[0.3em] text-[#3f6b3a]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#3a6b5a]/30 bg-[#3a6b5a]/10 px-3 py-1">
+                <SparklesIcon className="h-3 w-3 text-[#3a6b5a]" />
+                <span className="text-[9px] lg:text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a6b5a]">
                   Ingredient Library
                 </span>
               </div>
@@ -89,11 +89,11 @@ export default async function IngredientSearchPage({ searchParams }: PageProps) 
                 name="q"
                 defaultValue={queryValue}
                 placeholder="Try niacinamide, vitamin C, salicylic acid..."
-                className="w-full rounded-full border-2 border-black bg-white px-5 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.22)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3f6b3a]"
+                className="w-full rounded-full border-2 border-black bg-white px-5 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-14 text-sm sm:text-base shadow-[0_4px_0_rgba(0,0,0,0.22)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3a6b5a]"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#3f6b3a] p-2 sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[2px] hover:shadow-[0_4px_0_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3f6b3a]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-[#3a6b5a] p-2 sm:p-2.5 text-white shadow-[0_3px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[2px] hover:shadow-[0_4px_0_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3a6b5a]"
               >
                 <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
@@ -105,7 +105,7 @@ export default async function IngredientSearchPage({ searchParams }: PageProps) 
                 <Link
                   key={item.name}
                   href={`/ingredients?q=${encodeURIComponent(item.name)}`}
-                  className="rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] font-semibold text-[#3f6b3a] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.15)]"
+                  className="rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] font-semibold text-[#3a6b5a] transition hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.15)] hover:bg-[#c8f0e0]"
                 >
                   {item.name}
                 </Link>
@@ -125,11 +125,11 @@ export default async function IngredientSearchPage({ searchParams }: PageProps) 
                 <Link
                   key={item.name}
                   href={`/ingredients?q=${encodeURIComponent(item.name)}`}
-                  className="rounded-xl border-2 border-dashed border-[#3f6b3a]/40 bg-[#f4f9ee] px-4 py-3 transition 
-                            hover:-translate-y-1 hover:border-[#3f6b3a] hover:shadow-[0_4px_0_rgba(0,0,0,0.15)]"
+                  className="rounded-xl border-2 border-dashed border-[#3a6b5a]/40 bg-gradient-to-br from-white to-[#e8f7f2] px-4 py-3 transition 
+                            hover:-translate-y-1 hover:border-[#3a6b5a] hover:shadow-[0_4px_0_rgba(0,0,0,0.15)]"
                 >
-                  <p className="text-sm font-bold text-[#2e4b2c]">{item.name}</p>
-                  <p className="mt-1 text-xs text-[#2e4b2c]/70">{item.benefit}</p>
+                  <p className="text-sm font-bold text-[#2d5a4a]">{item.name}</p>
+                  <p className="mt-1 text-xs text-[#2d5a4a]/70">{item.benefit}</p>
                 </Link>
               ))}
             </div>
@@ -152,7 +152,7 @@ export default async function IngredientSearchPage({ searchParams }: PageProps) 
                 <Link
                   key={item.name}
                   href={`/ingredients?q=${encodeURIComponent(item.name)}`}
-                  className="rounded-full border border-black/10 bg-[#f4f4f4] px-3 py-1 text-xs font-semibold text-[#3f6b3a] hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.12)]"
+                  className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-[#3a6b5a] hover:-translate-y-0.5 hover:shadow-[0_3px_0_rgba(0,0,0,0.12)] hover:bg-[#c8f0e0]"
                 >
                   {item.name}
                 </Link>
@@ -189,7 +189,7 @@ function IngredientResultSection({ item }: SectionProps) {
       </div>
 
       <div className="mt-6 flex justify-end">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#3f6b3a]/30 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e4b2c]">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#3a6b5a]/30 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2d5a4a]">
           {matchLabel}
         </span>
       </div>
@@ -207,10 +207,10 @@ type IngredientFactsProps = {
 
 function IngredientFacts({ ingredient }: IngredientFactsProps) {
   return (
-    <div className="rounded-[20px] border-2 border-dashed border-[#3f6b3a]/35 bg-[#fffbf0] p-5 sm:p-6">
+    <div className="rounded-[20px] border-2 border-dashed border-[#3a6b5a]/35 bg-gradient-to-br from-white via-[#f0f9f6] to-[#e8f7f2] p-5 sm:p-6">
       <div className="flex flex-col gap-3">
         <div className="space-y-2 text-left">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#3f6b3a]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#3a6b5a]">
             Ingredient snapshot
           </p>
           <p className="text-sm text-[#1f2d26]/80">
@@ -265,8 +265,8 @@ type IngredientFactGroupProps = {
 
 function IngredientFactGroup({ title, items, emptyLabel }: IngredientFactGroupProps) {
   return (
-    <div className="rounded-xl border border-[#3f6b3a]/15 bg-white/75 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2e4b2c]">
+    <div className="rounded-xl border border-[#3a6b5a]/15 bg-white/75 p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2d5a4a]">
         {title}
       </p>
       {items.length ? (
@@ -274,7 +274,7 @@ function IngredientFactGroup({ title, items, emptyLabel }: IngredientFactGroupPr
           {items.map((item) => (
             <span
               key={item}
-              className="rounded-full border border-[#3f6b3a]/25 bg-[#eef7dd] px-2.5 py-0.5 text-[11px] font-semibold text-[#2e4b2c]"
+              className="rounded-full border border-[#3a6b5a]/25 bg-gradient-to-br from-white to-[#e8f7f2] px-2.5 py-0.5 text-[11px] font-semibold text-[#2d5a4a]"
             >
               {item}
             </span>
@@ -301,8 +301,8 @@ function IngredientFactBlock({ title, value, fallback }: IngredientFactBlockProp
     : [];
 
   return (
-    <div className="rounded-xl border border-[#3f6b3a]/15 bg-white/75 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2e4b2c]">
+    <div className="rounded-xl border border-[#3a6b5a]/15 bg-white/75 p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#2d5a4a]">
         {title}
       </p>
       {isList ? (

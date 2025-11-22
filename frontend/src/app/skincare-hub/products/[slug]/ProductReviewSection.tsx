@@ -197,18 +197,14 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
     <section id="reviews" className="relative h-full space-y-6 overflow-hidden rounded-[24px]">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
+          <p className="mt-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1f2d26]/60">
             Community voices
           </p>
-          <h2 className="text-2xl font-black text-[#1f2d26] leading-snug">
-            Reviews for {productName}
+          <h2 className="text-lg font-black  leading-snug">
+            <span className="block text-[#1f2d26]">Reviews for :</span>
+            <span className="block text-[#5a7a9a]">{productName}</span>
           </h2>
         </div>
-        {profile ? (
-          <p className="text-sm text-[#1f2d26]/60">
-            Signed in as <span className="font-semibold">{profile.username}</span>
-          </p>
-        ) : null}
       </div>
 
       <div className="space-y-6 max-h-[720px] overflow-y-auto pr-1 relative">
@@ -262,15 +258,15 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
                   aria-checked={postAnonymously}
                   onClick={() => setPostAnonymously((prev) => !prev)}
                   className={`relative inline-flex h-8 w-16 items-center rounded-full border-2 border-black transition ${
-                    postAnonymously ? "bg-[#0f5132]" : "bg-white"
+                    postAnonymously ? "bg-[#a8c8e8]" : "bg-[#e8f4ff]"
                   }`}
                 >
                   <span className="sr-only">
                     {postAnonymously ? "Anonymous reviews enabled" : "Anonymous reviews disabled"}
                   </span>
                   <span
-                    className={`absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-transform ${
-                      postAnonymously ? "translate-x-6" : "translate-x-0"
+                    className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-all ${
+                      postAnonymously ? "right-1" : "left-1"
                     }`}
                   />
                 </button>
@@ -296,7 +292,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#1f2d26] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#555] disabled:text-white/70"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#a8c8e8] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#999] disabled:text-black/70"
                 >
                   {submitting ? "Saving…" : ownerReview ? "Update review" : "Post review"}
                 </button>
@@ -319,7 +315,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
             </p>
           )}
         </div>
-        <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)]">
+        <div className="space-y-3 rounded-2xl border-2 border-dashed border-black/25 bg-white/70 p-4 shadow-[0_6px_16px_rgba(0,0,0,0.05)] mb-8">
           <div className="flex items-center gap-2">
             <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5 text-[#1f2d26]" />
             <h3 className="text-lg font-bold text-[#1f2d26]">Community feedback</h3>
@@ -398,7 +394,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
             <div className="flex justify-center">
               <Link
                 href={loginHref}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#1f2d26] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 whitespace-nowrap"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#bbd0b7] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 whitespace-nowrap"
               >
                 Sign in
               </Link>

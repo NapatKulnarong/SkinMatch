@@ -92,7 +92,7 @@ export function ProductScanner() {
         key: "benefits",
         title: "Benefits",
         icon: SparklesIcon,
-        accent: "text-[#6b3e3e]",
+        accent: "text-[#C85A7A]",
         badge: `Confidence: ${(result.confidence * 100).toFixed(0)}%`,
         items: toPairs(result.benefits),
       },
@@ -100,7 +100,7 @@ export function ProductScanner() {
         key: "actives",
         title: "Active Ingredients",
         icon: BeakerIcon,
-        accent: "text-[#5a2e2e]",
+        accent: "text-[#C85A7A]",
         badge: "What each active does",
         items: toPairs(result.actives).map((item) => ({
           headline: item.headline,
@@ -111,14 +111,14 @@ export function ProductScanner() {
         key: "concerns",
         title: "Watch Outs",
         icon: ExclamationTriangleIcon,
-        accent: "text-[#7b2b2b]",
+        accent: "text-[#C85A7A]",
         items: toPairs(result.concerns),
       },
       {
         key: "notes",
         title: "Notes",
         icon: ClipboardDocumentListIcon,
-        accent: "text-[#5a4230]",
+        accent: "text-[#B85A6A]",
         items: toPairs(result.notes),
       },
     ];
@@ -138,7 +138,7 @@ export function ProductScanner() {
   }, []);
 
   return (
-    <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#ffcdc3] via-[#ff9d94] to-[#cb3642]  shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
+    <section className="relative rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#FFB5C2] via-[#FFA8B8] to-[#FF9DB3] shadow-[4px_6px_0_rgba(0,0,0,0.15)] overflow-visible">
       <div className="hidden lg:block absolute md:-top-42 md:-right-2 z-10 pointer-events-none">
         <Image
           src="/img/mascot/matchy_cam.png"
@@ -154,12 +154,12 @@ export function ProductScanner() {
         <div className="mx-auto w-full max-w-7xl space-y-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 lg:justify-start">
-              <CameraIcon className="h-5 w-5 md:h-8 md:w-8 sm:h-6 sm:w-6 text-[#8C1007]" />
-              <h2 className="text-xl sm:text-2xl font-bold text-[#8C1007] text-left">
+              <CameraIcon className="h-5 w-5 md:h-8 md:w-8 sm:h-6 sm:w-6 text-[#8B3A4A]" />
+              <h2 className="text-xl sm:text-2xl font-bold text-[#8B3A4A] text-left">
                 Instant Product Scanner
               </h2>  
             </div>
-            <p className="text-left text-sm sm:text-base text-[#6b3e3e]/90 mx-auto lg:mx-0">
+            <p className="text-left text-sm sm:text-base text-[#6B2A3A] mx-auto lg:mx-0">
             Upload a clear photo of the ingredient list. We will identify key active ingredients, 
             flag concerns, and provide a brief overview of the product.
             </p>
@@ -192,15 +192,15 @@ export function ProductScanner() {
                 />
               ) : (
                 <div className="space-y-2">
-                  <SparklesIcon className="mx-auto h-6 lg:h-8 w-7 lg:w-8 text-[#a85b5b]/70 animate-pulse" />
-                  <p className="text-sm font-semibold text-[#5a4230]">Drop a photo or tap to browse</p>
-                  <p className="text-xs text-[#5a4230]/70">PNG / JPG / HEIC up to 10MB</p>
+                  <SparklesIcon className="mx-auto h-6 lg:h-8 w-7 lg:w-8 text-[#C85A7A]/70 animate-pulse" />
+                  <p className="text-sm font-semibold text-[#B85A6A]">Drop a photo or tap to browse</p>
+                  <p className="text-xs text-[#B85A6A]/70">PNG / JPG up to 10MB</p>
                 </div>
               )}
             </label>
 
             <div className="rounded-[5px] border-2 border-black  bg-white/70  p-4 text-left shadow-[0_4px_0_rgba(0,0,0,0.15)] flex flex-col">
-              <label htmlFor="manual-ingredients" className="block text-sm font-bold text-[#6b3e3e] mb-2">
+              <label htmlFor="manual-ingredients" className="block text-sm font-bold text-[#B85A6A] mb-2">
                 Or paste the ingredient list directly
               </label>
               <textarea
@@ -209,7 +209,7 @@ export function ProductScanner() {
                 onChange={(event) => setManualText(event.target.value)}
                 placeholder="Deionized Water, Garcinia Mangostana Peel Extract, Glyceryl Glucoside, ..."
                 rows={6}
-                className="h-full min-h-[150px] lg:min-h-[200px] w-full border border-dashed border-black/50 bg-white/60 px-3 py-2 text-sm text-[#5a4230] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#f2c9b5]/60"
+                className="h-full min-h-[150px] lg:min-h-[200px] w-full border border-dashed border-black/50 bg-white/60 px-3 py-2 text-sm text-[#B85A6A] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FFB5C2]/60"
               />
             </div>
           </div>
@@ -233,13 +233,13 @@ export function ProductScanner() {
             
           </div>
           {error && (
-            <div className="rounded-[5px] border-2 border-black bg-[#fff4f2] px-4 py-3 text-sm font-semibold text-[#7c2b2b]">
+            <div className="rounded-[5px] border-2 border-black bg-[#FFE5E8] px-4 py-3 text-sm font-semibold text-[#C85A7A]">
               {error}
             </div>
           )}
           {isUploading && (
-            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[#fddfdd] px-4 py-3 lg:py-4 text-sm font-semibold text-[#5a4230]">
-              <SparklesIcon className="h-6 w-6 animate-bounce text-[#a85b5b]" />
+            <div className="flex flex-row items-center justify-center gap-2 rounded-[5px] border-2 border-black bg-[#FFD7DC] px-4 py-3 lg:py-4 text-sm font-semibold text-[#B85A6A]">
+              <SparklesIcon className="h-6 w-6 animate-bounce text-[#C85A7A]" />
               <p>Analyzing ingredients… sit tight!</p>
             </div>
           )}
@@ -249,33 +249,33 @@ export function ProductScanner() {
               {infoLists.map(({ key, title, icon: Icon, accent, badge, items }) => (
                 <div
                   key={key}
-                  className="rounded-[5px] border-2 border-black bg-gradient-to-b from-[#fff1ee] to-[#ffcdc7] p-4 text-left shadow-[0_5px_0_rgba(0,0,0,0.15)]"
+                  className="rounded-[5px] border-2 border-black bg-gradient-to-b from-[#FFE5E8] to-[#FFD7DC] p-4 text-left shadow-[0_5px_0_rgba(0,0,0,0.15)]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Icon className={`h-5 w-5 ${accent}`} />
                       <p className={`text-sm font-bold ${accent}`}>{title}</p>
                     </div>
-                    {badge && <span className="text-[10px] font-semibold text-[#5a4230]/70">{badge}</span>}
+                    {badge && <span className="text-[10px] font-semibold text-[#B85A6A]/70">{badge}</span>}
                   </div>
                   {items.length ? (
-                    <ul className="mt-3 space-y-2 text-sm text-[#46342b]">
+                    <ul className="mt-3 space-y-2 text-sm text-[#B85A6A]">
                       {items.map(({ headline, body }, idx) => (
                         <li key={`${key}-${headline}-${idx}`} className=" bg-white/60 px-3 py-2 border border-dashed border-black/50 shadow-inner">
-                          <span className="font-semibold text-[#4a2b2b]">{headline}</span>
-                          {body && <p className="text-xs text-[#6b4c43] mt-0.5">{body}</p>}
+                          <span className="font-semibold text-[#C85A7A]">{headline}</span>
+                          {body && <p className="text-xs text-[#B85A6A]/80 mt-0.5">{body}</p>}
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-3 text-xs text-[#5a4230]/60">No insights detected.</p>
+                    <p className="mt-3 text-xs text-[#B85A6A]/60">No insights detected.</p>
                   )}
                 </div>
               ))}
             </div>
           )}
 
-          <p className="w-full text-center text-xs lg:text-sm font-semibold text-[#6b3e3e]/70">
+          <p className="w-full text-center text-xs lg:text-sm font-semibold text-[#B85A6A]/70">
             powered by Gemini AI
           </p>
         </div>

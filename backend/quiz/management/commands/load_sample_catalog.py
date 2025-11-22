@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import decimal
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Iterable
@@ -71,6 +72,10 @@ CONCERNS: tuple[tuple[str, str], ...] = (
     ("blemishes", "Blemishes"),
     ("makeup-prep", "Makeup Prep"),
     ("texture", "Texture"),
+    ("sensitive", "Sensitive"),
+    ("oil-control", "Oil Control"),
+    ("hydration", "Hydration"),
+    ("stretch-marks", "Stretch Marks"),
 )
 
 SKIN_TYPES: tuple[tuple[str, str], ...] = (
@@ -79,7 +84,7 @@ SKIN_TYPES: tuple[tuple[str, str], ...] = (
     ("normal", "Normal"),
     ("combination", "Combination"),
     ("sensitive", "Sensitive"),
-    ("mature", "Mature"),
+    ("acne-prone", "Acne-Prone"),
 )
 
 RESTRICTIONS: tuple[tuple[str, str], ...] = (
@@ -160,6 +165,26 @@ INGREDIENTS: tuple[tuple[str, str, str], ...] = (
     ("tripeptide", "Tripeptide", "A short chain of three amino acids that helps support collagen production and improve skin firmness. Works to reduce fine lines and enhance overall skin structure and elasticity."),
     ("uva-uvb-filters", "UVA/UVB Filters", "Broad-spectrum UV filters that protect the skin from both UVA (aging) and UVB (burning) rays. Essential for preventing sun damage, premature aging, and skin cancer."),
     ("zinc-pca", "Zinc PCA", "A zinc salt that helps regulate sebum production and reduce shine. Provides antimicrobial benefits, helps minimize the appearance of pores, and supports clearer, more balanced skin."),
+    ("centella-asiatica", "Centella Asiatica", "A soothing botanical extract that calms irritation, strengthens the skin barrier, and promotes healing. Rich in triterpenoids and antioxidants that reduce redness and support skin repair."),
+    ("soybean-extract", "Soybean Extract", "Rich in isoflavones and proteins that help improve skin elasticity and firmness. Provides antioxidant benefits, helps even out skin tone, and supports overall skin health."),
+    ("tea-tree-extract", "Tea Tree Extract", "A botanical extract derived from tea tree leaves with antibacterial and anti-inflammatory properties. Helps reduce acne, control excess oil, and calm redness. Gentler than tea tree oil and suitable for sensitive skin."),
+    ("green-tea-extract", "Green Tea Extract", "A concentrated extract from green tea leaves rich in antioxidants, particularly EGCG. Helps protect against environmental damage, reduce inflammation, control oil production, and soothe irritated skin."),
+    ("betula-platyphylla-japonica-juice", "Birch Juice (Betula Platyphylla Japonica)", "A hydrating botanical extract rich in amino acids and minerals. Helps soothe irritation, provide deep hydration, and support the skin's natural barrier function."),
+    ("pineapple-extract", "Pineapple Extract", "Contains bromelain, an enzyme that gently exfoliates and brightens the skin. Helps improve texture, reduce dullness, and provide antioxidant benefits for a more radiant complexion."),
+    ("betaine-salicylate", "Betaine Salicylate", "A gentle, water-soluble derivative of salicylic acid (BHA) that provides mild exfoliation and helps unclog pores. Less irritating than traditional salicylic acid, making it suitable for sensitive skin."),
+    ("cocamidopropyl-betaine", "Cocamidopropyl Betaine", "A mild, amphoteric surfactant derived from coconut oil and amino acids. Provides gentle cleansing without stripping the skin's natural oils, making it ideal for sensitive and dry skin types."),
+    ("paraffinum-liquidum", "Mineral Oil (Paraffinum Liquidum)", "A lightweight, occlusive oil that forms a protective barrier on the skin to prevent moisture loss. Helps soothe dry, irritated skin and is commonly used in baby products and sensitive skin formulations."),
+    ("isopropyl-palmitate", "Isopropyl Palmitate", "A synthetic emollient ester that provides smooth, non-greasy texture to skincare products. Helps improve product spreadability and provides light moisturization without feeling heavy."),
+    ("ceramide-np", "Ceramide NP", "A type of ceramide (ceramide 3) that is naturally found in the skin barrier. Helps restore and strengthen the skin's protective barrier, lock in moisture, and reduce dryness and sensitivity."),
+    ("camelina-sativa-seed-oil", "Camelina Seed Oil", "A lightweight, nutrient-rich oil high in omega-3 fatty acids and vitamin E. Provides antioxidant protection, helps soothe irritation, and supports skin barrier function without feeling greasy."),
+    ("prunus-amygdalus-dulcis-oil", "Sweet Almond Oil (Prunus Amygdalus Dulcis)", "A rich, emollient oil extracted from sweet almonds. Provides deep hydration, softens the skin, and contains vitamin E for antioxidant benefits. Ideal for dry and sensitive skin."),
+    ("sesamum-indicum-seed-oil", "Sesame Seed Oil (Sesamum Indicum)", "A lightweight, non-comedogenic oil rich in antioxidants, particularly sesamol and sesamin. Provides moisturization, helps protect against environmental damage, and absorbs quickly without leaving a greasy feel."),
+    ("isopropyl-myristate", "Isopropyl Myristate", "A synthetic emollient ester that provides smooth, silky texture to skincare products. Helps improve product spreadability and provides light moisturization. Commonly used in body oils and lotions for its non-greasy feel."),
+    ("hydrolyzed-collagen", "Hydrolyzed Collagen", "Collagen that has been broken down into smaller peptides for better skin absorption. Helps improve skin elasticity, reduce fine lines, and support skin structure. Provides hydration and may help improve skin firmness over time."),
+    ("palmitoyl-tripeptide-5", "Palmitoyl Tripeptide-5", "A synthetic peptide that helps stimulate collagen production and improve skin elasticity. Works to reduce the appearance of fine lines and wrinkles while supporting overall skin structure and firmness."),
+    ("ethylhexyl-triazone", "Ethylhexyl Triazone", "A chemical UV filter that provides protection against UVB rays. Helps prevent sunburn and sun damage. Commonly used in sunscreens for its photostability and effectiveness."),
+    ("ascorbyl-palmitate", "Ascorbyl Palmitate", "A fat-soluble derivative of vitamin C that provides antioxidant benefits and helps brighten skin tone. More stable than pure vitamin C and can penetrate the skin barrier more effectively. Helps protect against free radical damage."),
+    ("tocopheryl-acetate", "Tocopheryl Acetate (Vitamin E Acetate)", "A stable, esterified form of vitamin E that provides antioxidant protection against free radical damage. Helps reduce inflammation, support skin repair, and protect against environmental stressors. Less likely to cause irritation than pure vitamin E."),
 )
 
 INGREDIENT_NOTES: dict[str, dict[str, str]] = {
@@ -1480,7 +1505,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         rating=4.8,
         concerns=["fine-lines", "wrinkles", "uneven-skin-texture"],
         ingredients=["retinol", "camellia-sinensis-extract", "palmitoyl-tripeptide-1"],
-        skin_types=["normal", "combination", "mature"],
+        skin_types=["normal", "combination"],
         restrictions=["pregnancy-warning"],
         product_url="https://shopee.co.th/(%E0%B8%A3%E0%B8%B1%E0%B8%9A-Vit-C-5ml)INGU-Green-Tea-Retinol-Serum-Shot-%E0%B9%80%E0%B8%A3%E0%B8%95%E0%B8%B4%E0%B8%99%E0%B8%AD%E0%B8%A5-%E0%B9%80%E0%B8%8B%E0%B8%A3%E0%B8%B1%E0%B9%88%E0%B8%A1-i.770604218.29938732714?extraParams=%7B%22display_model_id%22:260734043972,%22model_selection_logic%22:3%7D&sp_atk=474f20a8-7af0-45d7-b20d-ed7ebc62ebde&xptdk=474f20a8-7af0-45d7-b20d-ed7ebc62ebde",
         image="https://s3.konvy.com/static/team/2025/0129/17381435834102_600x600.jpg",
@@ -1565,7 +1590,7 @@ THAI_PRODUCTS: list[ProductSeed] = [
         rating=4.7,
         concerns=["dryness", "barrier-damage", "dull-skin"],
         ingredients=["ceramides", "squalane", "camellia-sinensis-extract"],
-        skin_types=["dry", "normal", "combination", "mature"],
+        skin_types=["dry", "normal", "combination"],
         restrictions=[],
         product_url="https://shopee.co.th/INGU-Green-Tea-Deep-Repair-Cream-Biome-Balance-%E0%B8%A1%E0%B8%AD%E0%B8%A2%E0%B8%8B%E0%B9%8C%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%84%E0%B8%A3%E0%B9%80%E0%B8%8B%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%99%E0%B8%B7%E0%B9%89%E0%B8%AD%E0%B9%80%E0%B8%82%E0%B9%89%E0%B8%A1%E0%B8%82%E0%B9%89%E0%B8%99-%E0%B8%AA%E0%B8%B3%E0%B8%AB%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%AB%E0%B9%89%E0%B8%87-i.770604218.24800973241?extraParams=%7B%22display_model_id%22:240711284157%7D",
         image="https://www.jeban.com/uploads/reviews/product/110224/111668_daf2b1d3bb.jpg",
@@ -2434,7 +2459,7 @@ GLOBAL_PRODUCTS: list[ProductSeed] = [
         hero_ingredients="Neuromide®, Centella Asiatica",
         rating=4.6,
         concerns=["sensitive", "dehydrated-skin", "damaged-skin-barrier"],
-        ingredients=["niacinamide","centella"],
+        ingredients=["niacinamide","centella-asiatica-extract"],
         skin_types=["normal", "combination", "oily"],
         restrictions=["cruelty-free"] ,
         product_url="https://shopee.co.th/%E0%B9%80%E0%B8%88%E0%B8%A5%E0%B8%81%E0%B8%B9%E0%B9%89%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B8%A1%E0%B8%B1%E0%B8%99-%E0%B8%82%E0%B8%B2%E0%B8%94%E0%B8%99%E0%B9%89%E0%B8%B3-%E0%B9%83%E0%B8%AB%E0%B9%89%E0%B8%81%E0%B8%A5%E0%B8%B1%E0%B8%9A%E0%B8%A1%E0%B8%B2%E0%B8%89%E0%B9%88%E0%B8%B3%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87%E0%B8%AA%E0%B8%B8%E0%B8%82%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%94%E0%B8%B5-CURECODE-ULTRA-SOOTHING-RADIANCE-GEL-i.892144781.25965942034?extraParams=%7B%22display_model_id%22:197338180122%7D",
@@ -2640,6 +2665,688 @@ ProductSeed(
     restrictions=[],
     product_url="https://shopee.co.th/Dr.Althea-Cream-ด๊อกเตอร์อัลเทีย-ครีมบำรุงผิวหน้า-50ml-(345-Relief-147-Barrier)-i.70998059.40607143635",
     image="https://i5.walmartimages.com/seo/Dr-Althea-147-Barrier-Cream-50ml_c79af17e-e42d-4c12-8867-513905fe0ebb.acaff303ae93863f1ef823f4abb334eb.jpeg",
+),
+ProductSeed(
+    brand="MizuMi",
+    name="UV Water Serum SPF50 PA+++ 40g",
+    origin="South Korea",
+    category="sunscreen",
+    price="399.00",
+    currency="THB",
+    summary=(
+        "A lightweight, water-based sunscreen serum with SPF50 PA+++ that provides high-level sun protection "
+        "while hydrating and soothing the skin. Its fast-absorbing formula leaves no white cast, making it ideal "
+        "for all skin types, especially for those with sensitive or oily skin."
+    ),
+    hero_ingredients="Water, Niacinamide, Centella Asiatica Extract",
+    rating=None,
+    concerns=["sun-protection", "oily-skin", "sensitive-skin", "dehydrated-skin"],
+    ingredients=["niacinamide", "centella-asiatica-extract", "glycerin"],
+    skin_types=["normal", "oily", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/MizuMi-UV-Water-Serum-SPF50-PA-40g-No.1-Best-Selling-Sunscreen-i.70802054.1208419346",
+    image="https://www.konvy.com/static/team/2021/0430/16197760966662_600x600.jpg",
+),
+ProductSeed(
+    brand="MizuMi",
+    name="UV Ultimate Matte Oil Control Sunscreen 40g",
+    origin="South Korea",
+    category="sunscreen",
+    price="450.00",
+    currency="THB",
+    summary=(
+        "A lightweight, matte-finish sunscreen that controls oil and provides SPF50 PA+++ protection. "
+        "It absorbs quickly, leaving no residue and controlling shine, making it ideal for oily and combination skin types."
+    ),
+    hero_ingredients="Niacinamide, Zinc Oxide, Tea Tree Extract",
+    rating=None,
+    concerns=["sun-protection", "excess-oil", "oily-skin", "large-pores"],
+    ingredients=["niacinamide", "zinc-oxide", "melaleuca-alternifolia-leaf-oil"],
+    skin_types=["oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/MizuMi-UV-Ultimate-Matte-Oil-Control-Sunscreen-40g-%E0%B8%81%E0%B8%B1%E0%B8%99%E0%B9%81%E0%B8%94%E0%B8%94%E0%B8%84%E0%B8%B8%E0%B8%A1%E0%B8%A1%E0%B8%B1%E0%B8%99-%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%A1%E0%B8%95%E0%B8%95%E0%B9%8C-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B9%80%E0%B8%A2%E0%B8%B4%E0%B9%89%E0%B8%A1%E0%B8%A3%E0%B8%B0%E0%B8%AB%E0%B8%A7%E0%B9%88%E0%B8%B2%E0%B8%87%E0%B8%A7%E0%B8%B1%E0%B8%99-i.70802054.24642476644",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTlivVY9JRzsZ2l7taVJGs8FBy61BwBrn4o2yS-xVO3WxzhUPlunKAAjOVTznQgOmusBov31AHTBFB6qI8Jlkj74CjaVVjq8ZNyOWWxHNmNrCAL2zHioA-m-B_JluQ2aHPMrTYqua3RyA&usqp=CAc",
+),
+ProductSeed(
+    brand="L'Oréal Paris",
+    name="UV Defender Invisible Resist SPF50 PA+++ 50ml",
+    origin="France",
+    category="sunscreen",
+    price="599.00",
+    currency="THB",
+    summary=(
+        "A high-protection sunscreen with SPF50 PA+++ that provides invisible protection against harmful UV rays, "
+        "while offering a light, non-greasy finish. Ideal for daily use with a smooth, matte finish and enhanced skin defense."
+    ),
+    hero_ingredients="UV Filters, Niacinamide, Vitamin E",
+    rating=None,
+    concerns=["sun-protection", "uneven-skin-tone", "oil-control"],
+    ingredients=["niacinamide", "tocopherol", "zinc-oxide"],
+    skin_types=["normal", "oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/%E0%B8%A5%E0%B8%AD%E0%B8%A3%E0%B8%B5%E0%B8%AD%E0%B8%B1%E0%B8%A5-%E0%B8%9B%E0%B8%B2%E0%B8%A3%E0%B8%B5%E0%B8%AA-L'Or%C3%A9al-Paris-UV-Defender-Invisible-Resist-SPF50-PA-50ml-i.29667634.20135355889",
+    image="data:image/webp;base64,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",
+),
+ProductSeed(
+    brand="ANUA",
+    name="Heartleaf 77 Soothing Toner 250ml",
+    origin="South Korea",
+    category="toner",
+    price="450.00",
+    currency="THB",
+    summary=(
+        "A soothing toner with 77% Heartleaf extract to calm irritated skin, reduce redness, and balance moisture "
+        "without irritation. Ideal for sensitive skin types looking for hydration and skin barrier support."
+    ),
+    hero_ingredients="Heartleaf Extract, Niacinamide, Centella Asiatica",
+    rating=None,
+    concerns=["redness", "sensitive-skin", "dryness", "damaged-skin-barrier"],
+    ingredients=["centella-asiatica-extract", "niacinamide", "beta-glucan"],
+    skin_types=["normal", "dry", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ANUA-HEARTLEAF-77-SOOTHING-TONER-250-ml-%E0%B9%82%E0%B8%97%E0%B8%99%E0%B8%99%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%A5%E0%B8%94%E0%B8%AA%E0%B8%B4%E0%B8%A7%E0%B8%9C%E0%B8%94-%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%AA%E0%B8%9A%E0%B9%81%E0%B8%94%E0%B8%87-%E0%B8%9B%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%AA%E0%B8%A1%E0%B8%94%E0%B8%B8%E0%B8%A5-i.270751376.6242607130",
+    image="https://www.konvy.com/static/team/2025/0918/17581881721590_600x600.jpg",
+),
+ProductSeed(
+    brand="Round Lab",
+    name="Soybean Panthenol Cream",
+    origin="South Korea",
+    category="moisturizer",
+    price="690.00",
+    currency="THB",
+    summary=(
+        "A soothing cream enriched with Soybean Extract and Panthenol to deeply hydrate and repair the skin barrier. "
+        "This cream helps calm irritation, restore moisture, and promote healthy skin, ideal for sensitive and dry skin."
+    ),
+    hero_ingredients="Soybean Extract, Panthenol, Ceramide",
+    rating=None,
+    concerns=["dryness", "sensitive-skin", "damaged-skin-barrier", "redness"],
+    ingredients=["panthenol", "soybean-extract", "ceramides"],
+    skin_types=["dry", "sensitive", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Round-Lab-Soybean-Panthenol-Cream-i.549247856.29454283607",
+    image="https://media.allaboutyou.co.th/media/catalog/product/cache/68bd2c830b15d292727e06e369c4931c/p/a/panthenol-cream.jpg",
+),
+ProductSeed(
+    brand="Round Lab",
+    name="Birch Juice Moisturizing Sunscreen SPF50 PA++",
+    origin="South Korea",
+    category="sunscreen",
+    price="790.00",
+    currency="THB",
+    summary=(
+        "A lightweight sunscreen with SPF50 PA++ that provides strong UV protection while moisturizing the skin. "
+        "Infused with Birch Juice, it helps hydrate and soothe skin, leaving a smooth, non-greasy finish—perfect for daily use."
+    ),
+    hero_ingredients="Birch Juice, Niacinamide, Zinc Oxide",
+    rating=None,
+    concerns=["sun-protection", "hydration", "uneven-skin-tone", "dryness"],
+    ingredients=["niacinamide", "zinc-oxide", "betula-platyphylla-japonica-juice"],
+    skin_types=["normal", "dry", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Round-Lab-Birch-Juice-Moisturizing-Sunscreen-SPF50-PA--i.549247856.19922183497",
+    image="https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcSf3phtPXJtkc4fVTcWv513zzYu3d3-F11g-mOAXagZmFXcYNDy-MHhGx2Eio-_Xl7dFQqFhTSTHHdlIsTy1w62UN3rQFeDMtUcTSuoPlwkkoAg7yus-E4ziGV97BNlwTBj9kE6Fhfv1Q&usqp=CAc",
+),
+ProductSeed(
+    brand="INGU",
+    name="Brightening Pineapple Body Lotion",
+    origin="South Korea",
+    category="body-lotion",
+    price="390.00",
+    currency="THB",
+    summary=(
+        "A brightening body lotion enriched with Pineapple Extract to lighten dark spots, improve skin texture, "
+        "and hydrate the skin for a soft and smooth finish. Ideal for daily use to achieve glowing, even-toned skin."
+    ),
+    hero_ingredients="Pineapple Extract, Niacinamide, Glycerin",
+    rating=None,
+    concerns=["uneven-skin-tone", "dark-spots", "dryness", "dull-skin"],
+    ingredients=["niacinamide", "glycerin", "pineapple-extract"],
+    skin_types=["dry", "normal", "combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/INGU-Brightening-Pineapple-Body-Lotion-%E0%B8%AD%E0%B8%B4%E0%B8%99%E0%B8%81%E0%B8%B8-%E0%B9%82%E0%B8%A5%E0%B8%8A%E0%B8%B1%E0%B9%88%E0%B8%99%E0%B8%9A%E0%B8%B3%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B8%9C%E0%B8%B4%E0%B8%A7-i.770604218.23539929435",
+    image="https://www.cosmenet.in.th/upload/iblock/eb0/ingu_brighteningpineapplebodylotion600x600.jpg",
+),
+ProductSeed(
+    brand="INGU",
+    name="Glowing Pineapple Body Wash",
+    origin="South Korea",
+    category="body-wash",
+    price="320.00",
+    currency="THB",
+    summary=(
+        "A brightening body wash enriched with Pineapple Extract that helps cleanse, hydrate, and brighten the skin. "
+        "This refreshing body wash provides a smooth, glowing complexion while addressing dullness and skin texture issues."
+    ),
+    hero_ingredients="Pineapple Extract, Niacinamide, Glycerin",
+    rating=None,
+    concerns=["uneven-skin-tone", "dull-skin", "dryness", "dark-spots"],
+    ingredients=["niacinamide", "glycerin", "pineapple-extract"],
+    skin_types=["normal", "dry", "combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/INGU-Glowing-Pineapple-Body-Wash-%E0%B8%AD%E0%B8%B4%E0%B8%99%E0%B8%81%E0%B8%B8-%E0%B9%80%E0%B8%88%E0%B8%A5%E0%B8%AD%E0%B8%B2%E0%B8%9A-%E0%B9%83%E0%B8%AB%E0%B9%89%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B8%81%E0%B8%A3%E0%B8%B0%E0%B8%88%E0%B9%88%E0%B8%B2%E0%B8%87%E0%B9%83%E0%B8%AA%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%9A%E0%B9%80%E0%B8%99%E0%B8%B5%E0%B8%A2%E0%B8%99-%E0%B9%81%E0%B8%81%E0%B9%89%E0%B8%9B%E0%B8%B1%E0%B8%8D%E0%B8%AB%E0%B8%B2%E0%B8%AA%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%82%E0%B8%99%E0%B8%84%E0%B8%B8%E0%B8%94-i.770604218.22339929148",
+    image="https://www.konvy.com/static/team/2025/0820/17556740586962_600x600.jpg",
+),
+ProductSeed(
+    brand="La Roche-Posay",
+    name="Cicaplast Baume B5 100ml",
+    origin="FR",
+    category="moisturizer",
+    price="790.00",
+    currency="THB",
+    summary=(
+        "A multi-repair soothing balm formulated with Panthenol 5%, Madecassoside, and moisturizing agents "
+        "to support skin barrier recovery, calm irritation, and provide long-lasting hydration. "
+        "Suitable for dry, sensitive, and compromised skin."
+    ),
+    hero_ingredients="Panthenol 5%, Madecassoside, Shea Butter",
+    rating=None,
+    concerns=["damaged-skin-barrier", "dryness", "redness", "sensitive-skin"],
+    ingredients=["panthenol", "centella-asiatica-extract", "butyrospermum-parkii", "glycerin"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ลา-โรช-โพเซย์-La-Roche-Posay-CICAPLAST-BAUME-B5-บาล์มฟื้นบำรุงผิว-100-ml.-i.56542501.22417568339",
+    image="image.png",
+),
+ProductSeed(
+    brand="La Roche-Posay",
+    name="Mela B3 Serum 30ml",
+    origin="FR",
+    category="serum",
+    price="1,690.00",
+    currency="THB",
+    summary=(
+        "A dark-spot correcting serum powered by Melasyl™ and 10% Niacinamide to visibly fade hyperpigmentation, "
+        "brighten uneven skin tone, and reduce the look of dark spots while remaining gentle for sensitive skin."
+    ),
+    hero_ingredients="Melasyl™, Niacinamide",
+    rating=None,
+    concerns=["dark-spots", "hyperpigmentation", "uneven-skin-tone", "dull-skin"],
+    ingredients=["niacinamide", "glycerin"],
+    skin_types=["normal", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ลา-โรช-โพเซย์-La-Roche-Posay-Mela-B3-Serum-MELASYL-เซรั่มลดจุดด่างดำฝังลึก-30ml-i.56542501.25725904425",
+    image="https://www.larocheposay-th.com/-/media/project/loreal/brand-sites/lrp/apac/th/products/mela-b3/mela-b3-serum/mela-b3-serum-no-bg.png?cx=0.49&amp;ch=600&amp;cy=0.55&amp;cw=600&hash=245E86CFA2DB637937222ED374FBA4F5",
+),
+ProductSeed(
+    brand="La Roche-Posay",
+    name="Effaclar Serum 30ml",
+    origin="FR",
+    category="serum",
+    price="1,390.00",
+    currency="THB",
+    summary=(
+        "An anti-imperfection serum combining Salicylic Acid, Glycolic Acid, and LHA to unclog pores, smooth texture, "
+        "reduce acne breakouts, and fade post-acne marks. Formulated for sensitive, oily, and acne-prone skin."
+    ),
+    hero_ingredients="Salicylic Acid, Glycolic Acid, LHA",
+    rating=None,
+    concerns=["acne-breakouts", "clogged-pores", "texture", "dark-spots"],
+    ingredients=["salicylic-acid", "glycolic-acid", "capryloyl-salicylic-acid"],
+    skin_types=["oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ลา-โรช-โพเซย์-La-Roche-Posay-EFFACLAR-SERUM-30ml-i.56542501.7253560772",
+    image="https://s3.konvy.com/static/team/2020/1027/16037906661187.jpg",
+),
+ProductSeed(
+    brand="La Roche-Posay",
+    name="Anthelios UVMUNE 400 Oil Control Fluid SPF50+ PA++++ 50ml",
+    origin="FR",
+    category="sunscreen",
+    price="1,290.00",
+    currency="THB",
+    summary=(
+        "A high-protection, ultra-light sunscreen featuring UVMUNE 400 technology to filter long UVA. "
+        "The oil-control fluid absorbs excess sebum, provides a matte finish, and protects against sun damage "
+        "without irritating sensitive, oily, or acne-prone skin."
+    ),
+    hero_ingredients="UV Filters, Niacinamide",
+    rating=None,
+    concerns=["sun-protection", "excess-oil", "oily-skin", "uneven-skin-tone"],
+    ingredients=["niacinamide", "glycerin", "zinc-oxide"],
+    skin_types=["oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ลา-โรช-โพเซย์-La-Roche-Posay-Anthelios-UVMUNE400-Oil-Control-Fluid-SPF50-i.56542501.19688640976",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcQIwjaXe2AF5R5mzdUlSQbjloK45Ttcqd8ZCnnG4xb-iPrjw4OOwahIN5n6ksQhW0V5hMygJTp5ClYrvQxlrEkA0mNoOGkRkaJhMMVnmxyH7SNsP180wgwoUs8HQ2_uToL4ANRrAyY0vA&usqp=CAc",
+),
+ProductSeed(
+    brand="Nu Formula",
+    name="Oil Purifying Cleansing Water",
+    origin="TH",
+    category="cleanser",
+    price="259.00",
+    currency="THB",
+    summary=(
+        "A gentle yet effective micellar cleansing water formulated to remove makeup, excess oil, and impurities "
+        "while soothing and maintaining the skin barrier. Ideal for oily, combination, and sensitive skin prone to acne."
+    ),
+    hero_ingredients="Niacinamide, Zinc PCA, Glycerin",
+    rating=None,
+    concerns=["acne-breakouts", "excess-oil", "oily-skin", "sensitive-skin"],
+    ingredients=["niacinamide", "zinc-pca", "glycerin"],
+    skin_types=["oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Nu-Formula-Oil-Purifying-Cleansing-Water-i.155297073.3334823358",
+    image="https://s3.konvy.com/static/team/2023/1116/17001136228149.jpg",
+),
+ProductSeed(
+    brand="Nu Formula",
+    name="Mineral Cleansing Water (Sensitive Skin)",
+    origin="TH",
+    category="cleanser",
+    price="259.00",
+    currency="THB",
+    summary=(
+        "A gentle mineral-based micellar cleansing water designed for sensitive skin. "
+        "It removes impurities and makeup while soothing irritation and supporting the skin barrier "
+        "without leaving a greasy or stripping feel."
+    ),
+    hero_ingredients="Glycerin, Panthenol",
+    rating=None,
+    concerns=["sensitive-skin", "redness", "dryness"],
+    ingredients=["glycerin", "panthenol"],
+    skin_types=["sensitive", "dry", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Nu-Formula-Mineral-Cleansing-Water-For-Sensitive-Skin-i.155297073.4934727100",
+    image="data:image/webp;base64,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",
+),
+ProductSeed(
+    brand="Garnier",
+    name="Micellar Cleansing Water (All-in-1) 400ml",
+    origin="FR",
+    category="cleanser",
+    price="199.00",
+    currency="THB",
+    summary=(
+        "A gentle micellar cleansing water formulated to remove makeup, sunscreen, and impurities "
+        "without harsh rubbing. Suitable for sensitive skin, leaving skin clean, soft, and non-greasy."
+    ),
+    hero_ingredients="Glycerin",
+    rating=None,
+    concerns=["sensitive-skin", "dryness"],
+    ingredients=["glycerin"],
+    skin_types=["normal", "dry", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Garnier-ไมเซล่า-คลีนซิ่ง-วอเตอร์-ออล-อิน-วัน-เซนซิทีฟ-สกิน-400-มล.-i.31092295.459661056",
+    image="https://media.allonline.7eleven.co.th/pdmain/356473-01-allonline-bt-v1.jpg",
+),
+ProductSeed(
+    brand="Garnier",
+    name="Micellar Cleansing Water (Salicylic BHA) 400ml",
+    origin="FR",
+    category="cleanser",
+    price="229.00",
+    currency="THB",
+    summary=(
+        "An acne-targeted micellar cleansing water enriched with Salicylic Acid and BHA to help unclog pores, "
+        "reduce excess oil, and deeply cleanse impurities while remaining gentle on the skin."
+    ),
+    hero_ingredients="Salicylic Acid, Glycerin",
+    rating=None,
+    concerns=["acne-breakouts", "excess-oil", "clogged-pores"],
+    ingredients=["salicylic-acid", "glycerin"],
+    skin_types=["oily", "combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Garnier-สกิน-แอทเชอรัลส์-ไมเซล่า-คลีนซิ่ง-วอเตอร์-ซาลิไซลิค-บีเอชเอ-400-มล.-i.31092295.23824205052",
+    image="https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/70/89/8994993019670/8994993019670_1-20221213171829-.jpg",
+),
+ProductSeed(
+    brand="CeraVe",
+    name="Foaming Facial Cleanser 473ml",
+    origin="US",
+    category="cleanser",
+    price="650.00",
+    currency="THB",
+    summary=(
+        "A gentle foaming facial cleanser formulated with Ceramides, Niacinamide, and Amino Acid Surfactants "
+        "to remove excess oil, dirt, and makeup without disrupting the skin barrier. Ideal for normal to oily "
+        "and sensitive skin."
+    ),
+    hero_ingredients="Ceramides, Niacinamide, Amino Acid Surfactants",
+    rating=None,
+    concerns=["excess-oil", "oily-skin", "clogged-pores", "sensitive-skin"],
+    ingredients=["ceramides", "niacinamide", "amino-acid-surfactants"],
+    skin_types=["normal", "oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Cerave-โฟมล้างหน้า-CeraVe-เซราวี-เอสเอ-สมูทติ้ง-คลีนเซอร์-473-มล.-i.31092295.14277809761",
+    image="https://medias.watsons.co.th/publishing/WTCTH-298830-front-zoom.jpg?version=1733808956",
+),
+ProductSeed(
+    brand="Leaders",
+    name="Aquaporin Intense Plus Mask",
+    origin="KR",
+    category="mask",
+    price="49.00",
+    currency="THB",
+    summary=(
+        "A deeply hydrating sheet mask designed to replenish moisture and strengthen the skin barrier. "
+        "Formulated to soothe dryness, boost hydration pathways, and leave the skin smooth and refreshed."
+    ),
+    hero_ingredients="Hyaluronic Acid, Glycerin, Panthenol",
+    rating=None,
+    concerns=["dryness", "dehydrated-skin", "dull-skin"],
+    ingredients=["hyaluronic-acid", "glycerin", "panthenol"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Leaders-ลีดเดอร์-อควาพอริน-อินเทนส์-พลัส-มาสก์-i.31092295.4244384585",
+    image="https://img.lazcdn.com/g/p/d9d0b61d65762261eca0913864a39e7c.jpg_960x960q80.jpg_.webp",
+),
+ProductSeed(
+    brand="Leaders",
+    name="Cica Intense Plus Mask 25ml",
+    origin="KR",
+    category="mask",
+    price="49.00",
+    currency="THB",
+    summary=(
+        "A calming sheet mask enriched with Centella Asiatica and Portulaca Oleracea extracts to soothe irritated skin, "
+        "reduce redness and support barrier recovery. Ideal for sensitive, reactive, and redness-prone skin."
+    ),
+    hero_ingredients="Centella Asiatica Extract, Portulaca Oleracea Extract",
+    rating=None,
+    concerns=["sensitive-skin", "redness", "damaged-skin-barrier"],
+    ingredients=["centella-asiatica-extract", "portulaca-oleracea-extract", "glycerin"],
+    skin_types=["sensitive", "normal", "dry"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Leaders-%E0%B8%A5%E0%B8%B5%E0%B8%94%E0%B9%80%E0%B8%94%E0%B8%AD%E0%B8%A3%E0%B9%8C-%E0%B8%8B%E0%B8%B4%E0%B8%84%E0%B2%E0%B8%A2%E0%B8%99%E0%B8%AA%E0%B9%8C-%E0%B8%9E%E0%B8%A5%E0%B8%B1%E0%B8%AA-%E0%B8%A1%E0%B8%B2%E0%B8%AA%E0%B9%8C%E0%B8%81-i.31092295.4344386887",
+    image="https://media.multybeauty.com/v1/file/6x3zj1713929514826.jpeg",
+),
+ProductSeed(
+    brand="Neutrogena",
+    name="Body Oil Light Sesame 250ml",
+    origin="US",
+    category="body-oil",
+    price="579.00",
+    currency="THB",
+    summary=(
+        "A lightweight body oil infused with sesame seed oil that hydrates and nourishes dry skin, "
+        "leaving it soft, smooth and glowing without a greasy feel."  # based on the description from Watsons/Shopee.  [oai_citation:0‡Watsons](https://www.watsons.co.th/th/neutrogena-%E0%B8%AD%E0%B8%AD%E0%B8%A2%E0%B8%97%E0%B8%B2%E0%B8%9C%E0%B8%B4%E0%B8%A7-neutrogena-body-oil-%E0%B8%99%E0%B8%B9%E0%B9%82%E0%B8%97%E0%B8%A3%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B9%88%E0%B8%B2-%E0%B8%9A%E0%B8%AD%E0%B8%94%E0%B8%B5%E0%B9%89-%E0%B8%AD%E0%B8%AD%E0%B8%A2%E0%B8%A5%E0%B9%8C-%E0%B9%84%E0%B8%A5%E0%B8%97%E0%B9%8C-%E0%B9%80%E0%B8%8B%E0%B8%8B%E0%B8%B2%E0%B8%A1%E0%B8%B5%E0%B9%88-250-%E0%B8%A1%E0%B8%A5./p/BP_289390?utm_source=chatgpt.com)
+    ),
+    hero_ingredients="Sesame Seed Oil, Isopropyl Myristate",
+    rating=None,
+    concerns=["dryness","dull-skin"],
+    ingredients=["sesamum-indicum-seed-oil","isopropyl-myristate","glycerin"],
+    skin_types=["dry","normal","combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Neutrogena-%E0%B8%99%E0%B9%82%E0%B8%A1%E0%B8%95%E0%B8%A3%E0%B8%88%E0%B8%B5%E0%B8%99%E0%B9%88%E0%B8%B2-%E0%B8%9A%E0%B8%AD%E0%B8%94%E0%B8%B5%E0%B9%89-%E0%B8%AD%E0%B8%AD%E0%B8%A2%E0%B9%8C-%E0%B9%84%E0%B8%A5%E0%B8%97%E0%B9%8C-%E0%B9%80%E0%B8%8B%E0%B8%8B%E0%B8%A1%E0%B8%B5%E0%B9%88-250-%E0%B8%A1%E0%B8%A5.-i.31092295.7051754073",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRJZq0Zx0s2Zp5LnPt4CX-RAjfcyQogZzcq6_HqJ8mmsfVfSAXCPIWeAEGIb2Qz1hTJu6IMCvkcPJ9ZTx201ylin8kPFYu9f3F9Gc2TPFCBH-2hBWjd108xi36Il8umE0KjYnhR3VU&usqp=CAc",
+),
+ProductSeed(
+    brand="Hada Labo",
+    name="Premium Lotion 170ml",
+    origin="JP",
+    category="toner",
+    price="488.00",
+    currency="THB",
+    summary=(
+        "A premium hydrating lotion enriched with multiple types of Hyaluronic Acid to deeply replenish moisture, "
+        "revive tired skin and support barrier recovery—suitable even for sensitive skin as it’s free from alcohol, mineral oil, fragrance and colourants.  [oai_citation:0‡Watsons](https://www.watsons.co.th/en/hada-labo-hada-labo-premium-lotion-170-ml.-%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%95%E0%B8%9A-%E0%B8%AE%E0%B8%B2%E0%B8%94%E0%B8%B0-%E0%B8%A5%E0%B8%B2%E0%B9%82%E0%B8%9A%E0%B8%B0-%E0%B8%AA%E0%B8%B5%E0%B8%97%E0%B8%AD%E0%B8%87/p/BP_270155?utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Hyaluronic Acid (multiple types), Hydrolyzed Collagen, Palmitoyl Tripeptide-5",
+    rating=None,
+    concerns=["dryness", "dehydrated-skin", "damaged-skin-barrier"],
+    ingredients=["hyaluronic-acid", "hydrolyzed-collagen", "palmitoyl-tripeptide-5"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Hada-Labo-%E0%B8%AE%E0%B8%B2%E0%B8%94%E0%B0%E0%B0%E0%B8%A5%E0%B8%B2%E0%B9%82%E0%B8%9A%E0%B8%B0-%E0%B8%9E%E0%B8%A3%E0%B8%B5%E0%B9%80%E0%B8%A1%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%A1-%E0%B9%82%E0%B8%A5%E0%B8%8A%E0%B8%B1%E0%B9%88%E0%B8%99-170-%E0%B8%A1%E0%B8%A5.-i.31092295.1695643047",
+    image="data:image/webp;base64,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",
+),
+ProductSeed(
+    brand="ANESSA",
+    name="Perfect UV Sunscreen Skincare Milk SPF50+ PA++++ 50ml",
+    origin="JP",
+    category="sunscreen",
+    price="699.00",
+    currency="THB",
+    summary=(
+        "A high-performance UV protection milk with SPF50+ PA++++ designed to protect skin from UVA/UVB, "
+        "reduce dark spots, hydrate and leave skin luminous. Lightweight, water- & sweat-resistant — ideal for daily sun exposure."  
+        # Source: Watsons product description.  [oai_citation:0‡Watsons](https://www.watsons.co.th/th/anessa-%E0%B8%AD%E0%B9%80%E0%B8%99%E0%B8%AA%E0%B8%8B%E0%B9%88%E0%B8%B2-%E0%B9%80%E0%B8%9E%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%9F%E0%B8%84-%E0%B8%A2%E0%B8%B9%E0%B8%A7%E0%B8%B5-%E0%B8%8B%E0%B8%B1%E0%B8%99%E0%B8%AA%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B8%99-%E0%B8%AA%E0%B8%81%E0%B8%B4%E0%B8%99%E0%B9%81%E0%B8%84%E0%B8%A3%E0%B9%8C-%E0%B8%A1%E0%B8%B4%E0%B8%A5%E0%B8%84%E0%B9%8C-%E0%B9%80%E0%B8%AD%E0%B9%87%E0%B8%99%E0%B9%80%E0%B8%AD-%E0%B9%80%E0%B8%AD%E0%B8%AA%E0%B8%9E%E0%B8%B5%E0%B9%80%E0%B8%AD%E0%B8%9F-50-%E0%B8%9E%E0%B8%B5%E0%B9%80%E0%B8%AD-60-%E0%B8%A1%E0%B8%A5.-%E0%B8%81%E0%B8%B1%E0%B8%99/p/BP_309592?utm_source=chatgpt.com)
+    ),
+    hero_ingredients="Zinc Oxide, Ethylhexyl Triazone, Glycerin",
+    rating=None,
+    concerns=["sun-protection", "dark-spots", "uneven-skin-tone", "dull-skin"],
+    ingredients=["zinc-oxide", "ethylhexyl-triazone", "glycerin"],
+    skin_types=["normal", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Anessa-%E0%B8%AD%E0%B9%80%E0%B8%99%E0%B8%AA%E0%B8%8B%E0%B9%88%E0%B8%B2-%E0%B9%80%E0%B8%9E%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%9F%E0%B8%84-%E0%B8%A2%E0%B9%88%E0%B8%B2%E0%B8%A7%E0%B8%B5-%E0%B8%8B%E0%B8%B1%E0%B8%99%E0%B8%AA%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B8%99-%E0%B8%AA%E0%B8%81%E0%B8%B4%E0%B8%99%E0%B1%84%E0%B8%A5%E0%B8%B0-%E0%B8%A1%E0%B8%B4%E0%B8%A5%E0%B84%E0%B9%8C-%E0%B9%80%E0%B8%AD%E0%B9%87%E0%B8%99%E0%B9%80%E0%B8%AD%E0%B8%AA%E0%B8%9E%E0%B8%B5%E0%B9%80%E0%B8%AD-60-%E0%B8%A1%E0%B8%A5.-i.31092295.24221625320",
+    image="https://medias.watsons.co.th/publishing/WTCTH-309592-side-zoom.jpg?version=1729019405"
+),
+ProductSeed(
+    brand="Jergens",
+    name="Ultra Healing Extra Dry Skin Moisturizer 295ml",
+    origin="US",
+    category="body-lotion",
+    price="295.00",
+    currency="THB",
+    summary=(
+        "A deeply nourishing body lotion formulated with Vitamins C, E & B5 and Hydralucence™ blend to "
+        "heal, hydrate and restore extra-dry, rough skin (like elbows, knees, heels) for up to 48 hours of moisture.  [oai_citation:0‡jergens.com](https://www.jergens.com/en-au/products/daily-moisturisers/ultra-healing/?utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Vitamins C, E, B5",
+    rating=None,
+    concerns=["dryness", "damaged-skin-barrier", "dull-skin"],
+    ingredients=["glycerin", "ascorbyl-palmitate", "panthenol"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Jergens-%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%81%E0%B8%99%E0%B8%AA%E0%B9%8C-%E0%B8%AD%E0%B1%E0%B8%A5%E0%B8%95%E0%B8%B3%E0%B8%97%E0%B8%B2%E0%B8%AE%E0%B8%B5%E0%B8%A5%E0%B%A5%E0%B8%A5%E0%B8%B4%E0%B8%99%E0%B9%88%E0%B8%B2-%E0%B9%80%E0%B8%AD%E0%B9%87%E0%B8%81%E0%B8%8B%E0%B9%8C%E0%B8%95%E0%B8%A3%E0%B9%89%E0%B8%B2-%E0%B8%94%E0%B8%A3%E0%B8%B2%E0%B8%A2-%E0%B8%AA%E0%B8%81%E0%B8%B4%E0%B8%99-%E0%B8%A1%E0%B8%AD%E0%B8%A2%E0%B8%AA%E0%B9%8C%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B9%84%E0%B8%A3%E0%B0%9E%E0%B8%8B%E0%B8%B8%E0%B8%B7%E0%B9%88%E0%B2%E0%B8%A2-295-%E0%B8%A1%E0%B8%A5.",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTCJHvsbTwLkbEVXbDZAcqwibV1rWCdsnBS0HRlIgYNNZV7hCFR4Wm33S6HjVryU5_h8K5X7hLN_XAsOTVOALnZYzFAT-caucIv_If3ke6rbSDXi1j42vhyvvWrrrFRIjsUNIm0xGE"
+),
+ProductSeed(
+    brand="L'Occitane",
+    name="Almond Supple Skin Oil 100ml",
+    origin="FR",
+    category="body-oil",
+    price="2,390.00",
+    currency="THB",
+    summary=(
+        "A luxurious body oil enriched with over 50% Sweet Almond Oil and Camelina Oil (rich in Omega 3 & 6) "
+        "to deeply nourish dry skin, improve firmness and elasticity, reduce stretch marks, and leave skin soft, smooth and subtly almond-scented.  [oai_citation:0‡L'Occitane Thailand](https://th.loccitane.com/products/almond-supple-skin-oil-3?srsltid=AfmBOoqLX4oUhnIL4I89c54GVD-PDKKSVEcq7foQoGIG1xVySyqRmX1b&utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Sweet Almond Oil, Camelina Oil",
+    rating=None,
+    concerns=["dryness", "damaged-skin-barrier", "stretch-marks"],
+    ingredients=["prunus-amygdalus-dulcis-oil", "camelina-sativa-seed-oil", "glycerin"],
+    skin_types=["dry", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/LOccitane-Amande-Supple-Skin-Oil-100ml-i.70998059.8820560154",
+    image="https://uk.loccitane.com/dw/image/v2/BCDQ_PRD/on/demandware.static/-/Sites-occ_master/default/dw353c9fa9/GB/29HS100A21.png?sw=1200&sh=1200"
+),
+ProductSeed(
+    brand="Derma B",
+    name="Intensive Barrier Multi Oil 135ml",
+    origin="KR",
+    category="body-oil",
+    price="470.00",
+    currency="THB",
+    summary=(
+        "A multi-functional body oil enriched with 11 natural plant oils plus barrier-supporting lipids like ceramide and peptides. "
+        "Designed to hydrate, smooth rough skin, restore barrier and impart a radiant, soft finish to face, body, hair and nails."  
+    ),
+    hero_ingredients="Ceramide NP, Peptide Complex, Grape Seed Oil",
+    rating=None,
+    concerns=["dryness", "damaged-skin-barrier", "dull-skin"],
+    ingredients=["ceramide-np", "glycerin", "panthenol"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/DERMA-B-Intensive-Barrier-Multi-Oil-135ml-i.56560260.28071805428",
+    image="data:image/webp;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 e etc"
+),ProductSeed(
+    brand="Johnson’s",
+    name="Baby Bedtime Oil 500ml",
+    origin="US",
+    category="body-oil",
+    price="500.00",
+    currency="THB",
+    summary=(
+        "A soothing bedtime oil formulated with NaturalCalm™ essences, designed to moisturise and calm skin before sleep. "
+        "Ideal for gentle body massage, particularly for dry or sensitive skin.  [oai_citation:0‡johnsonsbaby.co.uk](https://www.johnsonsbaby.co.uk/johnsons-bedtime-oil?utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Isopropyl Palmitate, Paraffinum Liquidum",
+    rating=None,
+    concerns=["dryness", "sensitive-skin", "damaged-skin-barrier"],
+    ingredients=["isopropyl-palmitate", "paraffinum-liquidum", "glycerin"],
+    skin_types=["dry", "sensitive", "normal"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-%E0%B8%9F%E0%B8%A3%E0%B5%8C-200ml-%E0%B8%88%E0%B8%AD%E0%B8%AB%E0%B9%8C%E0%B8%99%E0%B8%AA%E0%B8%B1%E0%B8%99-%E0%B9%80%E0%B8%9A%E0%B8%9A%E0%B8%B5%E0%B9%89-%E0%B8%AD%E0%B8%AD%E0%B8%A2%E0%B8%B3%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B8%9C%E0%B8%B4%E0%B8%A7-%E0%B9%80%E0%B8%9A%E0%B8%98%E0%B9%84%E0%B8%97%E0%B8%A1%E0%B8%94%E0%B8%B4%E0%B8%AD%E0%B8%AD%E0%B8%A2-500-%E0%B8%A1%E0%B8%A5.-i.63669256.14496227194",
+    image="https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/36/95/9556006060636/9556006060636_1-20241218141034-.jpg"
+),
+ProductSeed(
+    brand="COSRX",
+    name="Low pH Good Morning Gel Cleanser 150 ml",
+    origin="KR",
+    category="cleanser",
+    price="299.00",
+    currency="THB",
+    summary=(
+        "A gel cleanser with a mildly acidic pH (around 5.3) formulated to cleanse without stripping the skin of moisture, "
+        "featuring Betaine Salicylate (a gentle BHA) and Tea Tree Oil to support clearer, calmer skin.  [oai_citation:0‡COSRX Official](https://www.cosrx.com/products/low-ph-good-morning-gel-cleanser?srsltid=AfmBOooL3pLp10yck5PvZrrY-dgBdDnitfB8MJp8aoNNdcut3rv-9CdF&utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Betaine Salicylate, Tea Tree Leaf Oil",
+    rating=None,
+    concerns=["acne-breakouts", "clogged-pores", "uneven-skin-texture", "sensitive-skin"],
+    ingredients=["betaine-salicylate", "melaleuca-alternifolia-leaf-oil", "cocamidopropyl-betaine"],
+    skin_types=["oily", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/-COSRX-OFFICIAL-Low-pH-Good-Morning-Gel-Cleanser-150ml-%E0%B9%82%E0%B8%A5%E0%B9%8C-%E0%B8%9E%E0%B8%B5%E0%B9%80%E0%B8%AD%E0%B8%8A-%E0%B8%81%E0%B8%B9%E0%B9%89%E0%B8%94-%E0%B8%A1%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%99%E0%B8%B4%E0%B9%88%E0%B8%87-%E0%B9%80%E0%B8%88%E0%B8%A5-%E0%B8%84%E0%B8%A5%E0%B8%B5%E0%B8%99%E0%B9%80%E0%B8%8B%E0%B8%A3%E0%B9%8C-i.134962775.2077939311",
+    image="https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQvQ7uuyYa4tC_EBf__oWo8DvS7cYOBbj_fVRJnBxlhlWfl7Vb5uKEfW-JQrxnvKlmF3jBVgghyXSWp6AXzoVH_-h5LCsMZB5uvq_sNKmCQMzL3bNI9sO7nNJ94fuQYTcFkpNKLAMM&usqp=CAc"
+),
+ProductSeed(
+    brand="Jergens",
+    name="Ultra Healing Moisturizer Extra Dry Skin 295ml",
+    origin="US",
+    category="body-lotion",
+    price="245.00",
+    currency="THB",
+    summary=(
+        "A deeply nourishing body lotion formulated with Vitamins C, E & B5 and Hydralucence™ blend to "
+        "heal, hydrate and restore extra-dry, rough skin for up to 24 hours of moisture. Supports smoother, softer skin."
+    ),
+    hero_ingredients="Vitamins C, E, B5",
+    rating=None,
+    concerns=["dryness", "damaged-skin-barrier", "uneven-skin-texture"],
+    ingredients=["glycerin", "butyrospermum-parkii", "tocopheryl-acetate"],
+    skin_types=["dry", "normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Jergens-%E0%B9%80%E0%B8%88%E0%B8%AD%E0%B9%80%E0%B8%81%E0%B8%99%E0%B8%AA%E0%B9%8C-%E0%B8%AD%E0%B1%A1%E0%B8%A5%E0%B8%95%E0%B3%A3%E0%B9%89%E0%B8%B2-%E0%B8%AE%E0%B8%B5%E0%B8%A5%E0%B8%A5%E0%B8%B4%E0%B9%88%E0%B8%99-%E0%B8%8B%E0%B8%B3%E0%B8%B1%E0%B8%95%E0%B8%A3%E0%B8%9F%E0%B7%89%E0%B8%99%E0%B0%1B%E0%B8%B1%E0%B8%95%E0%B8%95%E0%B8%AD%E0%B8%AD%E0%B8%A2%E0%B8%9A%E0%B8%B3%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B9%81%E0%B8%AB%E0%B9%89%E0%B8%87-%E0%B8%AA%E0%B8%B9%E0%B8%95%E0%B8%A3%E0%B0%1F%E0%B9%85%E0%B9%94-i.31092295.26456099146",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTCJHvsbTwLkbEVXbDZAcqwibV1rWCdsnBS0HRlIgYNNZV7hCFR4Wm33S6HjVryU5_h8K5X7hLN_XAsOTVOALnZYzFAT-caucIv_If3ke6rbSDXi1j42vhyvvWrrrFRIjsUNIm0xGE"
+),
+ProductSeed(
+    brand="ES",
+    name="Micro Balancing Cleanser 100 ml",
+    origin="TH",
+    category="cleanser",
+    price="281.00",
+    currency="THB",
+    summary=(
+        "A gentle gel cleanser designed for sensitive or acne-prone skin that helps restore skin balance and cleanse without leaving dryness.  [oai_citation:0‡Konvy](https://www.konvy.com/m/es/es-micro-balancing-cleanser-100ml-96746.html?srsltid=AfmBOoqr0U5Jbaq4iPxIQ08K6ZLe5Yz5ROJXZMJR3AkuErX3O3sLoBLQ&utm_source=chatgpt.com)"
+    ),
+    hero_ingredients="Sodium PCA, Allantoin",
+    rating=None,
+    concerns=["sensitive-skin", "acne-breakouts", "damaged-skin-barrier"],
+    ingredients=["allantoin", "glycerin"],
+    skin_types=["normal", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/ES-Micro-Balancing-Cleanser-100ml-%E0%B9%80%E0%B8%88%E0%B8%A5%E0%B8%A5%E0%B9%89%E0%B8%B2%E0%B8%87-%E0%B8%AE%E0%B8%99%E0%B9%89%E0%B8%B2-%E0%B8%AA%E0%B8%B9%E0%B8%95%E0%B8%A3%E0%B8%AD%E0%B9%88%E0%B8%AD%E0%B8%99-%E0%B9%82%E0%B8%A2%E0%B8%99-%E0%B8%8A%E0%B9%88%E0%B8%A7%E0%B8%A2%E0%B8%9B%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%AA%E0%B8%A1%E0%B8%94%E0%B8%B8%E0%B8%A5%E0%B8%84%E0%B8%A7%E0%B8%B2%E0%B8%A1%E0%B8%8A%E0%B8%B7%E0%B9%89%E0%B8%99-%E0%B9%80%E0%B8%9E%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B9%80%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B8%AA%E0%B8%B8%E0%B8%82%E0%B8%A0%E0%B8%B2%E0%B9%95%E0%B8%B5-i.1060374764.23257990367",
+    image="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcQevQGtX6_TsikdxZurIzNK13--qB_bVfUEbNpqqiZlOSMh2GxFQ-3U0Z3Uy8vkrTPAi2Hn_DxYI0XH5Z8rr1fsGndhEBAmxzOH7paGg6fd8Sf9uOkbUZGYS9--vgr9vPnrfE20WQ&usqp=CAc"
+),
+ProductSeed(
+    brand="Round Lab",
+    name="1025 Dokdo Cleanser 150ml",
+    origin="KR",
+    category="cleanser",
+    price=None,
+    currency="THB",
+    summary=(
+        "A low-irritation gel-to-foam cleanser formulated with deep sea water and mild surfactants to remove impurities while maintaining the skin barrier."
+    ),
+    hero_ingredients="Deep Sea Water, Allantoin, Panthenol",
+    rating=None,
+    concerns=["sensitive-skin", "redness", "dryness"],
+    ingredients=[
+        "glycerin",
+        "allantoin",
+        "panthenol"
+    ],
+    skin_types=["dry", "normal", "combination", "sensitive"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Round-Lab-1025-Dokdo-Cleanser-150ml-i.549247856.13719085163",
+    image="data:image/webp;base64,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"
+),
+ProductSeed(
+    brand="Clear Nose",
+    name="Acne Care Solution Cleanser 150 ml",
+    origin="TH",
+    category="cleanser",
+    price=None,
+    currency="THB",
+    summary=(
+        "A gentle acne-care cleanser formulated to help reduce excess oil, "
+        "minimize clogged pores, and soothe inflamed or breakout-prone skin."
+    ),
+    hero_ingredients="Salicylic Acid, Tea Tree Extract, Zinc PCA",
+    rating=None,
+    concerns=["acne-breakouts", "oily-skin", "clogged-pores"],
+    ingredients=[
+        "salicylic-acid",
+        "tea-tree-extract",
+        "zinc-pca",
+        "glycerin",
+    ],
+    skin_types=["oily", "combination", "acne-prone"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Clear-Nose-%E0%B9%80%E0%B8%84%E0%B8%A5%E0%B8%B5%E0%B8%A2%E0%B8%A3%E0%B9%8C%E0%B9%82%E0%B8%99%E0%B8%AA-%E0%B9%81%E0%B8%AD%E0%B8%84%E0%B9%80%E0%B8%99%E0%B9%88-%E0%B9%81%E0%B8%84%E0%B8%A3%E0%B9%8C-%E0%B9%82%E0%B8%8B%E0%B8%A5%E0%B8%B9%E0%B8%8A%E0%B8%B1%E0%B9%88%E0%B8%99-%E0%B8%84%E0%B8%A5%E0%B8%B5%E0%B8%99%E0%B9%80%E0%B8%8B%E0%B8%AD%E0%B8%A3%E0%B9%8C-150-%E0%B8%A1%E0%B8%A5.-i.31092295.4955082773",
+    image="https://s3.konvy.com/static/team/2025/0811/17548991409576.jpg"
+),
+ProductSeed(
+    brand="Senka",
+    name="Perfect Whip Low pH Calming Cica 100g",
+    origin="JP",
+    category="cleanser",
+    price=None,
+    currency="THB",
+    summary=(
+        "A low-pH soothing gel-foam cleanser formulated with cica and calming botanicals. "
+        "Designed to reduce irritation, maintain the skin barrier, and gently cleanse "
+        "without stripping—suitable for sensitive and easily-reactive skin."
+    ),
+    hero_ingredients="Cica (Centella Asiatica), Green Tea Extract, Glycerin, Mild Amino Surfactants",
+    rating=None,
+    concerns=["sensitivity", "redness", "damaged-skin-barrier", "dryness"],
+    ingredients=[
+        "centella-asiatica",
+        "green-tea-extract",
+        "glycerin",
+        "amino-acid-surfactants",
+    ],
+    skin_types=["sensitive", "normal", "dry", "combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Senka-%E0%B9%80%E0%B8%8B%E0%B8%99%E0%B8%81%E0%B8%B0-%E0%B9%80%E0%B8%9E%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%9F%E0%B9%87%E0%B8%84-%E0%B8%A7%E0%B8%B4%E0%B8%9B-%E0%B9%82%E0%B8%A5%E0%B8%A7%E0%B9%8C-%E0%B8%9E%E0%B8%B5%E0%B9%80%E0%B8%AD%E0%B8%8A-%E0%B8%84%E0%B8%B2%E0%B8%A5%E0%B9%8C%E0%B8%A1%E0%B8%A1%E0%B8%B4%E0%B9%88%E0%B8%87-%E0%B8%8B%E0%B8%B4%E0%B8%81%E0%B9%89%E0%B8%B2-100-%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%A1-%E0%B8%A7%E0%B8%B4%E0%B8%9B%E0%B9%82%E0%B8%9F%E0%B8%A1%E0%B8%A5%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2-%E0%B8%9C%E0%B8%B4%E0%B8%A7%E0%B8%9A%E0%B8%AD%E0%B8%9A%E0%B8%9A%E0%B8%B2%E0%B8%87-i.31092295.24118011574",
+    image="https://product.hstatic.net/200000843819/product/sua-rua-mat-cho-da-nhay-cam-senka-perfect-whip-low-ph-calming-cica_a0ecbf6def6544e5a2d2c22700bd343a.jpg"
+),
+ProductSeed(
+    brand="Senka",
+    name="Perfect Whip 120g",
+    origin="JP",
+    category="cleanser",
+    price=None,
+    currency="THB",
+    summary=(
+        "A rich, dense-foam facial cleanser designed to deeply cleanse pores while "
+        "maintaining skin softness. Suitable for daily use on normal to oily skin, "
+        "helping remove dirt, sweat, and excess sebum."
+    ),
+    hero_ingredients="Aqua-in-Pool, Glycerin, Hyaluronic Acid, Silk Essence",
+    rating=None,
+    concerns=["oily-skin"],
+    ingredients=[
+        "glycerin",
+        "hyaluronic-acid",
+    ],
+    skin_types=["normal", "oily", "combination"],
+    restrictions=[],
+    product_url="https://shopee.co.th/Senka-%E0%B9%80%E0%B8%8B%E0%B8%99%E0%B8%81%E0%B8%B0-%E0%B9%80%E0%B8%9E%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%9F%E0%B9%87%E0%B8%84-%E0%B8%A7%E0%B8%B4%E0%B8%9B-%E0%B9%80%E0%B8%AD%E0%B9%87%E0%B8%99-120-%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%A1-i.31092295.459649657",
+    image="https://medias.watsons.co.th/publishing/WTCTH-263862-side-thumbnail.jpg?version=1756753844"
 )
 
 
@@ -2693,7 +3400,10 @@ def _ensure_reference_data():
         if ingredient:
             updates = {}
             if ingredient.common_name != common_name:
-                updates["common_name"] = common_name
+                # Check if another ingredient with this common_name already exists
+                existing_with_name = Ingredient.objects.filter(common_name=common_name).exclude(pk=ingredient.pk).first()
+                if not existing_with_name:
+                    updates["common_name"] = common_name
             if ingredient.benefits != benefits:
                 updates["benefits"] = benefits
             notes = INGREDIENT_NOTES.get(key, {})
@@ -2704,15 +3414,24 @@ def _ensure_reference_data():
                 Ingredient.objects.filter(pk=ingredient.pk).update(**updates)
                 ingredient.refresh_from_db(fields=list(updates.keys()))
         else:
-            notes = INGREDIENT_NOTES.get(key, {})
-            ingredient = Ingredient.objects.create(
-                key=key,
-                common_name=common_name,
-                benefits=benefits,
-                helps_with=notes.get("helps_with", ""),
-                avoid_with=notes.get("avoid_with", ""),
-                side_effects=notes.get("side_effects", ""),
-            )
+            # Check if an ingredient with the same common_name already exists
+            existing_by_name = Ingredient.objects.filter(common_name=common_name).first()
+            if existing_by_name:
+                # Update the existing ingredient's key if it's different
+                if existing_by_name.key != key:
+                    Ingredient.objects.filter(pk=existing_by_name.pk).update(key=key)
+                    existing_by_name.refresh_from_db()
+                ingredient = existing_by_name
+            else:
+                notes = INGREDIENT_NOTES.get(key, {})
+                ingredient = Ingredient.objects.create(
+                    key=key,
+                    common_name=common_name,
+                    benefits=benefits,
+                    helps_with=notes.get("helps_with", ""),
+                    avoid_with=notes.get("avoid_with", ""),
+                    side_effects=notes.get("side_effects", ""),
+                )
         ingredient_map[key] = ingredient
 
     return concern_map, skin_type_map, restriction_map, ingredient_map
@@ -2776,6 +3495,12 @@ def _normalize_origin(value: str | None) -> str:
 
 
 def _product_defaults(seed: ProductSeed) -> dict:
+    # Handle invalid price values
+    try:
+        price = Decimal(seed.price) if seed.price and str(seed.price).strip() else Decimal("0")
+    except (ValueError, decimal.InvalidOperation):
+        price = Decimal("0")
+    
     return {
         "brand": _clip(seed.brand, Product._meta.get_field("brand").max_length),
         "name": _clip(seed.name, Product._meta.get_field("name").max_length),
@@ -2783,7 +3508,7 @@ def _product_defaults(seed: ProductSeed) -> dict:
         "category": seed.category,
         "summary": _clip(seed.summary, Product._meta.get_field("summary").max_length),
         "hero_ingredients": _clip(seed.hero_ingredients, Product._meta.get_field("hero_ingredients").max_length),
-        "price": Decimal(seed.price),
+        "price": price,
         "currency": seed.currency,
         "rating": seed.rating,
         "product_url": _clip(seed.product_url, Product._meta.get_field("product_url").max_length),
@@ -2802,9 +3527,6 @@ def _set_product_relations(
 ) -> None:
     ProductConcern.objects.filter(product=product).delete()
     for index, concern_key in enumerate(seed.concerns):
-        if concern_key not in concern_map:
-            print(f"Warning: Concern '{concern_key}' not found in CONCERNS for product {product.brand} - {product.name}. Skipping.")
-            continue
         concern = concern_map[concern_key]
         ProductConcern.objects.create(
             product=product,
@@ -2814,9 +3536,6 @@ def _set_product_relations(
 
     ProductIngredient.objects.filter(product=product).delete()
     for order, ingredient_key in enumerate(seed.ingredients):
-        if ingredient_key not in ingredient_map:
-            print(f"Warning: Ingredient '{ingredient_key}' not found in INGREDIENTS for product {product.brand} - {product.name}. Skipping.")
-            continue
         ingredient = ingredient_map[ingredient_key]
         ProductIngredient.objects.create(
             product=product,
@@ -2827,9 +3546,6 @@ def _set_product_relations(
 
     ProductSkinType.objects.filter(product=product).delete()
     for skin_type_key in seed.skin_types:
-        if skin_type_key not in skin_type_map:
-            print(f"Warning: Skin type '{skin_type_key}' not found in SKIN_TYPES for product {product.brand} - {product.name}. Skipping.")
-            continue
         skin_type = skin_type_map[skin_type_key]
         ProductSkinType.objects.create(
             product=product,
@@ -2839,9 +3555,6 @@ def _set_product_relations(
 
     restriction_objects = []
     for key in seed.restrictions:
-        if key not in restriction_map:
-            print(f"Warning: Restriction '{key}' not found in RESTRICTIONS for product {product.brand} - {product.name}. Skipping.")
-            continue
         restriction_objects.append(restriction_map[key])
     product.restrictions.set(restriction_objects)
 
@@ -2876,6 +3589,32 @@ class Command(BaseCommand):
         slug_limit = _product_field_limit("slug")
 
         for seed in PRODUCTS:
+            # Filter out non-existent tags
+            original_concerns = seed.concerns[:]
+            original_ingredients = seed.ingredients[:]
+            original_skin_types = seed.skin_types[:]
+            original_restrictions = seed.restrictions[:]
+            
+            seed.concerns = [c for c in seed.concerns if c in concern_map]
+            seed.ingredients = [i for i in seed.ingredients if i in ingredient_map]
+            seed.skin_types = [s for s in seed.skin_types if s in skin_type_map]
+            seed.restrictions = [r for r in seed.restrictions if r in restriction_map]
+            
+            # Print warnings for removed tags
+            removed_concerns = set(original_concerns) - set(seed.concerns)
+            removed_ingredients = set(original_ingredients) - set(seed.ingredients)
+            removed_skin_types = set(original_skin_types) - set(seed.skin_types)
+            removed_restrictions = set(original_restrictions) - set(seed.restrictions)
+            
+            for concern in removed_concerns:
+                print(f"Warning: Concern '{concern}' not found in CONCERNS for product {seed.brand} - {seed.name}. Skipping.")
+            for ingredient in removed_ingredients:
+                print(f"Warning: Ingredient '{ingredient}' not found in INGREDIENTS for product {seed.brand} - {seed.name}. Skipping.")
+            for skin_type in removed_skin_types:
+                print(f"Warning: Skin type '{skin_type}' not found in SKIN_TYPES for product {seed.brand} - {seed.name}. Skipping.")
+            for restriction in removed_restrictions:
+                print(f"Warning: Restriction '{restriction}' not found in RESTRICTIONS for product {seed.brand} - {seed.name}. Skipping.")
+            
             slug = _clip(slugify(f"{seed.brand} {seed.name}"), Product._meta.get_field("slug").max_length)
             defaults = _product_defaults(seed)
             product, is_created = Product.objects.update_or_create(
