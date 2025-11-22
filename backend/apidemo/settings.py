@@ -70,7 +70,6 @@ if "testserver" not in ALLOWED_HOSTS:
 CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [
     os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
-    "http://localhost:3000",
     "http://frontend:3000",  # Docker service name
     "https://skinmatch-nu.vercel.app",
 ]
@@ -194,7 +193,7 @@ GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
 )
 FRONTEND_LOGIN_REDIRECT_URL = os.getenv(
     "FRONTEND_LOGIN_REDIRECT_URL",
-    "http://localhost:3000/account" 
+    os.getenv("FRONTEND_ORIGIN", "http://localhost:3000") + "/account"
 )
 
 

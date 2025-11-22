@@ -286,7 +286,6 @@ def _get_newsletter_welcome_email_html(email: str = "") -> str:
         getattr(settings, "SITE_URL", None) 
         or os.environ.get("SITE_URL") 
         or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
-        or "http://localhost:3000"
     ).rstrip("/")
     unsubscribe_url = f"{site_url}/newsletter/unsubscribe"
     if email:

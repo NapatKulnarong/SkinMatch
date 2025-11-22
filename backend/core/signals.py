@@ -25,8 +25,7 @@ def _get_site_base_url() -> str:
     base_url = (
         getattr(settings, "SITE_URL", None)
         or os.environ.get("SITE_URL")
-        or getattr(settings, "FRONTEND_ORIGIN", None)
-        or "http://localhost:3000"
+        or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
     )
     return str(base_url).rstrip("/")
 
