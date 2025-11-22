@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd /app
 
-echo "🏁 Waiting for Postgres using psycopg (DATABASE_URL=$DATABASE_URL)"
+echo "🏁 Waiting for Postgres (DATABASE_URL=$DATABASE_URL)"
 python - <<'PY'
 import os, time, sys
 import psycopg
@@ -14,7 +14,7 @@ for i in range(60):
         with psycopg.connect(url, connect_timeout=3) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1;")
-        print("✅ DB is up")
+        print("✅ Database is ready")
         sys.exit(0)
     except Exception as e:
         print(f"⏳ DB not ready ({e}); retry {i+1}/60")
@@ -23,19 +23,16 @@ print("❌ DB did not become ready in time")
 sys.exit(1)
 PY
 
-echo "🔄 Running migrations"
+echo "🔄 Running migrations..."
 python manage.py migrate --noinput
 
-echo "👤 Ensuring default superuser"
+echo "👤 Ensuring default superuser (if credentials provided)..."
 python - <<'PY'
-import os
+import os, django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apidemo.settings")
-
-import django
 django.setup()
 
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
 
 username = os.getenv("DJANGO_SUPERUSER_USERNAME")
@@ -53,8 +50,9 @@ if username and email and password:
     else:
         print("Superuser already exists.")
 else:
-    print("Superuser credentials not provided; skipping creation.")
+    print("Superuser credentials missing; skipping superuser creation.")
 PY
 
-echo "🚀 Starting Django dev server..."
-exec python manage.py runserver 0.0.0.0:8000
+PORT=${PORT:-8000}
+echo "🚀 Starting Gunicorn on port $PORT ..."
+exec gunicorn apidemo.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 90
