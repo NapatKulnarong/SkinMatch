@@ -740,64 +740,6 @@ export default function HomePage() {
         {/* Product Scanner */}
         <ProductScanner />
 
-        {/* Skincare Hub promo */}
-        <section className="rounded-[26px] border-2 border-black bg-gradient-to-br from-[#fef8ef] to-[#f4f9ee] p-5 sm:p-6 lg:p-8 shadow-[4px_5px_0_rgba(0,0,0,0.25)]">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="space-y-3">
-              <h2 className="flex items-center gap-2 text-xl sm:text-2xl font-black text-[#1f2d26]">
-                <SparklesIcon className="h-5 w-5 text-[#1f2d26]" />
-                <span>Skincare Hub</span>
-              </h2>
-              <p className="text-sm sm:text-base text-[#1f2d26]/70">
-                Search across verified formulas, see what the community is loving, and share your experience. Every hub product page now includes shoppable links plus review tools.
-              </p>
-              <ul className="space-y-2 text-sm text-[#1f2d26]">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
-                  <span>Instant suggestions for matching products</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
-                  <span>Top 5 skincare picks refreshed from community reviews</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#2d4a2b]" />
-                  <span>Read &amp; write reviews with one tap</span>
-                </li>
-              </ul>
-            </div>
-            <div className="relative space-y-4">
-              <div className="pointer-events-none absolute -top-52 -right-10">
-                <Image
-                  src="/img/mascot/matchy_skincare.png"
-                  alt="Matchy the mascot holding skincare products"
-                  width={280}
-                  height={280}
-                  className="max-w-[400px]"
-                  priority={false}
-                />
-              </div>
-              <div className="pt-16 sm:pt-5" />
-              <SkincareSearchBar
-                className="max-w-none"
-                buttonLabel="Find skincare"
-                suggestionLabel="Instant matches"
-                showHelperHint={false}
-                variant="pill"
-              />
-              <div className="flex justify-end">
-                <Link
-                  href="/skincare-hub"
-                  className="mt-3 inline-flex items-center gap-3 rounded-full border-2 border-black bg-white px-7 py-3 text-sm font-semibold text-[#1f2d26] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
-                >
-                  Enter the hub
-                  <ArrowRightIcon className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Environment Alerts */}
         <EnvironmentAlertPanel />
 
