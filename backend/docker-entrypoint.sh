@@ -33,7 +33,11 @@ echo "👤 Seeding demo users..."
 python manage.py seed_demo_users || echo "Skipping demo users (command missing)"
 
 echo "🌿 Loading SkinFact topics & facts..."
-python manage.py import_skinfact_seed --reset --media-dir=data/skin_facts_media || echo "Skipping SkinFacts seed"
+python manage.py import_skinfact_seed --reset \
+  --media-dir=backend/data/skin_facts_media \
+  --seed-file=backend/data/skin_facts_seed.json \
+|| echo "Skipping SkinFacts seed"
+
 
 
 echo "👤 Ensuring default superuser (if credentials provided)..."
@@ -64,5 +68,8 @@ else:
 PY
 
 PORT=${PORT:-8000}
-echo "🚀 Starting Gunicorn on port $PORT ..."
-exec gunicorn apidemo.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 90
+echo "🚀 Starting Gunicorn on port $PORT with 1 worker ..."
+exec gunicorn apidemo.wsgi:application \
+  --bind 0.0.0.0:$PORT \
+  --workers 1 \
+  --timeout 90
