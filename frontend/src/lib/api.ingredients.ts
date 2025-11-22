@@ -11,6 +11,12 @@ type RawIngredientSummary = {
   top_concerns?: string[] | null;
 };
 
+type RawIngredientBenefit = {
+  ingredient: string;
+  benefit?: string | null;
+  source: string;
+};
+
 type RawIngredientProduct = {
   product_id: string;
   slug: string;
@@ -67,6 +73,12 @@ export type IngredientSummary = {
   topConcerns: string[];
 };
 
+export type IngredientBenefit = {
+  ingredient: string;
+  benefit: string | null;
+  source: string;
+};
+
 export type IngredientSearchProduct = {
   productId: string;
   slug: string;
@@ -121,7 +133,7 @@ const mapProduct = (raw: RawIngredientProduct): IngredientSearchProduct => ({
   averageRating:
     typeof raw.average_rating === "number" && Number.isFinite(raw.average_rating)
       ? raw.average_rating
-      : null,
+      : 0,
   reviewCount: raw.review_count ?? 0,
   imageUrl: resolveMediaUrl(raw.image_url),
   image: raw.image ?? null,
@@ -143,6 +155,12 @@ const mapIngredient = (raw: RawIngredientSummary): IngredientSummary => ({
   topConcerns: Array.isArray(raw.top_concerns)
     ? raw.top_concerns.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [],
+});
+
+const mapIngredientBenefit = (raw: RawIngredientBenefit): IngredientBenefit => ({
+  ingredient: raw.ingredient,
+  benefit: raw.benefit ?? null,
+  source: raw.source,
 });
 
 const mapSuggestion = (raw: RawIngredientSuggestion): IngredientSuggestion => ({
@@ -248,4 +266,41 @@ export async function fetchIngredientSuggestions(
   }
 
   return payload.suggestions.map(mapSuggestion);
+}
+
+type BenefitOptions = {
+  signal?: AbortSignal;
+};
+
+export async function fetchIngredientBenefit(
+  name: string,
+  options: BenefitOptions = {}
+): Promise<IngredientBenefit> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("Ingredient name cannot be blank.");
+  }
+
+  const params = new URLSearchParams({ name: trimmed });
+  const base = resolveApiBase();
+  const res = await fetch(`${base}/quiz/ingredients/benefit?${params.toString()}`, {
+    cache: "no-store",
+    signal: options.signal,
+  });
+
+  if (res.status === 400) {
+    const detail = await res.json().catch(() => ({}));
+    const message =
+      typeof detail?.detail === "string"
+        ? detail.detail
+        : "Unable to fetch ingredient benefit.";
+    throw new Error(message);
+  }
+
+  if (!res.ok) {
+    throw new Error("Unable to fetch ingredient benefit.");
+  }
+
+  const payload = (await res.json()) as RawIngredientBenefit;
+  return mapIngredientBenefit(payload);
 }

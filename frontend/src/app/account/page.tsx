@@ -92,6 +92,18 @@ function AccountContent() {
         setAuthTokenState(tokenToUse);
 
         if (tokenFromQuery) {
+          // Check for redirect parameter in sessionStorage (set before OAuth)
+          const storedRedirect = typeof window !== "undefined" 
+            ? sessionStorage.getItem("login_redirect") 
+            : null;
+          
+          if (storedRedirect) {
+            console.log("Found redirect parameter, redirecting to:", storedRedirect);
+            sessionStorage.removeItem("login_redirect");
+            router.replace(storedRedirect);
+            return;
+          }
+          
           console.log("Cleaning OAuth callback URL");
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('token');
@@ -1025,7 +1037,7 @@ export function WishlistPanel({ token, variant = "preview", title = "Wishlist" }
                       <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
                     )}
                   </div>
-                  <div className="p-3 sm:p-4 flex-1 relative pb-14 sm:pb-4">
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col pb-4">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
@@ -1035,24 +1047,24 @@ export function WishlistPanel({ token, variant = "preview", title = "Wishlist" }
                     <div className="mt-1 sm:mt-2 flex items-center justify-between">
                       <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
                     </div>
-                    <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:border-t border-black/10 pt-2 sm:pt-3 sm:static absolute bottom-3 right-3 z-10 sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleShowProductDetails(p)}
-                        className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
-                      >
-                        Details
-                      </button>
-                      {p.productUrl && (
+                    <div className="mt-auto pt-4 sm:pt-4 sm:border-t border-black/20">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleShowProductDetails(p)}
+                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                        >
+                          Details
+                        </button>
                         <a
-                          href={p.productUrl}
+                          href={p.productUrl || `https://shopee.co.th/search?keyword=${encodeURIComponent(`${p.brand} ${p.name}`.trim())}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                         >
-                          Shop
+                          Shopee
                         </a>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1161,8 +1173,11 @@ function WishlistProductDetailModal({
     display?.price ?? product.price,
     display?.currency ?? product.currency
   );
-  const rating = display?.averageRating ?? null;
-  const reviewCount = display?.reviewCount ?? null;
+  const ratingValue =
+    typeof display?.averageRating === "number" ? display.averageRating : null;
+  const reviewCount = display?.reviewCount ?? 0;
+  const hasReviews = ratingValue !== null && reviewCount > 0;
+  const ratingLabel = hasReviews && ratingValue !== null ? ratingValue.toFixed(1) : null;
   const heroIngredients = display?.heroIngredients ?? [];
   const ingredientDetails = display?.ingredients ?? [];
   const concerns = display?.concerns ?? [];
@@ -1242,15 +1257,15 @@ function WishlistProductDetailModal({
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B9375D]">{brand}</p>
                 <h2 className="text-2xl font-extrabold leading-tight text-[#1f2d26]">{name}</h2>
                 <p className="text-sm font-semibold text-[#3C3D37] text-opacity-70">{categoryLabel}</p>
-                {(rating || priceLabel) && (
+                {(hasReviews || priceLabel) && (
                   <div className="flex flex-wrap items-center gap-3 text-sm text-[#1f2d26]">
-                    {rating ? (
+                    {hasReviews && ratingLabel ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-[#fff3c4] px-3 py-1 font-semibold">
                         <svg className="h-4 w-4 text-[#f59e0b]" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 8.72c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                         </svg>
-                        {rating.toFixed(1)}
-                        <span className="text-xs text-[#3C3D37] text-opacity-60">({reviewCount ?? 0})</span>
+                        {ratingLabel}
+                        <span className="text-xs text-[#3C3D37] text-opacity-60">({reviewCount})</span>
                       </span>
                     ) : (
                       <span className="text-xs text-[#3C3D37] text-opacity-60">No reviews yet</span>

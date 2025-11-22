@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-import io, os, re, json
+import io
+import json
+import logging
+import os
+import re
 from pathlib import Path
+import logging
 from typing import List, Optional, Tuple
 
+from ninja import File, Router, Schema
 from ninja.errors import HttpError
+from ninja.files import UploadedFile
 
 try:  # pragma: no cover - optional dependency
     import cv2
@@ -17,9 +24,10 @@ except ImportError:
     np = None  # type: ignore
 
 try:  # pragma: no cover - optional dependency
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 except ImportError:
     Image = None  # type: ignore
+    UnidentifiedImageError = OSError  # type: ignore[misc,assignment]
 
 try:  # pragma: no cover - optional dependency
     import pillow_heif  # type: ignore
@@ -32,23 +40,36 @@ try:  # pragma: no cover - optional dependency
     import pytesseract
 except ImportError:
     pytesseract = None  # type: ignore
-from ninja import File, Router, Schema
-from ninja.files import UploadedFile
 
 try:
     import google.generativeai as genai
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
     genai = None
 
-API_KEY = os.getenv("GOOGLE_API_KEY")
-if genai is not None and API_KEY:
-    genai.configure(api_key=API_KEY)
-
-from .utils_ocr import preprocess_for_ocr
-from .text_cleaner import clean_ocr_text
 from .api_scan import scan_router as _legacy_scan_router
+from .text_cleaner import clean_ocr_text
+from .utils_ocr import preprocess_for_ocr
+
+logger = logging.getLogger(__name__)
 
 scan_text_router = Router(tags=["scan-text"])
+
+
+def _genai_ready() -> bool:
+    """
+    Evaluate readiness at call time so env changes in tests or runtime apply
+    without requiring module reload.
+    """
+    if genai is None:
+        return False
+    key = os.getenv("GOOGLE_API_KEY")
+    if not key:
+        return False
+    already_configured = getattr(_genai_ready, "_configured_key", None) == key
+    if not already_configured:
+        genai.configure(api_key=key)
+        _genai_ready._configured_key = key
+    return True
 
 
 def _ensure_ocr_stack_ready() -> None:
@@ -57,6 +78,7 @@ def _ensure_ocr_stack_ready() -> None:
             503,
             "OCR dependencies (Pillow, pytesseract, opencv-python, numpy) are not installed.",
         )
+
 EXAMPLE_JSON = {
     "benefits": [
         "Hydration: Provides deep moisture to keep skin plump.",
@@ -201,10 +223,6 @@ def _preprocess(image: Image.Image) -> Image.Image:
         return preprocess_for_ocr(image)
     return image
 
-def _pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
-    _ensure_ocr_stack_ready()
-    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-
 def _ocr_text(pil_img: Image.Image) -> str:
     """Run preprocess → cv2 conversion → OCR (Thai/English)."""
     _ensure_ocr_stack_ready()
@@ -224,28 +242,6 @@ def cv2_to_text(img: np.ndarray) -> str:
     return pytesseract.image_to_string(img, lang="tha+eng")
 
 # ---------------- Fallback extractor (English/Thai keywords) ----------------
-_ACTIVE_RULES = [
-    (r"\bniacinamide\b", "niacinamide", "Niacinamide helps support tone and barrier resilience."),
-    (r"\burea\b", "urea", "Urea is a humectant (NMF) that locks in water."),
-    (r"saccharide\s+isomerate", "saccharide isomerate", "Saccharide Isomerate binds moisture for long-lasting hydration."),
-    (r"\bceramide", "ceramide complex", "Ceramides replenish the barrier."),
-    (r"beta\s*glucan|oat\s*extract|avena\s+sativa", "avena sativa (oat) extract", None),
-    (r"\bpanthenol\b", "panthenol", None),
-    (r"tocopheryl\s*acetate|vitamin\s*e", "vitamin e", None),
-    (r"oryza\s+sativa.*bran\s*oil", "rice bran oil", None),
-    (r"aloe\s+barbadensis", "aloe barbadensis leaf juice", None),
-    (r"\bglycerin\b", "glycerin", None),
-    (r"centella|asiatica", "centella asiatica extract", None),
-    (r"hyaluronic\s+acid|sodium\s+hyaluronate", "hyaluronic acid", None),
-    (r"trehalose", "trehalose", None),
-    (r"sorbitol", "sorbitol", None),
-]
-
-_FREE_FROM_REMOVALS = [
-    (r"\balcohol[-\s]?free\b|free\s+from\s+alcohol", "drying alcohol"),
-    (r"\bparaben[-\s]?free\b|free\s+from\s+parabens?", "parabens"),
-]
-
 def _fallback_extract(text: str) -> dict:
     t = text.lower()
     def has(p: str) -> bool:
@@ -350,89 +346,115 @@ _GEMINI_MODELS = [
     "gemini-1.5-flash",
 ]
 
+def _extract_raw_text(resp) -> str | None:
+    """
+    Safely extract text from a GenerativeModel response.
+    Guards against missing candidates/parts to avoid ValueError when response.text is absent.
+    """
+    if not resp:
+        return None
+
+    try:
+        raw = getattr(resp, "text", None)
+    except Exception:
+        raw = None
+
+    if raw:
+        return raw
+
+    candidates = getattr(resp, "candidates", None) or []
+    try:
+        for cand in candidates:
+            content = getattr(cand, "content", None)
+            parts = getattr(content, "parts", None) if content else None
+            if not parts:
+                continue
+            chunks = [getattr(part, "text", "") for part in parts if getattr(part, "text", "")]
+            text_joined = "\n".join(chunks).strip()
+            if text_joined:
+                return text_joined
+    except Exception as e:
+        print(f"[LLM] Unable to extract candidate text: {type(e).__name__}: {e}")
+
+    return None
+
+
+def _parse_llm_payload(raw: str | None) -> dict | None:
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except Exception:
+        print("[LLM] JSON parse failed, raw:", raw[:400])
+        return None
+    if "confidence" not in data and "ai_confidence" in data:
+        data["confidence"] = data["ai_confidence"]
+    return data if _shape_guard(data) else None
+
+
+def _invoke_model_json(
+    model_name: str,
+    sys_msg: str,
+    user_prompt: str,
+    gen_cfg: dict,
+    *,
+    safety_settings: dict | None = None,
+) -> dict | None:
+    if not _genai_ready():
+        return None
+    try:
+        model = genai.GenerativeModel(
+            model_name,
+            system_instruction=sys_msg,
+            generation_config={**gen_cfg, "response_mime_type": "application/json"},
+            **({"safety_settings": safety_settings} if safety_settings else {}),
+        )
+        resp = model.generate_content(user_prompt)
+    except Exception as e:
+        print(f"[LLM] Model {model_name} API call failed: {type(e).__name__}: {str(e)}")
+        return None
+
+    raw = _extract_raw_text(resp)
+    return _parse_llm_payload(raw)
+
+
 # ---------------- LLM call (English prompt) # With Description ----------------
 def _call_gemini_for_json(ocr_text: str) -> dict | None:
-    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+    if not _genai_ready():
         return None
 
     sys_msg, user_prompt, gen_cfg = _build_llm_prompt(ocr_text)
 
     for model_name in _GEMINI_MODELS:
-        try:
-            model = genai.GenerativeModel(model_name, system_instruction=sys_msg, generation_config=gen_cfg)
-            resp = model.generate_content(user_prompt)
-            raw = getattr(resp, "text", None)
-            if not raw and hasattr(resp, "candidates"):
-                cand = resp.candidates[0]
-                parts = getattr(cand, "content", None)
-                if parts and getattr(parts, "parts", None):
-                    chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-                    raw = "\n".join(chunks).strip()
-
-            if not raw:
-                continue
-
-            data = json.loads(raw)
-            for k in ["benefits", "actives", "concerns", "notes", "confidence"]:
-                if k not in data:
-                    raise ValueError(f"Missing key: {k}")
-            return data
-        except Exception as e:
-            print(f"[LLM analyze] {model_name} failed: {e}")
-            continue
+        payload = _invoke_model_json(model_name, sys_msg, user_prompt, gen_cfg)
+        if payload:
+            return payload
     return None
 
 def _shape_guard(d: dict) -> bool:
     keys = {"benefits", "actives", "concerns", "notes", "confidence"}
     return isinstance(d, dict) and keys.issubset(set(d.keys()))
 
+
+_GEMINI_SAFETY_SETTINGS = {
+    "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+    "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+    "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+}
+
+
 def _call_one_model(model_name: str, user_prompt: str, sys_msg: str, gen_cfg: dict) -> dict | None:
-    try:
-        # --- 1 Force Gemini to output JSON ---
-        model = genai.GenerativeModel(
-            model_name,
-            system_instruction=sys_msg,
-            generation_config={
-                **gen_cfg,
-                "response_mime_type": "application/json",  # ← ensures Gemini replies in strict JSON only
-            },
-        )
-        # --- 2 Run the model safely ---
-        resp = model.generate_content(user_prompt, safety_settings = {"HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE", 
-                                                                      "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",})
-    except Exception as e:
-        print(f"[LLM] Model {model_name} API call failed: {type(e).__name__}: {str(e)}")
-        return None
-
-    # --- 3 Extract raw text (Gemini SDK differences) ---
-    raw = getattr(resp, "text", None)
-    if not raw and getattr(resp, "candidates", None):
-        cand0 = resp.candidates[0]
-        parts = getattr(cand0, "content", None)
-        if parts and getattr(parts, "parts", None):
-            chunks = [getattr(p, "text", "") for p in parts.parts if getattr(p, "text", "")]
-            raw = "\n".join(chunks).strip()
-
-    if not raw:
-        return None
-
-    try:
-        data = json.loads(raw)
-    except Exception as e:
-        print("[LLM] JSON parse failed, raw:", raw[:400])
-        return None
-
-    # --- 5 Normalize confidence key (ai_confidence → confidence) ---
-    if "confidence" not in data and "ai_confidence" in data:
-        data["confidence"] = data["ai_confidence"]
-
-    # --- ⑥ Return only if it has required shape ---
-    return data if _shape_guard(data) else None
+    return _invoke_model_json(
+        model_name,
+        sys_msg,
+        user_prompt,
+        gen_cfg,
+        safety_settings=_GEMINI_SAFETY_SETTINGS,
+    )
 
 def _call_gemini_ensemble(ocr_text: str) -> dict | None:
-    if genai is None or not os.getenv("GOOGLE_API_KEY"):
+    if not _genai_ready():
         return None
 
     sys_msg, user_prompt, gen_cfg = _build_llm_prompt(ocr_text)
@@ -487,16 +509,6 @@ def _call_gemini_ensemble(ocr_text: str) -> dict | None:
     }
 
 # ---------------- utilities ----------------
-def _derive_free_from(notes: List[str]) -> List[str]:
-    out: list[str] = []
-    for n in notes:
-        m = re.search(r"free\s*from[:\s]+(.+)", n, flags=re.I) or re.search(r"\b([\w\s/,-]+)-free\b", n, flags=re.I)
-        if m:
-            tail = m.group(1) if m.lastindex else n
-            toks = re.split(r"[,/|]| and ", tail, flags=re.I)
-            out.extend([t.strip() for t in toks if t.strip()])
-    return sorted(set(out))
-
 def norm_list(values) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
@@ -608,7 +620,11 @@ def _generate_insights_with_retry(text: str, max_attempts: int = 3):
 # ---------------- Endpoint ----------------
 @scan_text_router.post("/label/analyze-llm", response=LabelLLMOut)
 def analyze_label_llm(request, file: UploadedFile = File(...)):
-    text = _ocr_text_from_file(file)
+    try:
+        text = _ocr_text_from_file(file)
+    except (UnidentifiedImageError, OSError) as exc:
+        logger.warning("Rejected label scan upload due to unreadable image: %s", exc)
+        raise HttpError(400, "Please upload a valid image file (PNG, JPG, or WebP).")
     combined, confidence, _ = _generate_insights_with_retry(text)
 
     return LabelLLMOut(

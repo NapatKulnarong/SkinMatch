@@ -1,4 +1,4 @@
-.PHONY: test test-pytest test-django test-frontend
+.PHONY: test test-pytest test-frontend test-e2e
 
 # Run pytest across backend suite (includes tests_*.py via pytest.ini)
 test-pytest:
@@ -8,5 +8,9 @@ test-pytest:
 test-frontend:
 	cd frontend && npm test -- --runInBand
 
+# Run frontend end-to-end tests (Playwright)
+test-e2e:
+	cd frontend && npm run test:e2e
+
 # Default target runs both test suites for complete coverage
-test: test-pytest test-django test-frontend
+test: test-pytest test-frontend test-e2e

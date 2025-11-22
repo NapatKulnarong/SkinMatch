@@ -6,6 +6,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter } from "next/navigation";
 import PageContainer from "@/components/PageContainer";
 import { PasswordRequirements } from "@/components/PasswordRequirements";
+import { PasswordInput } from "@/components/PasswordInput";
 import {
   fetchProfile,
   updateProfile,
@@ -53,6 +54,8 @@ export default function AccountSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarAction, setAvatarAction] = useState<"none" | "upload" | "remove">("none");
+  const [avatarPendingRemoval, setAvatarPendingRemoval] = useState(false);
   const [passwordState, setPasswordState] = useState({
     current: "",
     next: "",
@@ -106,10 +109,13 @@ export default function AccountSettingsPage() {
   }, [avatarPreview]);
 
   const currentAvatar = useMemo(() => {
+    if (avatarPendingRemoval) {
+      return "/img/avatar_placeholder.png";
+    }
     if (avatarPreview) return avatarPreview;
     if (profile?.avatar_url) return profile.avatar_url;
     return "/img/avatar_placeholder.png";
-  }, [avatarPreview, profile]);
+  }, [avatarPendingRemoval, avatarPreview, profile]);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
@@ -129,20 +135,46 @@ export default function AccountSettingsPage() {
     );
   }, [fieldState, profile]);
 
-  const canSave = Boolean(profile) && (hasFormChanges || Boolean(avatarFile));
+  const hasAvatarChanges = avatarAction !== "none";
+  const hasPendingChanges = hasFormChanges || hasAvatarChanges;
+  const canSave = hasPendingChanges && !loading;
   const isSavingInProgress = saving || avatarUploading;
-  const allChangesSaved = !canSave && !isSavingInProgress;
+  const allChangesSaved = !hasPendingChanges && !isSavingInProgress;
 
   const handleFieldChange = (key: keyof FieldState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { value } = event.target;
     setFieldState((prev) => ({ ...prev, [key]: value }));
   };
 
+  const requireToken = () => {
+    const latestToken = tokenRef.current ?? getAuthToken();
+    if (!latestToken) {
+      setError("Please sign in again to update your profile.");
+      clearSession();
+      router.replace("/login?next=/account/settings");
+      return null;
+    }
+    tokenRef.current = latestToken;
+    return latestToken;
+  };
+
   const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!tokenRef.current) return;
+    const activeToken = requireToken();
+    if (!activeToken) {
+      return;
+    }
+
+    if (!hasPendingChanges) {
+      setMessage("No new changes to save yet.");
+      setError(null);
+      return;
+    }
+    const pendingAvatarUpload = avatarAction === "upload" && Boolean(avatarFile);
+    const pendingAvatarRemoval = avatarAction === "remove";
+
     setSaving(true);
-    setAvatarUploading(Boolean(avatarFile));
+    setAvatarUploading(pendingAvatarUpload);
     setMessage(null);
     setError(null);
 
@@ -152,26 +184,31 @@ export default function AccountSettingsPage() {
       username: fieldState.username,
       date_of_birth: fieldState.date_of_birth || null,
       gender: fieldState.gender || null,
-      remove_avatar: false,
+      remove_avatar: pendingAvatarRemoval ? true : undefined,
     };
 
     try {
       let updatedProfile: StoredProfile | null = null;
 
-      if (avatarFile) {
-        updatedProfile = normalizeStoredProfile(await uploadAvatar(tokenRef.current, avatarFile));
+      if (pendingAvatarUpload && avatarFile) {
+        updatedProfile = normalizeStoredProfile(await uploadAvatar(activeToken, avatarFile));
         setAvatarFile(null);
         if (avatarPreview) {
           URL.revokeObjectURL(avatarPreview);
           setAvatarPreview(null);
         }
+        setAvatarPendingRemoval(false);
       }
 
-      const updated = normalizeStoredProfile(await updateProfile(tokenRef.current, payload));
+      const updated = normalizeStoredProfile(await updateProfile(activeToken, payload));
       const finalProfile = updatedProfile ?? updated;
       setProfile(finalProfile);
       saveProfile(finalProfile);
       setMessage("Profile updated successfully.");
+      if (pendingAvatarRemoval) {
+        setAvatarPendingRemoval(false);
+      }
+      setAvatarAction("none");
     } catch (err) {
       console.error("Failed to update profile", err);
       setError(err instanceof Error ? err.message : "Unable to update profile");
@@ -189,6 +226,8 @@ export default function AccountSettingsPage() {
         URL.revokeObjectURL(avatarPreview);
         setAvatarPreview(null);
       }
+      setAvatarAction("none");
+      setAvatarPendingRemoval(false);
       return;
     }
     if (avatarPreview) {
@@ -196,28 +235,25 @@ export default function AccountSettingsPage() {
     }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+    setAvatarAction("upload");
+    setAvatarPendingRemoval(false);
+    setMessage(null);
+    setError(null);
   };
 
   const handleRemoveAvatar = async () => {
-    if (!tokenRef.current) return;
-    setAvatarUploading(true);
-    setMessage(null);
-    setError(null);
-    try {
-      const updated = await updateProfile(tokenRef.current, { remove_avatar: true });
-      setProfile(updated);
-      saveProfile(updated);
-      setMessage("Profile picture removed.");
-      setAvatarFile(null);
-      if (avatarPreview) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-      setAvatarPreview(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to remove avatar");
-    } finally {
-      setAvatarUploading(false);
+    if (avatarPendingRemoval || (!profile?.avatar_url && !avatarPreview)) {
+      return;
     }
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setAvatarAction("remove");
+    setAvatarPendingRemoval(true);
+    setMessage("Profile picture will be removed after saving.");
+    setError(null);
   };
 
   const handlePasswordFieldChange =
@@ -375,7 +411,11 @@ export default function AccountSettingsPage() {
                     </label>
                     <button
                       type="button"
-                      disabled={avatarUploading || (!profile?.avatar_url && !avatarPreview)}
+                      disabled={
+                        avatarUploading ||
+                        avatarPendingRemoval ||
+                        (!profile?.avatar_url && !avatarPreview)
+                      }
                       onClick={handleRemoveAvatar}
                       className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f57371] px-4 py-2.5 text-[11px] lg:text-[13px] font-bold text-gray-900 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] flex-1 min-w-[140px] sm:text-sm sm:px-5 sm:py-3 whitespace-nowrap"
                     >
@@ -495,7 +535,7 @@ export default function AccountSettingsPage() {
                       </div>
                     </div>
                   )}
-                  {canSave && !saving && !message && (
+                  {hasPendingChanges && !saving && !message && (
                     <p className="text-sm font-semibold text-[#92400e]">Unsaved changes</p>
                   )}
                 </div>
@@ -561,8 +601,7 @@ export default function AccountSettingsPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800 sm:col-span-2">
                 Current password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.current}
                   onChange={handlePasswordFieldChange("current")}
                   autoComplete="current-password"
@@ -574,8 +613,7 @@ export default function AccountSettingsPage() {
 
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
                 New password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.next}
                   onChange={handlePasswordFieldChange("next")}
                   autoComplete="new-password"
@@ -591,8 +629,7 @@ export default function AccountSettingsPage() {
 
               <label className="flex flex-col gap-2 text-sm font-bold text-gray-800">
                 Confirm new password
-                <input
-                  type="password"
+                <PasswordInput
                   value={passwordState.confirm}
                   onChange={handlePasswordFieldChange("confirm")}
                   autoComplete="new-password"
@@ -632,12 +669,12 @@ export default function AccountSettingsPage() {
               </button>
             </div>
           </form>
-          <div className="absolute -bottom-43 -right-32 hidden lg:block">
+          <div className="absolute -bottom-43 -right-32 hidden lg:block pointer-events-none select-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
             src="/img/mascot/matchy_set.png"
             alt = "Matchy Mascot (Settings)"
-            className="w-120 h-120 md:w-150 md:h-150 lg:w-170 lg:h-170 xl:w-190 xl:h-190 object-contain"
+            className="w-120 h-120 md:w-150 md:h-150 lg:w-170 lg:h-170 xl:w-190 xl:h-190 object-contain pointer-events-none select-none"
             />
           </div>
         </section>

@@ -17,28 +17,70 @@ const nextConfig: NextConfig = {
     root: currentDir,
   },
   images: {
+    dangerouslyAllowSVG: true,
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/media/**',
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/media/**",
       },
       {
-        protocol: 'http',
-        hostname: 'backend',
-        port: '8000',
-        pathname: '/media/**',
+        protocol: "http",
+        hostname: "backend",
+        port: "8000",
+        pathname: "/media/**",
       },
       {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '3000',
-        pathname: '/media/**',
+        protocol: "http",
+        hostname: "localhost",
+        port: "3000",
+        pathname: "/media/**",
       },
       {
         protocol: "https",
         hostname: "placehold.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "s3.konvy.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "thmappbkk.blob.core.windows.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.koreanbeauty.se",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.bioderma.co.th",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.essentials.lk",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "down-th.img.susercontent.com",
+        pathname: "/**",
+      },
+      // Wildcard fallbacks to cover newly added product image hosts
+      {
+        protocol: "https",
+        hostname: "**",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
         pathname: "/**",
       },
     ],

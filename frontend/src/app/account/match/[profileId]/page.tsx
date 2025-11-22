@@ -975,9 +975,9 @@ function renderRecommendations(
                     href={item.productUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
-                    Shop
+                    Shopee
                   </a>
                 )}
               </div>
@@ -1052,8 +1052,10 @@ function ProductDetailModal({
     display?.price ?? recommendation.priceSnapshot,
     display?.currency ?? recommendation.currency
   );
-  const rating = display?.averageRating ?? recommendation.averageRating;
-  const reviewCount = display?.reviewCount ?? recommendation.reviewCount;
+  const reviewCount = display?.reviewCount ?? recommendation.reviewCount ?? 0;
+  const ratingSource = display?.averageRating ?? recommendation.averageRating ?? null;
+  const hasReviews = reviewCount > 0 && typeof ratingSource === "number";
+  const ratingValue = hasReviews ? (ratingSource as number) : 0;
   const heroIngredients =
     (display?.heroIngredients && display.heroIngredients.length
       ? display.heroIngredients
@@ -1153,17 +1155,15 @@ function ProductDetailModal({
               <p className="text-sm font-semibold text-[#3C3D37] text-opacity-70">
                 {categoryLabel}
               </p>
-              {(rating || priceLabel) && (
+              {(hasReviews || priceLabel) && (
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[#1f2d26]">
-                  {rating ? (
+                  {hasReviews ? (
                     <span className="inline-flex items-center gap-1 rounded-full border border-black/20 bg-[#fff3c4] px-3 py-1 font-semibold">
                       <svg className="h-4 w-4 text-[#f59e0b]" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 8.72c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                       </svg>
-                      {rating.toFixed(1)}
-                      <span className="text-xs text-[#3C3D37] text-opacity-60">
-                        ({reviewCount ?? 0})
-                      </span>
+                      {ratingValue.toFixed(1)}
+                      <span className="text-xs text-[#3C3D37] text-opacity-60">({reviewCount})</span>
                     </span>
                   ) : (
                     <span className="text-xs text-[#3C3D37] text-opacity-60">No reviews yet</span>

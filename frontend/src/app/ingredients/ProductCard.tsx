@@ -39,8 +39,11 @@ export type ProductCardProps = {
 export function ProductCard({ product, compact = false, onShowDetails }: ProductCardProps) {
   const imageSrc = product.imageUrl ?? product.image ?? null;
   const priceLabel = formatPrice(product.price, product.currency);
+  const reviewCount = product.reviewCount ?? 0;
   const ratingLabel =
-    product.averageRating !== null ? `${product.averageRating.toFixed(1)} / 5` : null;
+    reviewCount > 0 && typeof product.averageRating === "number"
+      ? `${product.averageRating.toFixed(1)} / 5`
+      : null;
   const categoryLabel = toTitleCase(product.category);
   const detailButtonClasses = compact
     ? "inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-2.5 py-1 text-[9px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
@@ -133,14 +136,14 @@ export function ProductCard({ product, compact = false, onShowDetails }: Product
             <span className="inline-flex items-center gap-1">
               <StarIcon className="h-4 w-4 text-[#fbbf24]" />
               {ratingLabel}
-              {product.reviewCount ? (
+              {reviewCount > 0 ? (
                 <span className="text-[10px] text-[#1f2d26]/50">
-                  ({product.reviewCount} reviews)
+                  ({reviewCount} reviews)
                 </span>
               ) : null}
             </span>
           ) : (
-            <span className="text-[10px] text-[#1f2d26]/50">Rating coming soon</span>
+            <span className="text-[10px] text-[#1f2d26]/50">No reviews yet</span>
           )}
         </div>
         <div className="flex items-center justify-end gap-2">

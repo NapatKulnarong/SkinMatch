@@ -30,7 +30,13 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
     setMessage("Opening your email app so you can send the myth to our team.");
 
     const body = encodeURIComponent(`Skin myth question:\n\n${trimmed}`);
-    window.location.href = `mailto:hello@skinmatch.co?subject=Skin%20Myth%20Suggestion&body=${body}`;
+    const href = `mailto:hello@skinmatch.co?subject=Skin%20Myth%20Suggestion&body=${body}`;
+    const opener = typeof window !== "undefined" ? window.open : null;
+    if (opener) {
+      opener(href, "_self");
+    } else if (typeof window !== "undefined") {
+      window.location.href = href;
+    }
   };
 
   return (
@@ -139,7 +145,7 @@ export default function AskExpertCTA({ sectionId }: AskExpertCTAProps) {
           )}
         </div>
 
-        <div className="lg:mt-3 rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#B9E5E8] to-[#DFF2EB] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+        <div className="lg:mt-3 rounded-[24px] sm:rounded-[28px] border-2 border-black bg-gradient-to-br from-[#F5E6D3] via-[#F0DFC8] to-[#E8D4B8] p-6 sm:p-8 shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
           <NewsletterSignup
             title="Get Weekly Skincare Tips"
             subtitle="Join 1,000+ readers for ingredient insights, routine blueprints, and myth-busting science."

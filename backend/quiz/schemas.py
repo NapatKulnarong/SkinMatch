@@ -46,6 +46,7 @@ class ReviewCreateIn(Schema):
     rating: Optional[int] = None
     comment: str
     is_public: Optional[bool] = True
+    anonymous: Optional[bool] = False
 
     @field_validator("rating")
     @classmethod
@@ -75,6 +76,7 @@ class ReviewOut(Schema):
     comment: str
     is_public: bool
     is_owner: bool
+    is_anonymous: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -216,6 +218,33 @@ class ProductDetailOut(Schema):
     affiliate_url: Optional[str] = None
 
 
+class SkincareProductSummaryOut(Schema):
+    product_id: uuid.UUID
+    slug: str
+    brand: str
+    product_name: str
+    category: str
+    category_label: Optional[str] = None
+    summary: Optional[str] = None
+    hero_ingredients: List[str] = Field(default_factory=list)
+    price: Optional[float] = None
+    currency: str
+    average_rating: Optional[float] = None
+    review_count: int = 0
+    image_url: Optional[str] = None
+    product_url: Optional[str] = None
+
+
+class ProductSuggestionResponse(Schema):
+    query: str
+    suggestions: List[SkincareProductSummaryOut]
+
+
+class ProductSearchOut(Schema):
+    query: str
+    results: List[SkincareProductSummaryOut]
+
+
 class IngredientSummaryOut(Schema):
     key: str
     common_name: str
@@ -227,6 +256,12 @@ class IngredientSummaryOut(Schema):
     product_count: int = 0
     popular_categories: List[str] = Field(default_factory=list)
     top_concerns: List[str] = Field(default_factory=list)
+
+
+class IngredientBenefitOut(Schema):
+    ingredient: str
+    benefit: Optional[str] = None
+    source: str
 
 
 class IngredientProductOut(Schema):

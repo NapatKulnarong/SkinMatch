@@ -172,7 +172,7 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
                 key={topic.slug}
                 href={`/facts/${topic.slug}`}
                 aria-label={`Read about ${topic.title}`}
-                className={`group relative flex flex-none snap-start w-[255px] lg:w-[360px] flex-col overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette}
+                className={`mt-1 group relative flex flex-none snap-start w-[255px] lg:w-[360px] flex-col overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette}
                             shadow-none sm:min-w-0 sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
               >
                 {/* Image header with fade */}
