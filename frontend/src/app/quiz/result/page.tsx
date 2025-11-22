@@ -13,7 +13,7 @@ import { buildFeedbackMetadata } from "@/lib/feedback";
 import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
-import { BeakerIcon, UserIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { BeakerIcon, UserIcon, BookOpenIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -329,13 +329,13 @@ export default function QuizResultPage() {
         <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
           <section className="space-y-8">
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <div className="inline-flex gap-2 text-2xl text-[#35574a] items-center">
+              <div className="mb-4 inline-flex gap-2 text-2xl text-[#3C3D37] items-center">
                 <UserIcon className="w-8 h-8" aria-hidden />
-                <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Your Skin Profile</h2>
+                <h2 className="text-2xl font-bold">Your Skin Profile</h2>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {profileItems.map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-black/60 bg-white/80 px-4 py-3">
+                  <div key={item.label} className="rounded-2xl border border-2 border-dashed border-black/50 bg-white/80 px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#767394]/80 font-semibold">
                       {item.label}
                     </p>
@@ -389,7 +389,11 @@ export default function QuizResultPage() {
             
 
             <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-              <h2 className="text-2xl font-bold text-[#70410f]">Use with caution</h2>
+              <div className="-ml-1 mb-4 inline-flex gap-2 text-2xl text-[#70410f] items-center">
+                <ExclamationTriangleIcon className="w-8 h-8" aria-hidden />
+                <h2 className="font-bold">Use with caution</h2>
+              </div>
+              
               {guidance.avoid.length ? (
                 <ul className="space-y-4">
                   {guidance.avoid.map((item) => (

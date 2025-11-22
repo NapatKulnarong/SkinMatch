@@ -50,7 +50,7 @@ export default function QuizLoadingPage() {
     <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
       <section className="w-full max-w-[1200px] px-4">
         <div className="relative rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#D9CAB3] to-[#C5A880]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#ebe1d4] to-[#d7be9e]" />
 
           <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 z-20">
             <div className="pointer-events-auto">
