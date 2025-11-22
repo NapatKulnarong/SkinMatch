@@ -153,6 +153,7 @@ def notify_new_skin_fact_topic(sender, instance: SkinFactTopic, created: bool, *
             unsubscribe_url,
         )
         try:
+            logger.info(f"Attempting to send Skin Fact announcement email to {email}")
             send_mail(
                 subject=subject,
                 message=plain_message,
@@ -161,5 +162,7 @@ def notify_new_skin_fact_topic(sender, instance: SkinFactTopic, created: bool, *
                 html_message=html_message,
                 fail_silently=False,
             )
+            logger.info(f"Skin Fact announcement email sent successfully to {email}")
         except Exception as exc:
             logger.warning("Unable to send Skin Fact announcement to %s: %s", email, exc)
+            logger.exception("Full exception details for email send failure")

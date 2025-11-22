@@ -361,13 +361,23 @@ EMAIL_BACKEND = os.getenv(
 )
 
 if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
-    EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
-    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
+    # Gmail requires TLS on port 587
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True) if EMAIL_PORT == 587 else env_bool("EMAIL_USE_TLS", False)
     EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
-    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "0")) or None
+    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10")) or 10  # Default 10 seconds timeout
+    
+    # Log email configuration (without password)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(
+        f"Email backend configured: SMTP {EMAIL_HOST}:{EMAIL_PORT}, "
+        f"TLS={EMAIL_USE_TLS}, SSL={EMAIL_USE_SSL}, "
+        f"User={'*' * len(EMAIL_HOST_USER) if EMAIL_HOST_USER else 'not set'}"
+    )
 
 # --- JWT config ---
 from datetime import timedelta

@@ -621,9 +621,11 @@ def send_terms_email(request, payload: SendTermsEmailIn):
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
 
     try:
-        send_mail(subject, payload.terms_body, from_email, [payload.email])
-    except Exception:
-        logger.exception("Failed to send terms email to %s", payload.email)
+        logger.info(f"Attempting to send terms email to {payload.email}")
+        send_mail(subject, payload.terms_body, from_email, [payload.email], fail_silently=False)
+        logger.info(f"Terms email sent successfully to {payload.email}")
+    except Exception as e:
+        logger.exception("Failed to send terms email to %s: %s", payload.email, str(e))
         raise HttpError(500, "We couldn't send the terms right now. Please try again later.")
 
     return {"ok": True}
@@ -657,9 +659,21 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "SkinMatch <no-reply@skinmatch.local>")
 
     try:
-        send_mail(subject, message, from_email, [str(payload.email)])
-    except Exception:
-        logger.exception("Failed to send password reset email to %s", payload.email)
+        logger.info(f"Attempting to send password reset email to {payload.email}")
+        send_mail(subject, message, from_email, [str(payload.email)], fail_silently=False)
+        logger.info(f"Password reset email sent successfully to {payload.email}")
+    except Exception as e:
+        logger.exception("Failed to send password reset email to %s: %s", payload.email, str(e))
+        # Log email backend configuration for debugging
+        email_backend = getattr(settings, "EMAIL_BACKEND", "not set")
+        logger.error(f"Email backend: {email_backend}")
+        if email_backend == "django.core.mail.backends.smtp.EmailBackend":
+            logger.error(
+                f"SMTP config: host={getattr(settings, 'EMAIL_HOST', 'not set')}, "
+                f"port={getattr(settings, 'EMAIL_PORT', 'not set')}, "
+                f"use_tls={getattr(settings, 'EMAIL_USE_TLS', 'not set')}, "
+                f"user={'set' if getattr(settings, 'EMAIL_HOST_USER', '') else 'not set'}"
+            )
         raise HttpError(500, "We couldn't send the reset link. Please try again later.")
 
     return {"ok": True}

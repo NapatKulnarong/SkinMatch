@@ -32,9 +32,9 @@ python manage.py collectstatic --noinput --clear || echo "Warning: collectstatic
 # -------------------------
 # Optional seeding controls
 # -------------------------
-RUN_SEED="${RUN_SEED:-true}"            # set true only when you want seeding
+RUN_SEED="${RUN_SEED:-false}"            # set true only when you want seeding
 SEED_SAMPLE="${SEED_SAMPLE:-false}"      # set true if you want sample catalog reset
-SEED_SKINFACTS="${SEED_SKINFACTS:-true }" # set true if you want SkinFacts reseed
+SEED_SKINFACTS="${SEED_SKINFACTS:-false }" # set true if you want SkinFacts reseed
 
 if [ "$SEED_SAMPLE" = "true" ]; then
   echo "📦 Loading sample catalog data (ingredients/products)..."

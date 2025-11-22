@@ -88,6 +88,7 @@ export function SkincareProductSummaryCard({
             alt={`${product.brand} ${product.productName}`}
             width={400}
             height={400}
+            unoptimized={product.imageUrl?.startsWith("http")}
             className={clsx("w-full object-cover", isHorizontal ? "h-44 sm:h-full" : "h-40 sm:h-48")}
           />
         ) : (

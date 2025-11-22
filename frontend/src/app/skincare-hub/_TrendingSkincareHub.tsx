@@ -159,6 +159,8 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
                     src={image}
                     alt={item.heroImageAlt ?? item.title}
                     fill
+                    priority={index < 2}
+                    unoptimized={image.startsWith("http")}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 320px"
                   />

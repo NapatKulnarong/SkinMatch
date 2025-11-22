@@ -190,6 +190,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   alt={`${product.brand} ${product.productName}`}
                   width={600}
                   height={600}
+                  priority
+                  unoptimized={product.imageUrl.startsWith("http")}
                   className="h-full w-full max-h-[200px] md:max-h-[340px] lg:max-h-[320px] object-contain bg-white"
                 />
               ) : (

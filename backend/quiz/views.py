@@ -1232,9 +1232,11 @@ def email_summary(request, payload: EmailSummaryIn):
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
 
     try:
-        send_mail(subject, message, from_email, [target_email])
-    except Exception:
-        logger.exception("Failed to send SkinMatch summary email to %s", target_email)
+        logger.info(f"Attempting to send quiz summary email to {target_email}")
+        send_mail(subject, message, from_email, [target_email], fail_silently=False)
+        logger.info(f"Quiz summary email sent successfully to {target_email}")
+    except Exception as e:
+        logger.exception("Failed to send SkinMatch summary email to %s: %s", target_email, str(e))
         raise HttpError(500, "We couldn't send the email right now. Please try again later.")
 
     return EmailSummaryAck(ok=True)
