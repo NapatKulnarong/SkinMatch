@@ -94,21 +94,38 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    git clone https://github.com/NapatKulnarong/SkinMatch.git
    ```
 2. **Download Environment File**
-   download .env.example*
+   download .env.example
+   macOS / Linux
    ```bash
    cp .env.example .env
-   cd backend
-   cp .env.example .env
-   cd ..
-   cd frontend
-   cp .env.example .env
-   cd ..
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
    ```
+   Windows (PowerShell / CMD)
+   ```bash
+   copy .env.example .env
+   copy backend\.env.example backend\.env
+   copy frontend\.env.example frontend\.env
+   ```
+
 3. **Setup Virtual Environment**
+   macOS / Linux
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    pip install -r backend/requirements.txt
+   ```
+   Windows (PowerShell / CMD)
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r backend\requirements.txt
+   ```
+   Windows (Git Bash)
+   ```bash
+   python -m venv venv
+   source venv/Scripts/activate
+   pip install -r backend/requirements.tx
    ```
 
 4. **Setup Environment Secret Keys**
@@ -176,7 +193,6 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    python manage.py load_sample --reset
    python manage.py import_skinfact_seed --reset --media-dir=../data/skin_facts_media
    python manage.py seed_demo_users
-   cd ..
    ```
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
@@ -193,10 +209,11 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
 
 6. **Run Everything with Docker**
    ```bash
+   cd ..
    docker-compose up --build
    ```
 
-7. **Verify everything is running**
+ึึ7. **Verify everything is running**
    Backend API: http://localhost:8000
    Frontend: http://localhost:3000
 
