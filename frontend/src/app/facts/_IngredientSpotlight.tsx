@@ -108,6 +108,8 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
                           src={image}
                           alt={topic.heroImageAlt ?? topic.title}
                           fill
+                          priority={index < 2}
+                          unoptimized={image.startsWith("http")}
                           className="object-cover"
                           sizes="(max-width: 768px) 60vw, 320px"
                         />

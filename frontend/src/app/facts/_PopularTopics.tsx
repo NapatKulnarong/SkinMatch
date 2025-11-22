@@ -85,6 +85,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
               alt={current.heroImageAlt ?? current.title}
               fill
               priority
+              unoptimized={heroImage.startsWith("http")}
               className="object-cover w-full h-full"
               sizes="(max-width: 768px) 100vw, 1200px"
             />
@@ -137,6 +138,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
                       alt={topic.heroImageAlt ?? topic.title}
                       width={56}
                       height={56}
+                      unoptimized={image.startsWith("http")}
                       className="h-full w-full object-cover"
                     />
                   </span>

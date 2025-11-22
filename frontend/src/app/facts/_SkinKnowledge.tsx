@@ -181,7 +181,8 @@ export default function SkinKnowledge({ sectionId }: SkinKnowledgeProps) {
                     src={image}
                     alt={topic.heroImageAlt ?? topic.title}
                     fill
-                    priority={false}
+                    priority={index < 2}
+                    unoptimized={image.startsWith("http")}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 400px"
                   />

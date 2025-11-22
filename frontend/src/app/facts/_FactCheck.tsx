@@ -165,6 +165,8 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
                       src={image}
                       alt={topic.heroImageAlt ?? topic.title}
                       fill
+                      priority={false}
+                      unoptimized={image.startsWith("http")}
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 320px"
                     />

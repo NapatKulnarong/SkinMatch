@@ -165,6 +165,8 @@ export default function TrendingSkincare({ sectionId }: TrendingSkincareProps) {
                       src={image}
                       alt={item.heroImageAlt ?? item.title}
                       fill
+                      priority={index < 2}
+                      unoptimized={image.startsWith("http")}
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 320px"
                     />
