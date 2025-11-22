@@ -73,8 +73,9 @@ function FigureImage({ src, alt }: { src: string; alt: string }) {
           // you can tune these base dimensions; they just need to be defined
           width={800}
           height={600}
-          className="h-auto w-full object-contain"
           priority
+          unoptimized={src.startsWith("http")}
+          className="h-auto w-full object-contain"
         />
       </div>
 

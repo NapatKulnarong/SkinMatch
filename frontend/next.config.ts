@@ -108,6 +108,9 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+    // Disable image optimization for external images to avoid domain whitelist issues
+    // Images with unoptimized prop will bypass optimization anyway
+    unoptimized: false,
   },
   async rewrites() {
     const target = resolveBackendTarget();

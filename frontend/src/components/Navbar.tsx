@@ -260,10 +260,12 @@ export default function Navbar() {
           aria-label={loginAriaLabel}
           className="order-3 hidden h-12 w-12 sm:h-[3.5rem] sm:w-[3.5rem] flex-shrink-0 sm:block"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={avatarError ? "/default-profile.png" : avatarSrc}
             alt="Profile avatar"
+            width={56}
+            height={56}
+            unoptimized={avatarSrc.startsWith("http")}
             className={`h-full w-full rounded-full border-2 border-black bg-[#e9e3eb] object-cover ${
               isActive(loginHref) ? "shadow-[0_0_0_2px_#c7b6ea]" : ""
             }`}

@@ -32,12 +32,13 @@ export default function ArticleBlock({
               alt={block.imageAlt ?? "Content image"}
               width={800}
               height={600}
+              priority
+              unoptimized={block.imageUrl.startsWith("http")}
               className="
                 w-full
                 h-auto
                 object-contain
               "
-              priority
             />
           </div>
 
