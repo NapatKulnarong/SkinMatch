@@ -100,7 +100,7 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
                 return (
                   <article
                     key={topic.slug}
-                    className={`relative min-w-[260px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette} shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
+                    className={`mt-1 relative min-w-[260px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-gradient-to-br ${palette} shadow-[4px_4px_0_rgba(0,0,0,0.35)] sm:shadow-[6px_8px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1`}
                   >
                     <Link href={`/facts/${topic.slug}`} className="flex h-full flex-col">
                       <div className="relative h-36 overflow-hidden">
