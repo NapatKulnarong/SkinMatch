@@ -233,6 +233,7 @@ SITE_ID = 1
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",          
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files in production
     "core.middleware.SecurityHeadersMiddleware",
     "core.middleware.SensitiveFileProtectionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -338,7 +339,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 FACT_IMAGE_MAX_UPLOAD_MB = int(os.getenv("FACT_IMAGE_MAX_UPLOAD_MB", "5"))
 
 # WhiteNoise staticfiles storage (prod only)
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+WHITENOISE_AUTOREFRESH = env_bool("WHITENOISE_AUTOREFRESH", False)  # Set to True only in development
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

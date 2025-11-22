@@ -3,6 +3,7 @@ FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
+VOLUME /app/media
 
 # Install system dependencies (for psycopg2, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \

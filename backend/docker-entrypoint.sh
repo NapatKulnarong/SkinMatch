@@ -26,10 +26,13 @@ PY
 echo "🔄 Running migrations..."
 python manage.py migrate --noinput
 
+echo "📦 Collecting static files..."
+python manage.py collectstatic --noinput --clear || echo "Warning: collectstatic failed"
+
 # -------------------------
 # Optional seeding controls
 # -------------------------
-RUN_SEED="${RUN_SEED:-false}"            # set true only when you want seeding
+RUN_SEED="${RUN_SEED:-true}"            # set true only when you want seeding
 SEED_SAMPLE="${SEED_SAMPLE:-false}"      # set true if you want sample catalog reset
 SEED_SKINFACTS="${SEED_SKINFACTS:-true }" # set true if you want SkinFacts reseed
 
