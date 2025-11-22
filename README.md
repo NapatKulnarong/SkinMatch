@@ -93,6 +93,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    ```bash
    git clone https://github.com/NapatKulnarong/SkinMatch.git
    ```
+   
 2. **Download Environment File**
    download .env.example
    macOS / Linux
@@ -109,11 +110,11 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    ```
 
 3. **Setup Virtual Environment**
+   read setup instruction 
    macOS / Linux
    ```bash
    python3 -m venv venv
    source venv/bin/activate
-   pip install -r backend/requirements.txt
    ```
    Windows (PowerShell / CMD)
    ```bash
@@ -180,14 +181,19 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    NEXT_PUBLIC_GOOGLE_CLIENT_ID
    Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
 
-5. **Load Sample Data**
+5. **Run Everything with Docker**
+   ```bash
+   docker-compose up --build
+   ```
+
+6. **Load Sample Data**
    ```bash
    cd backend
    python manage.py load_sample --reset
    python manage.py import_skinfact_seed --reset --media-dir=../data/skin_facts_media
    python manage.py seed_demo_users
    ```
-   
+
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
@@ -201,13 +207,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    | Member | **Testuser003**     | **FreshPass#123**   |
 
 
-6. **Run Everything with Docker**
-   ```bash
-   cd ..
-   docker-compose up --build
-   ```
-
-ึึ7. **Verify everything is running**
+7. **Verify everything is running**
    Backend API: http://localhost:8000
    Frontend: http://localhost:3000
 
