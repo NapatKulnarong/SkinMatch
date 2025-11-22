@@ -22,7 +22,7 @@ def logout_view(request):
 
 class GoogleOAuthCallbackView(View):
     token_endpoint = "https://oauth2.googleapis.com/token"
-    frontend_origin = getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+    frontend_origin = getattr(settings, "FRONTEND_ORIGIN")
     account_redirect = getattr(settings, "FRONTEND_ACCOUNT_URL", f"{frontend_origin}/account")
     login_redirect = getattr(settings, "FRONTEND_LOGIN_URL", f"{frontend_origin}/login")
 

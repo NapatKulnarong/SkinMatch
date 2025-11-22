@@ -285,7 +285,7 @@ def _get_newsletter_welcome_email_html(email: str = "") -> str:
     site_url = (
         getattr(settings, "SITE_URL", None) 
         or os.environ.get("SITE_URL") 
-        or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+        or getattr(settings, "FRONTEND_ORIGIN")
     ).rstrip("/")
     unsubscribe_url = f"{site_url}/newsletter/unsubscribe"
     if email:
@@ -638,7 +638,7 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
 
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    frontend_origin = getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
+    frontend_origin = getattr(settings, "FRONTEND_ORIGIN").rstrip("/")
     reset_url = f"{frontend_origin}/reset-password?uid={uid}&token={token}"
 
     subject = "SkinMatch Password Reset"
@@ -864,10 +864,20 @@ def _absolute_avatar_url(raw_url: Optional[str], request) -> Optional[str]:
     url = raw_url.strip()
     if not url:
         return None
+    
+    # Get backend URL from settings or environment
+    backend_url = (
+        getattr(settings, "BACKEND_URL", None)
+        or os.getenv("BACKEND_URL")
+        or os.getenv("NEXT_PUBLIC_BACKEND_URL")
+        or "http://localhost:8000"
+    ).rstrip("/")
+    
     if url.startswith(("http://", "https://")):
         # Already absolute - fix backend hostname if present
-        url = url.replace("http://backend:8000", "http://localhost:8000")
-        url = url.replace("http://backend", "http://localhost:8000")
+        url = url.replace("http://backend:8000", backend_url)
+        url = url.replace("http://backend", backend_url)
+        url = url.replace("https://backend", backend_url)
         return url
     
     if url.startswith("/"):
@@ -878,8 +888,9 @@ def _absolute_avatar_url(raw_url: Optional[str], request) -> Optional[str]:
     
     # Fix the hostname for browser access
     if isinstance(absolute, str):
-        absolute = absolute.replace("http://backend:8000", "http://localhost:8000")
-        absolute = absolute.replace("http://backend", "http://localhost:8000")
+        absolute = absolute.replace("http://backend:8000", backend_url)
+        absolute = absolute.replace("http://backend", backend_url)
+        absolute = absolute.replace("https://backend", backend_url)
     
     return absolute
 

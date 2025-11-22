@@ -29,9 +29,9 @@ python manage.py migrate --noinput
 # -------------------------
 # Optional seeding controls
 # -------------------------
-RUN_SEED="${RUN_SEED:-true}"            # set true only when you want seeding
-SEED_SAMPLE="${SEED_SAMPLE:-true}"      # set true if you want sample catalog reset
-SEED_SKINFACTS="${SEED_SKINFACTS:-true}"# set true if you want SkinFacts reseed
+RUN_SEED="${RUN_SEED:-false}"            # set true only when you want seeding
+SEED_SAMPLE="${SEED_SAMPLE:-false}"      # set true if you want sample catalog reset
+SEED_SKINFACTS="${SEED_SKINFACTS:-true }" # set true if you want SkinFacts reseed
 
 if [ "$SEED_SAMPLE" = "true" ]; then
   echo "📦 Loading sample catalog data (ingredients/products)..."
@@ -55,19 +55,9 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apidemo.settings")
 django.setup()
 
-from core.models import SkinFact  # <- ถ้าคลาสคุณชื่อไม่ตรง เปลี่ยนตรงนี้
-
-already = SkinFact.objects.exists()
-reset = os.getenv("SEED_SKINFACTS", "false").lower() == "true"
-
-print(f"already_seeded={already}, reset_requested={reset}")
-
-if already and not reset:
-    print("⏭️  SkinFacts already exist; skipping seed.")
-    raise SystemExit(0)
+from core.models import SkinFactTopic
 PY
 
-  # รัน seed จริง (ไม่ใช้ --reset ค่า default)
   python manage.py import_skinfact_seed \
     --media-dir="data/skin_facts_media" \
     || echo "Skipping SkinFacts seed (missing file/command)"
