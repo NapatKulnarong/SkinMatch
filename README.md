@@ -83,7 +83,7 @@ npm run test:watch
 npm run test:e2e
 ```
 
-Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./TESTING.md) for complete documentation on running tests, writing new tests, and troubleshooting.
+Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./docs/TESTING.md) for complete documentation on running tests, writing new tests, and troubleshooting.
 
 ---
 
@@ -212,7 +212,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
 
 ## 🔐 Security
 
-Start with the operational checklist in [SECURITY.md](./SECURITY.md) to enable HTTPS, MFA for admins, routine backups, and basic monitoring. Production deployments must override the new `DJANGO_SECURE_*` and cookie env vars documented there so Django enforces TLS-only cookies and HSTS.
+Start with the operational checklist in [SECURITY.md](./docs/SECURITY.md) to enable HTTPS, MFA for admins, routine backups, and basic monitoring. Production deployments must override the new `DJANGO_SECURE_*` and cookie env vars documented there so Django enforces TLS-only cookies and HSTS.
 
 - Use the sample `backend/.env.production.example` (copy it to your secrets store) and run commands with `DJANGO_ENV=production` (for example, `DJANGO_ENV=production python manage.py check --deploy`) to load hardened defaults and catch misconfigurations before deploying.
-- For database-specific hardening (prepared statements, least-privilege roles, encryption, audit logging), follow [`docs/database-security.md`](./docs/database-security.md).
+- For database-specific hardening (prepared statements, least-privilege roles, encryption, audit logging), follow [`docs/database-security.md`](./docs/DATABASE_SECURITY.md).
