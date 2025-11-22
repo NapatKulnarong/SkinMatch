@@ -34,7 +34,7 @@ const SECTIONS: TermsSection[] = [
     title: "2. Eligibility & Account Responsibilities",
     paragraphs: [
       {
-        text: "SkinMatch is intended for individuals who are at least 16 years old. When you create an account, you confirm that the information you provide is accurate, complete, and kept current.",
+        text: "SkinMatch is intended for individuals who are at least 13 years old. When you create an account, you confirm that the information you provide is accurate, complete, and kept current.",
       },
       {
         text: "You are responsible for safeguarding your login credentials and notifying us immediately of any unauthorised use of your account.",
