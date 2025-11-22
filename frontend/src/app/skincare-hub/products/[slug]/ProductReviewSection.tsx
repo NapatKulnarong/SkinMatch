@@ -394,7 +394,7 @@ export function ProductReviewSection({ productId, productName }: ProductReviewSe
             <div className="flex justify-center">
               <Link
                 href={loginHref}
-                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#bbd0b7] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 whitespace-nowrap"
+                className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-[#a7c8e8] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 whitespace-nowrap"
               >
                 Sign in
               </Link>

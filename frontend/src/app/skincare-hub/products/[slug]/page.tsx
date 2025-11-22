@@ -260,8 +260,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {heroIngredients.length > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-black text-[#1f2d26]">Hero ingredients</h2>
-                  <span className="mt-1 text-xs font-semibold tracking-[0.2em] text-[#1f2d26]/50">
+                  <h2 className="text-md md:text-xl font-black text-[#1f2d26]/">Hero ingredients</h2>
+                  <span className="mt-1 text-xs font-semibold tracking-[0.1em] text-[#1f2d26]/50">
                     powered by Gemini AI
                   </span>
                 </div>
@@ -294,9 +294,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <div className="rounded-2xl border border-black/20 bg-[#e8f4ff] p-5">
                 <span className="inline-flex gap-2 text-xl text-[#1f2d26]">
                   <span><SparklesIcon className="w-6 h-6" /></span>
-                  <span className="text-xl font-bold">Smart Review</span>
+                  <span className="text-base md:text-lg font-bold">Smart Review</span>
                 </span>
-                <div className="mt-3 rounded-2xl border border-black/20 border-dashed bg-white p-4">
+                <div className="mt-1 lg:mt-3 rounded-2xl border border-black/20 border-dashed bg-white p-4">
                   <ul className="space-y-3">
                     <li className="text-sm text-[#1f2d26]/80 leading-relaxed">
                       {product.summary
@@ -311,7 +311,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     ))}
                   </ul>
                 </div>
-                <p className="mt-3 mr-1 text-xs text-[#1f2d26]/60 text-right">powered by Gemini AI</p>
+                <p className="mt-3 mr-1 text-xs font-semibold tracking-[0.1em] text-[#1f2d26]/50 text-right">powered by Gemini AI</p>
               </div>
             </div>
           </div>
