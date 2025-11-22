@@ -235,7 +235,7 @@ export default function Navbar() {
       </div>
 
       <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-        <div className="order-1 flex w-full items-center justify-between gap-1 rounded-full border-2 border-black bg-white px-2 py-1 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:h-14 sm:w-auto sm:gap-2 sm:px-4 sm:py-3">
+        <div className="order-1 flex w-full items-center justify-between gap-1 rounded-[28px] border-2 border-black bg-white px-2 py-1 shadow-[2px_3px_0px_rgba(0,0,0,0.3)] sm:h-14 sm:w-auto sm:gap-2 sm:px-4 sm:py-3">
           {links.map(({ href, label, color }) => (
             <Link
               key={href}
