@@ -167,7 +167,10 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
 
 3. **Load Sample Data**
    ```bash
+   cd backend
    python manage.py load_sample --reset
+   python manage.py import_skinfact_seed --reset --media-dir=../data/skin_facts_media
+   python manage.py seed_demo_users
    ```
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
