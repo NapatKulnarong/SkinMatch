@@ -160,6 +160,10 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./T
    PGADMIN_PASSWORD
    Password for logging into pgAdmin web UI.
    Source: Chosen during pgAdmin setup.
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID
+   OAuth Client ID used by the frontend to initiate Google Sign-In.
+   This value must match the OAuth Client created in Google Cloud Console.
+   Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
 
 3. **Load Sample Data**
    ```bash
