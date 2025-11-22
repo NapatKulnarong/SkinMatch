@@ -48,7 +48,7 @@ export default function QuizLoadingPage() {
 
   return (
     <main className="min-h-screen bg-[#f8cc8c] flex items-center justify-center">
-      <section className="w-full max-w-[1200px] px-4">
+      <section className="w-full max-w-[1200px] px-4 pt-24 md:pt-0">
         <div className="relative rounded-3xl border-2 border-black shadow-[6px_8px_0_rgba(0,0,0,0.35)] overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-[#ebe1d4] to-[#d7be9e]" />
 

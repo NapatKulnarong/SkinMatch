@@ -3403,7 +3403,7 @@ def _ensure_reference_data():
                 # Check if another ingredient with this common_name already exists
                 existing_with_name = Ingredient.objects.filter(common_name=common_name).exclude(pk=ingredient.pk).first()
                 if not existing_with_name:
-                    updates["common_name"] = common_name
+                updates["common_name"] = common_name
             if ingredient.benefits != benefits:
                 updates["benefits"] = benefits
             notes = INGREDIENT_NOTES.get(key, {})
@@ -3422,16 +3422,16 @@ def _ensure_reference_data():
                     Ingredient.objects.filter(pk=existing_by_name.pk).update(key=key)
                     existing_by_name.refresh_from_db()
                 ingredient = existing_by_name
-            else:
-                notes = INGREDIENT_NOTES.get(key, {})
-                ingredient = Ingredient.objects.create(
-                    key=key,
-                    common_name=common_name,
-                    benefits=benefits,
-                    helps_with=notes.get("helps_with", ""),
-                    avoid_with=notes.get("avoid_with", ""),
-                    side_effects=notes.get("side_effects", ""),
-                )
+        else:
+            notes = INGREDIENT_NOTES.get(key, {})
+            ingredient = Ingredient.objects.create(
+                key=key,
+                common_name=common_name,
+                benefits=benefits,
+                helps_with=notes.get("helps_with", ""),
+                avoid_with=notes.get("avoid_with", ""),
+                side_effects=notes.get("side_effects", ""),
+            )
         ingredient_map[key] = ingredient
 
     return concern_map, skin_type_map, restriction_map, ingredient_map

@@ -14,6 +14,7 @@ import { buildGuidance } from "./_guidance";
 import { useQuiz } from "../_QuizContext";
 import type { QuizAnswer, QuizAnswerKey } from "../_QuizContext";
 import { BeakerIcon, UserIcon, BookOpenIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleOvalLeftEllipsisIcon, StarIcon } from "@heroicons/react/24/solid";
 
 const MATCH_INGREDIENT_REASON =
   "Frequently appears across the product matches prioritised for your skin profile.";
@@ -310,53 +311,53 @@ export default function QuizResultPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F5EFE6] flex items-start justify-center pt-36 pb-20">
-      <section className="mx-auto lg:w-[85rem] px-32 space-y-12" style={{ maxWidth: sectionMaxWidth }}>
-        <header className="text-left space-y-4">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#3C3D37] drop-shadow-[0_2px_0_rgba(0,0,0,0.15)]">
+    <main className="min-h-screen bg-[#F5EFE6] flex items-start justify-center pt-38 md:pt-28 pb-20">
+      <section className="mx-auto md:w-[90rem] lg:w-[85rem] px-4 sm:px-6 md:px-8 lg:px-32 space-y-6 md:space-y-8 lg:space-y-12" style={{ maxWidth: sectionMaxWidth }}>
+        <header className="text-left space-y-2 md:space-y-3 lg:space-y-4">
+          <h1 className="text-xl md:text-2xl lg:text-3xl sm:text-4xl font-extrabold text-[#3C3D37] drop-shadow-[0_2px_0_rgba(0,0,0,0.15)]">
             Personalised Routine Roadmap
           </h1>
-          <p className="text-base sm:text-lg text-[#3C3D37]/80">
+          <p className="text-sm md:text-base lg:text-base sm:text-lg text-[#3C3D37]/80">
             Here&apos;s a snapshot of your SkinProfile—plus the ingredient insights surfaced by our matcher.
           </p>
           {error && (
-            <p className="text-sm text-[#B9375D]">
+            <p className="text-xs md:text-sm text-[#B9375D]">
               We had trouble fetching the latest recommendations. Your saved guidance is shown below.
             </p>
           )}
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
-          <section className="space-y-8">
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <div className="mb-4 inline-flex gap-2 text-2xl text-[#3C3D37] items-center">
-                <UserIcon className="w-8 h-8" aria-hidden />
-                <h2 className="text-2xl font-bold">Your Skin Profile</h2>
+        <div className="grid gap-4 md:gap-5 lg:gap-8 md:grid-cols-2 lg:grid-cols-[3fr_2fr]">
+          <section className="space-y-4 md:space-y-5 lg:space-y-8">
+            <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-gradient-to-br from-[#f7f3ff] to-[#a7a4d2] p-4 md:p-5 lg:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+              <div className="mb-2 md:mb-3 lg:mb-4 inline-flex gap-1.5 md:gap-2 text-lg md:text-xl lg:text-2xl text-[#3C3D37] items-center">
+                <UserIcon className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" aria-hidden />
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold">Your Skin Profile</h2>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2 md:gap-3 lg:gap-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
                 {profileItems.map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-2 border-dashed border-black/50 bg-white/80 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#767394]/80 font-semibold">
+                  <div key={item.label} className="rounded-xl md:rounded-2xl border border-2 border-dashed border-black/50 bg-white/80 px-2.5 py-2 md:px-3 md:py-2.5 lg:px-4 lg:py-3">
+                    <p className="text-[10px] md:text-[11px] lg:text-xs uppercase tracking-[0.15em] md:tracking-[0.18em] lg:tracking-[0.2em] text-[#767394]/80 font-semibold">
                       {item.label}
                     </p>
-                    <p className="mt-1 text-base font-semibold text-[#3C3D37]">{item.value}</p>
+                    <p className="mt-0.5 md:mt-1 text-xs md:text-sm lg:text-base font-semibold text-[#3C3D37]">{item.value}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-            <div className="inline-flex gap-2 text-2xl text-[#33574a] font-bold items-center">
-              <BeakerIcon className="relative w-8 h-8" aria-hidden />
-              <h2 className="text-2xl">Ingredients to prioritise</h2>
+            <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A7E399] p-4 md:p-5 lg:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-3 md:space-y-4 lg:space-y-6">
+            <div className="inline-flex gap-1.5 md:gap-2 text-lg md:text-xl lg:text-2xl text-[#33574a] font-bold items-center">
+              <BeakerIcon className="relative w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" aria-hidden />
+              <h2 className="text-lg md:text-xl lg:text-2xl">Ingredients to prioritise</h2>
             </div>
-              <ul className="space-y-4">
+              <ul className="space-y-2 md:space-y-3 lg:space-y-4">
                 {ingredientHighlights.map((item) => (
-                  <li key={item.ingredient} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#33574a]" aria-hidden />
+                  <li key={item.ingredient} className="flex items-start gap-2 md:gap-2.5 lg:gap-3">
+                    <span className="mt-1 inline-flex h-1.5 w-1.5 md:h-2 md:w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-[#33574a]" aria-hidden />
                     <div>
-                      <p className="font-semibold text-[#1f2d26]">{item.ingredient}</p>
-                      <p className="text-sm text-[#1f2d26]/70">{item.reason}</p>
+                      <p className="text-sm md:text-base lg:text-base font-semibold text-[#1f2d26]">{item.ingredient}</p>
+                      <p className="text-xs md:text-sm text-[#1f2d26]/70">{item.reason}</p>
                     </div>
                   </li>
                 ))}
@@ -364,50 +365,50 @@ export default function QuizResultPage() {
             </div>
           </section>
 
-          <aside className="space-y-8">
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
-              <span className="inline-flex gap-2 text-2xl text-[#33574a]">
-              <span><BookOpenIcon className="w-8 h-8" /></span>
-              <span className="text-2xl font-bold">Strategy Notes</span>
+          <aside className="space-y-4 md:space-y-5 lg:space-y-8">
+            <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#A3CCDA] p-4 md:p-5 lg:p-7 shadow-[6px_8px_0_rgba(0,0,0,0.25)]">
+              <span className="inline-flex gap-1.5 md:gap-2 text-lg md:text-xl lg:text-2xl text-[#33574a]">
+              <span><BookOpenIcon className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" /></span>
+              <span className="text-lg md:text-xl lg:text-2xl font-bold">Strategy Notes</span>
               </span>
-              <div className="mt-2 rounded-2xl border-2 border-black/40 border-dashed bg-white/40 p-4">
-                <ul className="space-y-4">
+              <div className="mt-2 rounded-xl md:rounded-2xl border-2 border-black/40 border-dashed bg-white/40 p-2.5 md:p-3 lg:p-4">
+                <ul className="space-y-2 md:space-y-3 lg:space-y-4">
                   {strategyNotes.map((insight) => (
-                    <li key={insight} className="text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
+                    <li key={insight} className="text-xs md:text-sm text-[#1b2a50]/80 font-medium leading-relaxed">
                       {insight}
                     </li>
                   ))}
                 </ul>
               </div>
               {!strategyNotes.length && (
-                <p className="text-sm text-[#1b2a50]/70">
+                <p className="text-xs md:text-sm text-[#1b2a50]/70">
                   Keep routines gentle and consistent—your skin will reward the steady care.
                 </p>
               )}
-              <p className="mt-3 mr-1 text-sm text-[#1b2a50] text-right">powered by Gemini AI</p>
+              <p className="mt-2 md:mt-2.5 lg:mt-3 mr-1 text-[10px] md:text-xs lg:text-sm text-[#1b2a50] text-right">powered by Gemini AI</p>
             </div>
             
 
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-6">
-              <div className="-ml-1 mb-4 inline-flex gap-2 text-2xl text-[#70410f] items-center">
-                <ExclamationTriangleIcon className="w-8 h-8" aria-hidden />
-                <h2 className="font-bold">Use with caution</h2>
+            <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-gradient-to-br from-[#fffbde] to-[#ffaf6f] p-4 md:p-5 lg:p-8 shadow-[6px_8px_0_rgba(0,0,0,0.25)] space-y-3 md:space-y-4 lg:space-y-6">
+              <div className="-ml-1 mb-2 md:mb-3 lg:mb-4 inline-flex gap-1.5 md:gap-2 text-lg md:text-xl lg:text-2xl text-[#70410f] items-center">
+                <ExclamationTriangleIcon className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" aria-hidden />
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold">Use with caution</h2>
               </div>
               
               {guidance.avoid.length ? (
-                <ul className="space-y-4">
+                <ul className="space-y-2 md:space-y-3 lg:space-y-4">
                   {guidance.avoid.map((item) => (
-                    <li key={item.ingredient} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#b45a1b]" aria-hidden />
+                    <li key={item.ingredient} className="flex items-start gap-2 md:gap-2.5 lg:gap-3">
+                      <span className="mt-1 inline-flex h-1.5 w-1.5 md:h-2 md:w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-[#b45a1b]" aria-hidden />
                       <div>
-                        <p className="font-semibold text-[#5f3111]">{item.ingredient}</p>
-                        <p className="text-sm text-[#5f3111]/75">{item.reason}</p>
+                        <p className="text-sm md:text-base font-semibold text-[#5f3111]">{item.ingredient}</p>
+                        <p className="text-xs md:text-sm text-[#5f3111]/75">{item.reason}</p>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-[#5f3111]/75">
+                <p className="text-xs md:text-sm text-[#5f3111]/75">
                   Nothing major to avoid based on your answers—maintain balance and listen to your skin.
                 </p>
               )}
@@ -416,60 +417,60 @@ export default function QuizResultPage() {
           </aside>
 
           {/* PRODUCT MATCHES SECTION - MOVED UP */}
-            <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#f0e7ff] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
-            <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Product matches</h2>
+            <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-[#ebe1d4] p-4 md:p-5 lg:p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] md:col-span-2 lg:col-span-2">
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-[#3C3D37] mb-2 md:mb-3 lg:mb-4">Product matches</h2>
             {renderRecommendations(recommendations, requiresAuth, handleShowProductDetails, wishlistedIds, setWishlistedIds)}
           </div>
 
           {/* EMAIL & RETAKE QUIZ ROW */}
-          <div className="rounded-3xl border-2 border-black bg-white/80 p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-4">
-            <h3 className="text-lg font-bold text-[#1b2a50]">Email this summary</h3>
-            <p className="text-sm text-[#1b2a50]/70">
+          <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-white/80 p-4 md:p-5 lg:p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] space-y-2 md:space-y-3 lg:space-y-4">
+            <h3 className="text-base md:text-lg font-bold text-[#1b2a50]">Email this summary</h3>
+            <p className="text-xs md:text-sm text-[#1b2a50]/70">
               Get a copy of your SkinProfile delivered straight to your inbox.
             </p>
-            <div className="space-y-3 text-left">
+            <div className="space-y-2 md:space-y-2.5 lg:space-y-3 text-left">
               <input
                 type="email"
                 value={emailInput}
                 onChange={(event) => setEmailInput(event.target.value)}
                 placeholder="name@example.com"
-                className="w-full rounded-xl border border-[#1b2a50]/30 bg-white/90 px-4 py-2 text-sm text-[#1b2a50] shadow-[0_3px_0_rgba(0,0,0,0.12)] focus:border-[#1b2a50] focus:outline-none"
+                className="w-full rounded-lg md:rounded-xl border border-[#1b2a50]/30 bg-white/90 px-3 py-1.5 md:px-3.5 md:py-2 lg:px-4 lg:py-2 text-xs md:text-sm text-[#1b2a50] shadow-[0_3px_0_rgba(0,0,0,0.12)] focus:border-[#1b2a50] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleEmailSummary}
                 disabled={emailStatus === "sending" || !result?.sessionId}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-[#1b2a50] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-1.5 md:gap-2 rounded-full border-2 border-black bg-[#1b2a50] px-3 py-1.5 md:px-3.5 md:py-2 lg:px-4 lg:py-2 text-xs md:text-sm font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.25)] md:shadow-[0_5px_0_rgba(0,0,0,0.25)] lg:shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] md:hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] lg:hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {emailStatus === "sending" ? "Sending..." : "Send summary"}
               </button>
               {emailStatus === "success" && emailMessage && (
-                <p className="text-sm font-semibold text-[#1b2a50]">{emailMessage}</p>
+                <p className="text-xs md:text-sm font-semibold text-[#1b2a50]">{emailMessage}</p>
               )}
               {emailStatus === "error" && emailMessage && (
-                <p className="text-sm font-semibold text-[#B9375D]">{emailMessage}</p>
+                <p className="text-xs md:text-sm font-semibold text-[#B9375D]">{emailMessage}</p>
               )}
               {emailStatus === "idle" && !emailMessage && (
-                <p className="text-xs text-[#1b2a50]/60">
+                <p className="text-[10px] md:text-xs text-[#1b2a50]/60">
                   Leave the field blank to use your account email, or enter another address.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-[#fff8e1] to-[#ffe0b2] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col">
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold text-[#3C3D37]">Want to tweak your answers?</h3>
-              <p className="text-sm text-[#3C3D37]/70">
+          <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-gradient-to-br from-[#fff8e1] to-[#ffe0b2] p-4 md:p-5 lg:p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] flex flex-col">
+            <div className="space-y-1.5 md:space-y-2">
+              <h3 className="text-base md:text-lg font-bold text-[#3C3D37]">Want to tweak your answers?</h3>
+              <p className="text-xs md:text-sm text-[#3C3D37]/70">
                 Update your responses to see how your ingredient roadmap evolves.
               </p>
             </div>
             <button
               type="button"
               onClick={handleRetake}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 text-sm font-semibold text-[#3C3D37] shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)] mt-auto"
+              className="inline-flex w-full items-center justify-center gap-1.5 md:gap-2 rounded-full border-2 border-black bg-white px-3 py-1.5 md:px-3.5 md:py-2 lg:px-4 lg:py-2 text-xs md:text-sm font-semibold text-[#3C3D37] shadow-[0_4px_0_rgba(0,0,0,0.25)] md:shadow-[0_5px_0_rgba(0,0,0,0.25)] lg:shadow-[0_6px_0_rgba(0,0,0,0.25)] transition hover:-translate-y-[1px] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] md:hover:shadow-[0_7px_0_rgba(0,0,0,0.25)] lg:hover:shadow-[0_8px_0_rgba(0,0,0,0.25)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.25)] mt-auto"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3.5 w-3.5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Retake the quiz
@@ -477,59 +478,56 @@ export default function QuizResultPage() {
           </div>
 
           {/* FEEDBACK SECTION */}
-          <div className="rounded-3xl border-2 border-black bg-gradient-to-br from-white to-[#ffd4e5] p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] lg:col-span-2">
-            <h2 className="text-2xl font-bold text-[#3C3D37] mb-4">Rate your match experience</h2>
-            
+          <div className="rounded-2xl md:rounded-3xl border-2 border-black bg-white/80 p-4 md:p-5 lg:p-6 shadow-[6px_8px_0_rgba(0,0,0,0.18)] md:col-span-2 lg:col-span-2">
             {feedbackSubmitted ? (
-              <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#A7E399] mb-4">
-                  <svg className="w-8 h-8 text-[#33574a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center py-6 md:py-7 lg:py-8">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full bg-[#A7E399] mb-3 md:mb-3.5 lg:mb-4">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-[#33574a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-lg font-bold text-[#3C3D37]">Thank you for your feedback!</p>
-                <p className="text-sm text-[#3C3D37] text-opacity-70 mt-2">Your input helps us improve our matches.</p>
+                <p className="text-base md:text-lg font-bold text-[#1f2d26]">Thank you for your feedback!</p>
+                <p className="text-xs md:text-sm text-[#1f2d26]/70 mt-1.5 md:mt-2">Your input helps us improve our matches.</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-3 md:space-y-3.5 lg:space-y-4 rounded-xl md:rounded-2xl bg-white/70 p-3 md:p-3.5 lg:p-4">
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5 text-[#1f2d26]" />
+                  <h3 className="text-base md:text-lg font-bold text-[#1f2d26]">Rate your match experience</h3>
+                </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <svg
-                          className={`w-10 h-10 ${
-                            star <= (hoverRating || rating)
-                              ? "text-[#fbbf24] fill-current"
-                              : "text-gray-300"
+                  <p className="text-xs md:text-sm font-semibold text-[#1f2d26]/80">
+                    Optional star rating
+                  </p>
+                  <div className="mt-1.5 md:mt-2 flex gap-1.5 md:gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const value = star;
+                      const isActive = rating >= value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`rounded-full border-2 border-black p-0.5 md:p-1 lg:p-1 transition ${
+                            isActive ? "bg-[#fcd34d]" : "bg-white"
                           }`}
-                          fill={star <= (hoverRating || rating) ? "currentColor" : "none"}
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          onClick={() => setRating(rating === value ? 0 : value)}
+                          aria-label={`${value} star${value > 1 ? "s" : ""}`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                          <StarIcon
+                            className={`h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5 ${
+                              isActive ? "text-black" : "text-[#d1d5db]"
+                            }`}
                           />
-                        </svg>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-3 rounded-2xl border-2 border-black bg-white px-4 py-3 shadow-[2px_3px_0_rgba(0,0,0,0.1)] sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 md:gap-2.5 lg:gap-3 rounded-xl md:rounded-2xl border border-dashed border-black/30 bg-white/60 px-3 py-2 md:px-3.5 md:py-2.5 lg:px-4 lg:py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-[#3C3D37]">Submit feedback anonymously</p>
-                    <p className="text-xs text-[#3C3D37]/70">
-                      Keep your thoughts visible while hiding your name on public testimonials.
+                    <p className="text-xs md:text-sm font-semibold text-[#1f2d26]">Post anonymously</p>
+                    <p className="text-[10px] md:text-xs text-[#1f2d26]/70">
+                      Hide your name on public reviews while keeping feedback visible.
                     </p>
                   </div>
                   <button
@@ -537,46 +535,46 @@ export default function QuizResultPage() {
                     role="switch"
                     aria-checked={anonymizeFeedback}
                     onClick={() => setAnonymizeFeedback((prev) => !prev)}
-                    className={`relative inline-flex h-9 w-16 items-center rounded-full border-2 border-black transition ${
-                      anonymizeFeedback ? "bg-[#B9375D]" : "bg-white"
+                    className={`relative inline-flex h-6 w-12 md:h-7 md:w-14 lg:h-8 lg:w-16 items-center rounded-full border-2 border-black transition ${
+                      anonymizeFeedback ? "bg-[#a8c8e8]" : "bg-[#e8f4ff]"
                     }`}
                   >
                     <span className="sr-only">
                       {anonymizeFeedback ? "Anonymous feedback enabled" : "Anonymous feedback disabled"}
                     </span>
                     <span
-                      className={`absolute left-1 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-transform ${
-                        anonymizeFeedback ? "translate-x-6" : "translate-x-0"
+                      className={`absolute top-1/2 h-4 w-4 md:h-4.5 md:w-4.5 lg:h-5 lg:w-5 -translate-y-1/2 rounded-full border-2 border-black bg-white transition-all ${
+                        anonymizeFeedback ? "right-0.5 md:right-1" : "left-0.5 md:left-1"
                       }`}
                     />
                   </button>
                 </div>
-
                 <div>
-                  <label htmlFor="feedback" className="block text-sm font-semibold text-[#3C3D37] mb-2">
-                    Additional feedback (optional)
+                  <label htmlFor="feedback" className="text-xs md:text-sm font-semibold text-[#1f2d26]/80">
+                    Tell us about your experience
                   </label>
                   <textarea
                     id="feedback"
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Share your thoughts about the matches, ingredients, or overall experience..."
+                    placeholder="Share results, texture notes, how long you used it, etc."
                     rows={4}
-                    className="w-full rounded-2xl border-2 border-black px-4 py-3 text-sm text-[#3C3D37] placeholder-[#3C3D37] placeholder-opacity-40 focus:outline-none focus:ring-2 focus:ring-[#B9375D] shadow-[2px_3px_0_rgba(0,0,0,0.1)]"
+                    className="mt-1.5 md:mt-2 h-28 md:h-28 lg:h-32 w-full rounded-xl md:rounded-2xl border-2 border-black bg-white p-2.5 md:p-3 text-xs md:text-sm text-[#1f2d26] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2d26]"
                   />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleSubmitFeedback}
-                  disabled={rating === 0 || isSubmittingFeedback}
-                  className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_rgba(0,0,0,0.2)]"
-                >
-                  {isSubmittingFeedback ? "Sending..." : "Submit feedback"}
-                </button>
                 {feedbackError ? (
-                  <p className="text-sm font-semibold text-red-600">{feedbackError}</p>
+                  <p className="text-xs md:text-sm font-semibold text-[#b42318]">{feedbackError}</p>
                 ) : null}
+                <div className="flex flex-wrap gap-2 md:gap-2.5 lg:gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSubmitFeedback}
+                    disabled={rating === 0 || isSubmittingFeedback}
+                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-full border-2 border-black bg-[#a8c8e8] px-3 py-1.5 md:px-3.5 md:py-2 lg:px-4 lg:py-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.15em] md:tracking-[0.18em] lg:tracking-[0.2em] text-black shadow-[0_2px_0_rgba(0,0,0,0.3)] md:shadow-[0_2.5px_0_rgba(0,0,0,0.3)] lg:shadow-[0_3px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#999] disabled:text-black/70"
+                  >
+                    {isSubmittingFeedback ? "Saving…" : "Submit feedback"}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -747,18 +745,18 @@ function renderRecommendations(
   };
   if (recommendations.length) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-3.5 lg:gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
         {recommendations.map((item) => {
           const brandLabel = item.brandName ?? item.brand;
           const priceLabel = formatPriceLabel(item.priceSnapshot, item.currency);
           return (
             <article
               key={item.productId}
-              className="group relative flex h-full flex-col rounded-2xl border-2 border-black bg-white p-4 shadow-[3px_4px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[4px_6px_0_rgba(0,0,0,0.25)]"
+              className="group relative flex h-full flex-col rounded-xl md:rounded-2xl border-2 border-black bg-white p-3 md:p-3.5 lg:p-4 shadow-[3px_4px_0_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:shadow-[4px_6px_0_rgba(0,0,0,0.25)]"
             >
               {/* Product Image - 1:1 Ratio, No Border */}
               {item.imageUrl ? (
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#f8f8f8]">
+                <div className="relative aspect-square w-full overflow-hidden rounded-lg md:rounded-xl bg-[#f8f8f8]">
                   <Image
                     src={item.imageUrl}
                     alt={`${brandLabel} ${item.productName}`}
@@ -769,33 +767,33 @@ function renderRecommendations(
                   />
                 </div>
               ) : (
-                <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-[#f2ebff] text-[10px] font-bold uppercase tracking-[0.15em] text-[#7a628c] text-center px-2">
+                <div className="flex aspect-square w-full items-center justify-center rounded-lg md:rounded-xl bg-[#f2ebff] text-[9px] md:text-[10px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-[#7a628c] text-center px-2">
                   Product preview<br />coming soon
                 </div>
               )}
 
               {/* Product Info */}
-              <div className="mt-3 flex flex-col gap-1.5 flex-grow">
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#B9375D]">{brandLabel}</p>
-                <h4 className="text-sm font-bold leading-tight text-[#1f2d26] line-clamp-2">{item.productName}</h4>
-                <p className="text-[10px] font-semibold text-[#3C3D37] text-opacity-60">{capitalize(item.category)}</p>
+              <div className="mt-2 md:mt-2.5 lg:mt-3 flex flex-col gap-1 md:gap-1.5 flex-grow">
+                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.12em] md:tracking-[0.15em] text-[#B9375D]">{brandLabel}</p>
+                <h4 className="text-xs md:text-sm font-bold leading-tight text-[#1f2d26] line-clamp-2">{item.productName}</h4>
+                <p className="text-[9px] md:text-[10px] font-semibold text-[#3C3D37] text-opacity-60">{capitalize(item.category)}</p>
                 
                 {/* Match Score & Price */}
-                <div className="flex items-center gap-1.5 text-xs mt-1">
-                  <span className="inline-flex items-center gap-0.5 rounded-full border border-black/20 bg-[#e8f5e9] px-2 py-0.5 text-[10px] font-bold text-[#2e7d32]">
-                    <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-1 md:gap-1.5 text-[10px] md:text-xs mt-0.5 md:mt-1">
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-black/20 bg-[#e8f5e9] px-1.5 md:px-2 py-0.5 text-[9px] md:text-[10px] font-bold text-[#2e7d32]">
+                    <svg className="h-2 md:h-2.5 w-2 md:w-2.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     {item.score.toFixed(1)}
                   </span>
                   {priceLabel && (
-                    <span className="text-xs font-bold text-[#3C3D37]">{priceLabel}</span>
+                    <span className="text-[10px] md:text-xs font-bold text-[#3C3D37]">{priceLabel}</span>
                   )}
                 </div>
 
                 {/* Hero Ingredients */}
                 {item.ingredients.length > 0 && (
-                  <p className="text-[10px] leading-relaxed text-[#3C3D37] text-opacity-70 line-clamp-2">
+                  <p className="text-[9px] md:text-[10px] leading-relaxed text-[#3C3D37] text-opacity-70 line-clamp-2">
                     <span className="font-semibold text-[#3C3D37]">Hero:</span>{" "}
                     {item.ingredients.slice(0, 2).join(", ")}
                     {item.ingredients.length > 2 ? "..." : ""}
@@ -804,11 +802,11 @@ function renderRecommendations(
               </div>
 
               {/* Footer - Rating & CTA */}
-              <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/10 pt-3">
-                <div className="flex items-center gap-1 text-[10px] text-[#3C3D37] text-opacity-60">
+              <footer className="mt-2 md:mt-2.5 lg:mt-3 flex flex-wrap items-center justify-between gap-1.5 md:gap-2 border-t border-black/10 pt-2 md:pt-2.5 lg:pt-3">
+                <div className="flex items-center gap-0.5 md:gap-1 text-[9px] md:text-[10px] text-[#3C3D37] text-opacity-60">
                   {item.averageRating ? (
                     <>
-                      <svg className="h-3 w-3 text-[#fbbf24]" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="h-2.5 md:h-3 w-2.5 md:w-3 text-[#fbbf24]" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                       <span className="font-semibold text-[#3C3D37]">
@@ -821,15 +819,15 @@ function renderRecommendations(
                   )}
                 </div>
                 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 md:gap-1.5">
                   {/* Wishlist Heart Button */}
                   <button
                     type="button"
                     aria-label={wishlistedIds.has(item.productId) ? "Remove from wishlist" : "Add to wishlist"}
                     onClick={() => { void handleFav(item); }}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    className="flex h-6 w-6 md:h-6 md:w-6 lg:h-7 lg:w-7 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffebef] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
-                    <svg className={`h-3.5 w-3.5 ${wishlistedIds.has(item.productId) ? "text-pink-500" : "text-[#B9375D]"}`} fill={wishlistedIds.has(item.productId) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`h-3 md:h-3.5 w-3 md:w-3.5 ${wishlistedIds.has(item.productId) ? "text-pink-500" : "text-[#B9375D]"}`} fill={wishlistedIds.has(item.productId) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>
@@ -839,7 +837,7 @@ function renderRecommendations(
                     onClick={() => {
                       void onShowDetails(item);
                     }}
-                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                    className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 lg:py-1.5 text-[9px] md:text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                   >
                     Details
                   </button>
@@ -849,7 +847,7 @@ function renderRecommendations(
                       href={item.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                      className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 lg:py-1.5 text-[9px] md:text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                     >
                       Shopee
                     </a>
