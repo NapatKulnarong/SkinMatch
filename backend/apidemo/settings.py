@@ -72,6 +72,7 @@ CORS_ALLOWED_ORIGINS = [
     os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
     "http://localhost:3000",
     "http://frontend:3000",  # Docker service name
+    "https://skinmatch-nu.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
