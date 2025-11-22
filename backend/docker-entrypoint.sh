@@ -26,14 +26,15 @@ PY
 echo "🔄 Running migrations..."
 python manage.py migrate --noinput
 
-# ---- Load sample data (optional one-time) ----
-# Set LOAD_SAMPLE_ON_START=1 in Render env to run once, then remove it.
-if [ "${LOAD_SAMPLE_ON_START:-0}" = "1" ]; then
-  echo "📦 Loading sample data (load_sample --reset)..."
-  python manage.py load_sample --reset || echo "⚠️ load_sample failed (continuing)"
-else
-  echo "📦 Skipping sample load (set LOAD_SAMPLE_ON_START=1 to enable)"
-fi
+echo "📦 Loading sample catalog data (ingredients/products)..."
+python manage.py load_sample --reset
+
+echo "👤 Seeding demo users..."
+python manage.py seed_demo_users || echo "Skipping demo users (command missing)"
+
+echo "🌿 Loading SkinFact topics & facts..."
+python manage.py import_skinfact_seed --reset --media-dir=../data/skin_facts_media || echo "Skipping SkinFacts seed"
+
 
 echo "👤 Ensuring default superuser (if credentials provided)..."
 python - <<'PY'
