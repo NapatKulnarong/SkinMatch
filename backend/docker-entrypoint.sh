@@ -26,17 +26,54 @@ PY
 echo "🔄 Running migrations..."
 python manage.py migrate --noinput
 
-echo "📦 Loading sample catalog data (ingredients/products)..."
-python manage.py load_sample --reset
+# -------------------------
+# Optional seeding controls
+# -------------------------
+RUN_SEED="${RUN_SEED:-true}"            # set true only when you want seeding
+SEED_SAMPLE="${SEED_SAMPLE:-true}"      # set true if you want sample catalog reset
+SEED_SKINFACTS="${SEED_SKINFACTS:-true}"# set true if you want SkinFacts reseed
+
+if [ "$SEED_SAMPLE" = "true" ]; then
+  echo "📦 Loading sample catalog data (ingredients/products)..."
+  python manage.py load_sample --reset || echo "Skipping load_sample (failed)"
+else
+  echo "⏭️  Skipping sample catalog seed (SEED_SAMPLE=false)"
+fi
 
 echo "👤 Seeding demo users..."
 python manage.py seed_demo_users || echo "Skipping demo users (command missing)"
 
-echo "🌿 Loading SkinFact topics & facts..."
-python manage.py import_skinfact_seed --reset --media-dir=data/skin_facts_media
-|| echo "Skipping SkinFacts seed"
+# Seed SkinFacts only when requested AND not already seeded
+if [ "$RUN_SEED" = "true" ] || [ "$SEED_SKINFACTS" = "true" ]; then
+  echo "🌿 Loading SkinFact topics & facts..."
 
+  python - <<'PY'
+import os
+from pathlib import Path
+import django
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "apidemo.settings")
+django.setup()
+
+from core.models import SkinFact  # <- ถ้าคลาสคุณชื่อไม่ตรง เปลี่ยนตรงนี้
+
+already = SkinFact.objects.exists()
+reset = os.getenv("SEED_SKINFACTS", "false").lower() == "true"
+
+print(f"already_seeded={already}, reset_requested={reset}")
+
+if already and not reset:
+    print("⏭️  SkinFacts already exist; skipping seed.")
+    raise SystemExit(0)
+PY
+
+  # รัน seed จริง (ไม่ใช้ --reset ค่า default)
+  python manage.py import_skinfact_seed \
+    --media-dir="data/skin_facts_media" \
+    || echo "Skipping SkinFacts seed (missing file/command)"
+else
+  echo "⏭️  Skipping SkinFacts seed (RUN_SEED/SEED_SKINFACTS=false)"
+fi
 
 echo "👤 Ensuring default superuser (if credentials provided)..."
 python - <<'PY'
