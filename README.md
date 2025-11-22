@@ -131,60 +131,53 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
 4. **Setup Environment Secret Keys**
    ### 🔸 Backend Secret Keys (./backend/.env)
    DJANGO_SECRET_KEY
-   Used by Django for session signing, CSRF protection, password hashing, and cryptographic operations.
    Source: Generate using Python:
    ```bash
    python -c "import secrets; print(secrets.token_hex(32))"
    ```
-   
+
    Google OAuth Client Settings
    ![Google OAuth Client Configuration Screenshot](/appendix/cloundconsolefallback.png)
+   
    GOOGLE_OAUTH_CLIENT_ID
-   OAuth Client ID for Google Sign-In (backend).
    Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
+   
    GOOGLE_OAUTH_CLIENT_SECRET
-   OAuth Client Secret paired with the above Client ID.
    Source: Google Cloud Console → OAuth 2.0 Client.
+   
    GOOGLE_API_KEY
-   API key for Google Gemini / Generative AI / Vision / other Google APIs.
    Source: Google AI Studio or Google Cloud Console → API Keys.
    
    ADMIN_ALLOWED_IPS
-   This is used to restrict admin access for improved security.
    Source: Use your own machine’s public IP address.
    
    EMAIL_HOST_USER
-   Email address used for sending outgoing system emails.
    Source: Gmail account used as the email sender.
+
    EMAIL_HOST_PASSWORD
-   SMTP password for the email sender.
-   Must use Gmail App Password.
    Source: Google Account → Security → App Passwords.
 
    ### 🔸 Frontend Secret Keys (./frontend/.env)
    NEXT_PUBLIC_GOOGLE_CLIENT_ID
-   OAuth Client ID for Google Sign-In on the frontend (browser).
    Source: Google Cloud Console → OAuth 2.0 Client ID.
 
    ### 🔸 Database & Admin Secrets (.env)
    DB_PASSWORD
-   Password for connecting to the PostgreSQL database.
    Source: Defined by the developer (local or docker-compose).
+
    DB_USER
-   Username used to authenticate with PostgreSQL.
    Source: Defined manually when setting up the database (or in docker-compose).
+   
    DB_NAME
-   Name of the PostgreSQL database used by the application.
    Source: Set during database creation or defined in docker-compose.
+
    PGADMIN_EMAIL
-   Email used to log into pgAdmin's web UI.
    Source: Chosen by the developer (not a secret, but required for setup).
+   
    PGADMIN_PASSWORD
-   Password for logging into pgAdmin web UI.
    Source: Chosen during pgAdmin setup.
+
    NEXT_PUBLIC_GOOGLE_CLIENT_ID
-   OAuth Client ID used by the frontend to initiate Google Sign-In.
-   This value must match the OAuth Client created in Google Cloud Console.
    Source: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID.
 
 5. **Load Sample Data**
@@ -194,6 +187,7 @@ Tests run automatically in CI/CD on push and pull requests. See [TESTING.md](./d
    python manage.py import_skinfact_seed --reset --media-dir=../data/skin_facts_media
    python manage.py seed_demo_users
    ```
+   
    The `load_sample` command is a compatibility alias for `load_sample_catalog` and seeds the quiz database with curated products, concerns, and ingredient mappings. The quiz service auto-seeds this data on first use when running in development (see `QUIZ_AUTO_SEED_SAMPLE`), but running the command manually lets you reset or refresh the catalog on demand. Any additional products you create in the Django admin will automatically participate in quiz recommendations as long as they remain `is_active` and you assign the relevant concerns/traits.
 
    You can now provide a product photo directly via the `image` field in the Product admin—paste either an absolute URL or a relative media path. When no image is set, SkinMatch renders an on-the-fly gradient card so the UI never falls back to an empty frame. Add any HTTPS product link to the `product_url` field to surface the "View product" button in quiz results.
