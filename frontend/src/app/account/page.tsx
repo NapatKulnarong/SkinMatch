@@ -92,6 +92,18 @@ function AccountContent() {
         setAuthTokenState(tokenToUse);
 
         if (tokenFromQuery) {
+          // Check for redirect parameter in sessionStorage (set before OAuth)
+          const storedRedirect = typeof window !== "undefined" 
+            ? sessionStorage.getItem("login_redirect") 
+            : null;
+          
+          if (storedRedirect) {
+            console.log("Found redirect parameter, redirecting to:", storedRedirect);
+            sessionStorage.removeItem("login_redirect");
+            router.replace(storedRedirect);
+            return;
+          }
+          
           console.log("Cleaning OAuth callback URL");
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('token');
@@ -1025,7 +1037,7 @@ export function WishlistPanel({ token, variant = "preview", title = "Wishlist" }
                       <div className="h-full w-full flex items-center justify-center text-[#7C6DB1] font-bold">No Image</div>
                     )}
                   </div>
-                  <div className="p-3 sm:p-4 flex-1 relative pb-14 sm:pb-4">
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col pb-4">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">{p.brand}</p>
@@ -1035,24 +1047,24 @@ export function WishlistPanel({ token, variant = "preview", title = "Wishlist" }
                     <div className="mt-1 sm:mt-2 flex items-center justify-between">
                       <span className="text-sm font-bold text-gray-900">{p.currency} {Number(p.price).toFixed(2)}</span>
                     </div>
-                    <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:border-t border-black/10 pt-2 sm:pt-3 sm:static absolute bottom-3 right-3 z-10 sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleShowProductDetails(p)}
-                        className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
-                      >
-                        Details
-                      </button>
-                      {p.productUrl && (
+                    <div className="mt-auto pt-4 sm:pt-4 sm:border-t border-black/20">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleShowProductDetails(p)}
+                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-bold text-[#1f2d26] shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#f5f4ff] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                        >
+                          Details
+                        </button>
                         <a
-                          href={p.productUrl}
+                          href={p.productUrl || `https://shopee.co.th/search?keyword=${encodeURIComponent(`${p.brand} ${p.name}`.trim())}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#B9375D] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a72f52] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
+                          className="inline-flex items-center justify-center rounded-full border-2 border-black bg-[#f97316] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_2px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_3px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                         >
-                          Shop
+                          Shopee
                         </a>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>

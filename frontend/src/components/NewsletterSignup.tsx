@@ -65,27 +65,31 @@ export default function NewsletterSignup({
 
   const inputClass = [
     "flex-1 rounded-[5px] lg:rounded-full border-2 border-black",
-    "bg-white px-4 py-2.5 sm:py-3 text-sm",
-    "text-[#102030] placeholder:text-[#8C9AAE]",
-    "shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#7c5a8f]",
+    "bg-[#FFF8F0] px-4 py-2.5 sm:py-3 text-sm",
+    "text-[#5C4A3A] placeholder:text-[#8B7A6A]",
+    "shadow-[0_3px_0_rgba(0,0,0,0.2)] focus:outline-none focus:ring-2 focus:ring-[#8B7A6A]",
     inputClassName ?? "",
   ]
     .filter(Boolean)
     .join(" ");
 
   const buttonClass =
+<<<<<<< HEAD
     "rounded-[5px] lg:rounded-full border-2 border-black bg-[#7db5d0] lg:bg-[#9ed0da]  px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-black/80 shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#7db5d0] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
+=======
+    "rounded-[5px] lg:rounded-full border-2 border-black bg-[#DDC5A5] px-5 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-[#5C4A3A] shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#CDB595] hover:shadow-[0_6px_0_rgba(0,0,0,0.25)] active:translate-y-0.5 active:shadow-[0_2px_0_rgba(0,0,0,0.2)] disabled:cursor-not-allowed disabled:opacity-60";
+>>>>>>> origin/main
 
   return (
     <div className={sharedWrapper} aria-live="polite" aria-atomic="true">
       <div className="space-y-2 text-left lg:text-center md:pt-3 lg:pt-0">
         {title ? (
-          <h2 className={variant === "compact" ? "text-xl font-bold text-[#3C5B6F]" : "text-xl sm:text-2xl font-bold text-[#3C5B6F]"}>
+          <h2 className={variant === "compact" ? "text-xl font-bold text-[#5C4A3A]" : "text-xl sm:text-2xl font-bold text-[#5C4A3A]"}>
             {title}
           </h2>
         ) : null}
         {subtitle ? (
-          <p className={variant === "compact" ? "text-xs text-[#4a3a5a]/70" : "text-xs sm:text-sm text-[#4a3a5a]/70"}>
+          <p className={variant === "compact" ? "text-xs text-[#6B5A4A]/80" : "text-xs sm:text-sm text-[#6B5A4A]/80"}>
             {subtitle}
           </p>
         ) : null}
@@ -112,9 +116,9 @@ export default function NewsletterSignup({
         </button>
       </form>
 
-      <div className="space-y-1 text-[10px] sm:text-xs text-[#4a3a5a]/60">
+      <div className="space-y-1 text-[10px] sm:text-xs text-[#6B5A4A]/70">
         {message && (
-          <p className={`font-semibold ${status === "error" ? "text-[#B9375D]" : "text-[#4a3a5a]"}`}>
+          <p className={`font-semibold ${status === "error" ? "text-[#B9375D]" : "text-[#6B5A4A]"}`}>
             {message}
           </p>
         )}

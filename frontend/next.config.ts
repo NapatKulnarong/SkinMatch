@@ -69,7 +69,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "cloudinary.images-iherb.com",
+        hostname: "down-th.img.susercontent.com",
+        pathname: "/**",
+      },
+      // Wildcard fallbacks to cover newly added product image hosts
+      {
+        protocol: "https",
+        hostname: "**",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
         pathname: "/**",
       },
     ],

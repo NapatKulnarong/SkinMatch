@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Optional
 
 from ninja import File, Router, Schema
 from ninja.errors import HttpError
@@ -24,44 +25,60 @@ def get_decode():
             "On macOS, install it with: brew install zbar"
         )
 
+
+def _ensure_pillow():
+    if Image is None:
+        raise HttpError(503, "Pillow is not installed on the server.")
+
+
+def _decode_barcode(file: UploadedFile) -> Optional[str]:
+    _ensure_pillow()
+    decode = get_decode()
+    image = Image.open(BytesIO(file.read()))
+    decoded_objects = decode(image)
+    if not decoded_objects:
+        return None
+    return decoded_objects[0].data.decode("utf-8")
+
+
+def _serialize_product(product: Product) -> dict:
+    return {
+        "id": str(product.id),
+        "name": product.name,
+        "brand": product.brand,
+        "category": product.category,
+        "price": float(product.price),
+        "currency": product.currency,
+        "image_url": product.image_url,
+        "product_url": product.product_url,
+    }
+
+
 class ScanOut(Schema):
     ok: bool
     barcode: str | None = None
     product: dict | None = None
     message: str | None = None
 
+
 @scan_router.post("/scan", response=ScanOut)
 def scan_barcode(request, file: UploadedFile = File(...)):
-    if Image is None:
-        raise HttpError(503, "Pillow is not installed on the server.")
-    # Decode
     try:
-        decode = get_decode()
-        image = Image.open(BytesIO(file.read()))
-        decoded_objects = decode(image)
-        if not decoded_objects:
+        barcode_value = _decode_barcode(file)
+        if not barcode_value:
             return {"ok": False, "barcode": None, "message": "No barcode detected."}
-
-        barcode_value = decoded_objects[0].data.decode("utf-8")
         return {"ok": True, "barcode": barcode_value, "message": "Barcode detected."}
     except Exception as e:
         return {"ok": False, "message": f"Error decoding: {e}"}
-    
+
+
 @scan_router.post("/resolve", response=ScanOut)
 def scan_and_resolve(request, file: UploadedFile = File(...)):
-    if Image is None:
-        raise HttpError(503, "Pillow is not installed on the server.")
-    # Decode and resolve in database
     try:
-        decode = get_decode()
-        image = Image.open(BytesIO(file.read()))
-        decoded_objects = decode(image)
-        if not decoded_objects:
+        barcode_value = _decode_barcode(file)
+        if not barcode_value:
             return {"ok": False, "barcode": None, "message": "No barcode found."}
 
-        barcode_value = decoded_objects[0].data.decode("utf-8")
-
-        # Lookup product in the database
         product = Product.objects.filter(barcode=barcode_value, is_active=True).first()
         if not product:
             return {
@@ -71,22 +88,10 @@ def scan_and_resolve(request, file: UploadedFile = File(...)):
                 "message": "Barcode recognized, but product not found in database.",
             }
 
-        # Serialize minimal product info
-        product_data = {
-            "id": str(product.id),
-            "name": product.name,
-            "brand": product.brand,
-            "category": product.category,
-            "price": float(product.price),
-            "currency": product.currency,
-            "image_url": product.image_url,
-            "product_url": product.product_url,
-        }
-
         return {
             "ok": True,
             "barcode": barcode_value,
-            "product": product_data,
+            "product": _serialize_product(product),
             "message": "Product found.",
         }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowPathIcon, MapPinIcon, ExclamationTriangleIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, MapPinIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { SunIcon } from "@heroicons/react/24/solid";
 
 
@@ -41,8 +41,8 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
   const rawPercent = ((uvIndex - 0.5) / MAX_UV) * 100;
   const uvPointerPercent = Math.max(0, Math.min(100, rawPercent));
 
-  const hasAlerts = alerts.length > 0;
-  const primaryAlert = hasAlerts ? alerts[0] : null;
+  const uvAlerts = alerts.filter((alert) => alert.category === "uv");
+  const primaryAlert = uvAlerts.length > 0 ? uvAlerts[0] : null;
   const colorForRisk = (() => {
     if (uvValue >= 11) return "#7e3dcf";
     const match = UV_SCALE.find((segment) => segment.value === Math.ceil(uvValue));
@@ -125,7 +125,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-[#1f2d26]">
               <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              <span>Checking local UV levels…</span>
+              <span>Checking UV levels…</span>
             </div>
           ) : error ? (
             <div className="rounded-2xl border-2 border-[#B9375D] bg-[#fdecec] p-3 text-sm text-[#7b1c32]">
@@ -134,11 +134,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
           ) : primaryAlert ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#1f2d26]">
-                {primaryAlert.category === "uv" ? (
-                  <SunIcon className="h-5 w-5 text-[#f59e0b]" />
-                ) : (
-                  <ExclamationTriangleIcon className="h-5 w-5 text-[#b45309]" />
-                )}
+                <SunIcon className="h-5 w-5 text-[#f59e0b]" />
                 <span>{primaryAlert.title}</span>
               </div>
               <p className="text-sm text-[#1f2d26]/80">{primaryAlert.message}</p>
@@ -159,7 +155,7 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
                 <span>You&apos;re all clear</span>
               </div>
               <p className="mt-1 text-xs text-[#1f2d26]/70">
-                We&apos;ll ping you when UV needs extra care.
+                We&apos;ll ping you when UV levels need extra care.
               </p>
             </div>
           )}
@@ -173,3 +169,4 @@ export function EnvironmentAlertPanel({ className = "" }: EnvironmentAlertPanelP
     </section>
   );
 }
+

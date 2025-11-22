@@ -21,7 +21,7 @@ const MOBILE_SECTIONS = [
 export default function FactsPage() {
   return (
     <>
-      <main className="min-h-screen bg-[#d2eec8] to-[#f6f8ef] lg:pb-16">
+      <main className="min-h-screen bg-[#d8eed9] to-[#f6f8ef] lg:pb-16">
         <div className="pt-27 md:pt-12 lg:pt-6" />
 
         <PageContainer className="lg:hidden fixed inset-x-0 bottom-5 z-30">

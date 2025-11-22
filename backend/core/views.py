@@ -22,6 +22,8 @@ def logout_view(request):
 
 class GoogleOAuthCallbackView(View):
     token_endpoint = "https://oauth2.googleapis.com/token"
+    account_redirect = getattr(settings, "FRONTEND_ACCOUNT_URL", "http://localhost:3000/account")
+    login_redirect = getattr(settings, "FRONTEND_LOGIN_URL", "http://localhost:3000/login")
 
     def get(self, request, *args, **kwargs):
         if "error" in request.GET:
@@ -80,13 +82,7 @@ class GoogleOAuthCallbackView(View):
         return HttpResponseRedirect(self._build_frontend_redirect(params))
 
     def _build_frontend_redirect(self, params: dict) -> str:
-    # Always redirect to account page after successful auth
-        base = "http://localhost:3000/account"
-    
-    # If there's an error, redirect to login page with error
-        if params.get("error"):
-            base = "http://localhost:3000/login"
-    
+        base = self.login_redirect if params.get("error") else self.account_redirect
         parsed = urlparse(base)
         existing = dict(parse_qsl(parsed.query))
         existing.update(params)
