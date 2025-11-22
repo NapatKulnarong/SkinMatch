@@ -157,7 +157,7 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
             return (
               <article
                 key={topic.slug}
-                className="flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-none sm:shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
+                className="mt-2 flex-none w-[255px] lg:w-[360px] snap-start overflow-hidden rounded-[26px] border-2 border-black bg-white shadow-none sm:shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition hover:-translate-y-1.5"
               >
                 <Link href={`/facts/${topic.slug}`} className="flex h-full flex-col">
                   <div className="relative h-40 overflow-hidden sm:h-48">
