@@ -88,7 +88,13 @@ export default function IngredientSpotlight({ sectionId }: IngredientSpotlightPr
                 />
               ))
             : displayed.map((topic, index) => {
-                const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+                // Ensure image URL is absolute, fallback to default if not
+                let image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+                // If image is relative path, make it absolute using backend URL
+                if (image && !image.startsWith("http") && !image.startsWith("/img/") && image.startsWith("/")) {
+                  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+                  image = `${backendBase.replace(/\/$/, "")}${image}`;
+                }
                 const description = topic.subtitle || topic.excerpt || "Daily deep dive";
                 const palette = PALETTE[index % PALETTE.length];
                 const tags = buildTagHints({

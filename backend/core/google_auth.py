@@ -66,6 +66,13 @@ def authenticate_google_id_token(id_token: str) -> Tuple[User, bool, str]:
         profile.google_sub = sub
     if idinfo.get("email_verified") and not profile.is_verified:
         profile.is_verified = True
+    
+    # Update avatar URL from Google profile picture
+    # Always update to keep avatar in sync with Google profile
+    google_picture = idinfo.get("picture")
+    if google_picture:
+        profile.avatar_url = google_picture
+    
     profile.save()
 
     if not user.email:

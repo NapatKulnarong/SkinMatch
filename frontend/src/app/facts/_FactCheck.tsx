@@ -143,7 +143,13 @@ export default function FactCheck({ sectionId }: FactCheckProps) {
 
         <div className="lg:pt-1 flex snap-x snap-mandatory sm:snap-none gap-3 lg:gap-4 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
           {visibleTopics.map((topic) => {
-            const image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+            // Ensure image URL is absolute, fallback to default if not
+            let image = topic.heroImageUrl ?? FALLBACK_IMAGE;
+            // If image is relative path, make it absolute using backend URL
+            if (image && !image.startsWith("http") && !image.startsWith("/img/") && image.startsWith("/")) {
+              const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+              image = `${backendBase.replace(/\/$/, "")}${image}`;
+            }
             const description =
               topic.subtitle || topic.excerpt || "We break down the science.";
             const verdict = topic.title.toLowerCase().includes("myth")

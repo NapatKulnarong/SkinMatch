@@ -144,7 +144,13 @@ export function TrendingSkincareHub({ sectionId }: TrendingSkincareHubProps) {
 
       <div className="flex snap-x snap-mandatory sm:snap-none gap-4 lg:gap-6 overflow-x-auto pb-4 lg:pb-6 ps-1 pe-4 sm:pe-6">
         {visible.map((item, index) => {
-          const image = item.heroImageUrl ?? FALLBACK_IMAGE;
+          // Ensure image URL is absolute, fallback to default if not
+          let image = item.heroImageUrl ?? FALLBACK_IMAGE;
+          // If image is relative path, make it absolute using backend URL
+          if (image && !image.startsWith("http") && !image.startsWith("/img/") && image.startsWith("/")) {
+            const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+            image = `${backendBase.replace(/\/$/, "")}${image}`;
+          }
           const description = item.subtitle || item.excerpt || "See why it's trending.";
           const hypeScore = (item.viewCount ?? 0) + (index + 1) * 128;
 
