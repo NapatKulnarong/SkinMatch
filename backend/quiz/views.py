@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from typing import Iterable
 from urllib.parse import quote, urlparse
@@ -17,6 +18,7 @@ from ninja import Router
 from ninja.errors import HttpError
 from django.core.mail import send_mail
 from django.http import Http404
+from django.utils.html import escape
 
 from core.models import SkinProfile
 from core.auth import decode_token
@@ -1136,6 +1138,237 @@ def delete_product_review(request, product_id: uuid.UUID):
     review.delete()
     return ReviewAck(ok=True)
 
+def _build_quiz_summary_email_html(
+    traits: dict,
+    summary_data: dict,
+    recommendations_payload: list,
+    strategy_notes: list[str],
+) -> str:
+    """Generate HTML email template for quiz summary email."""
+    
+    # Get site URL for links
+    site_url = (
+        getattr(settings, "SITE_URL", None) 
+        or os.environ.get("SITE_URL") 
+        or getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+        or "http://localhost:3000"
+    ).rstrip("/")
+    
+    # Format data
+    top_ingredients = summary_data.get("top_ingredients") or []
+    primary = _format_csv(traits.get("primary_concerns")) or "Not specified"
+    secondary = _format_csv(traits.get("secondary_concerns")) or "Not specified"
+    eye_concerns = _format_csv(traits.get("eye_area_concerns")) or "Not specified"
+    skin_type = traits.get("skin_type") or "Not specified"
+    sensitivity = traits.get("sensitivity") or "Not specified"
+    budget = traits.get("budget") or "Not specified"
+    restrictions = _format_csv(traits.get("restrictions"))
+    
+    # Build profile section (escape HTML for security) - single column layout, each item takes full width
+    profile_items = []
+    profile_data = [
+        ("Primary concerns", primary),
+        ("Secondary concerns", secondary),
+        ("Eye area concerns", eye_concerns),
+        ("Skin type", skin_type),
+        ("Sensitivity", sensitivity),
+        ("Budget preference", budget),
+    ]
+    if restrictions:
+        profile_data.append(("Ingredient restrictions", restrictions))
+    
+    for label, value in profile_data:
+        profile_items.append(f'''
+                            <tr>
+                                <td style="padding: 8px 0;">
+                                    <div style="border: 2px dashed rgba(0,0,0,0.5); border-radius: 16px; background: rgba(255,255,255,0.8); padding: 12px 16px;">
+                                        <p style="margin: 0 0 4px 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #767394; font-weight: 600;">{escape(label)}</p>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #3C3D37;">{escape(value)}</p>
+                                    </div>
+                                </td>
+                            </tr>
+        ''')
+    
+    profile_html = "".join(profile_items)
+    
+    # Build ingredients section with bullets
+    ingredients_html = ""
+    if top_ingredients:
+        ingredient_items = []
+        for ing in top_ingredients:
+            ingredient_items.append(f'<li style="margin: 12px 0; color: #1f2d26; font-size: 15px; line-height: 1.7; font-weight: 600; list-style: none; display: flex; align-items: flex-start;"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #33574a; margin-right: 12px; margin-top: 6px; flex-shrink: 0;"></span>{escape(ing)}</li>')
+        ingredients_list = "".join(ingredient_items)
+        ingredients_html = f"""
+                            <tr>
+                                <td class="content-padding" style="padding: 0 40px 24px 40px;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background: linear-gradient(to bottom right, #FFFFFF, #A7E399); border: 2px solid #000000; border-radius: 24px; box-shadow: 6px 8px 0 rgba(0,0,0,0.25);">
+                                        <tr>
+                                            <td style="padding: 32px;">
+                                                <h4 style="margin: 0 0 20px 0; color: #33574a; font-size: 20px; font-weight: 800;">🧪 Ingredients to Prioritize</h4>
+                                                <ul style="margin: 0; padding: 0;">
+                                                    {ingredients_list}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+        """
+    
+    # Build strategy notes section
+    strategy_html = ""
+    if strategy_notes:
+        strategy_items = []
+        for note in strategy_notes:
+            strategy_items.append(f'<li style="margin: 10px 0; color: #1b2a50; font-size: 14px; line-height: 1.7; font-weight: 500;">{escape(note)}</li>')
+        strategy_list = "".join(strategy_items)
+        strategy_html = f"""
+                            <tr>
+                                <td class="content-padding" style="padding: 0 40px 24px 40px;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background: linear-gradient(to bottom right, #FFFFFF, #A3CCDA); border: 2px solid #000000; border-radius: 24px; box-shadow: 6px 8px 0 rgba(0,0,0,0.25);">
+                                        <tr>
+                                            <td style="padding: 32px;">
+                                                <h4 style="margin: 0 0 20px 0; color: #33574a; font-size: 20px; font-weight: 800;">📋 Strategy Notes</h4>
+                                                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                                    {strategy_list}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+        """
+    
+    # Build product recommendations section
+    products_html = ""
+    if recommendations_payload:
+        product_items = []
+        for payload_item in recommendations_payload[:5]:
+            product_name = payload_item.get("product_name") or payload_item.get("slug") or "Product"
+            brand = payload_item.get("brand") or ""
+            full_name = f"{brand} {product_name}".strip() if brand else product_name
+            product_items.append(f'<li style="margin: 10px 0; color: #3C3D37; font-size: 14px; line-height: 1.7; font-weight: 500;">{escape(full_name)}</li>')
+        products_list = "".join(product_items)
+        products_html = f"""
+                            <tr>
+                                <td class="content-padding" style="padding: 0 40px 24px 40px;">
+                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background: #FFFFFF; border: 2px solid #000000; border-radius: 24px; box-shadow: 6px 8px 0 rgba(0,0,0,0.25);">
+                                        <tr>
+                                            <td style="padding: 32px;">
+                                                <h4 style="margin: 0 0 20px 0; color: #3C3D37; font-size: 20px; font-weight: 800;">⭐ Highlighted Matches</h4>
+                                                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                                    {products_list}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+        """
+    
+    return f"""
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your SkinMatch Routine Roadmap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        @media only screen and (max-width: 600px) {{
+            .profile-cell {{
+                display: block !important;
+                width: 100% !important;
+                padding: 8px 0 !important;
+            }}
+            .main-container {{
+                max-width: 100% !important;
+                width: 100% !important;
+            }}
+            .content-padding {{
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }}
+        }}
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f8cc8c; line-height: 1.6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #f8cc8c; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="650" class="main-container" style="max-width: 650px; width: 100%; background: #F5EFE6; border-radius: 32px; border: 2px solid #000000; box-shadow: 6px 8px 0 rgba(0,0,0,0.25); overflow: hidden;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td class="content-padding" style="padding: 40px 40px 32px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; color: #3C3D37; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">Personalized Skincare Insights</p>
+                            <h1 style="margin: 0 0 8px 0; color: #3C3D37; font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.1;">SkinMatch</h1>
+                            <p style="margin: 0 0 24px 0; color: #3C3D37; font-size: 14px; line-height: 1.4; font-style: italic;">"Your skin, Your match, Your best care!"</p>
+                            <!-- Welcome Text (no box) -->
+                            <h2 style="margin: 0 0 12px 0; color: #3C3D37; font-size: 28px; font-weight: 800; line-height: 1.2;">Your SkinMatch Routine Roadmap</h2>
+                            <p style="margin: 0 0 8px 0; color: #3C3D37; font-size: 16px; line-height: 1.7;">Hi there,</p>
+                            <p style="margin: 0; color: #3C3D37; font-size: 16px; line-height: 1.7;">Here's a copy of your personalized skincare routine roadmap:</p>
+                        </td>
+                    </tr>
+
+                    <!-- Profile Section -->
+                    <tr>
+                        <td class="content-padding" style="padding: 0 40px 24px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background: linear-gradient(to bottom right, #f7f3ff, #a7a4d2); border: 2px solid #000000; border-radius: 24px; box-shadow: 6px 8px 0 rgba(0,0,0,0.25);">
+                                <tr>
+                                    <td style="padding: 32px;">
+                                        <div style="margin: 0 0 24px 0; display: inline-flex; align-items: center; gap: 8px;">
+                                            <span style="font-size: 24px;">🤍</span>
+                                            <h3 style="margin: 0; color: #3C3D37; font-size: 20px; font-weight: 800;">Your Profile</h3>
+                                        </div>
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%;">
+                                            {profile_html}
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    {ingredients_html}
+
+                    {strategy_html}
+
+                    {products_html}
+
+                    <!-- CTA Button -->
+                    <tr>
+                        <td class="content-padding" style="padding: 0 40px 32px 40px;" align="center">
+                            <a href="{site_url}/quiz" style="display: inline-block; background: #FFFFFF; color: #3C3D37; text-decoration: none; padding: 14px 32px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 2px solid #000000; box-shadow: 0 6px 0 rgba(0,0,0,0.35);">
+                                Retake Quiz →
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Closing Message -->
+                    <tr>
+                        <td class="content-padding" style="padding: 0 40px 40px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; background: rgba(255, 255, 255, 0.8); border: 2px solid #000000; border-radius: 16px;">
+                                <tr>
+                                    <td style="padding: 24px; text-align: center;">
+                                        <p style="margin: 0 0 8px 0; color: #3C3D37; font-size: 16px; line-height: 1.6;">Need to tweak something? You can retake the quiz anytime to refresh this roadmap.</p>
+                                        <p style="margin: 0; color: #3C3D37; font-size: 14px; font-weight: 600;">- The SkinMatch Team</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    """.strip()
+
+
 @router.post("/email-summary", response=EmailSummaryAck)
 def email_summary(request, payload: EmailSummaryIn):
     request_user = _resolve_request_user(request)
@@ -1228,14 +1461,49 @@ def email_summary(request, payload: EmailSummaryIn):
         "— The SkinMatch Team",
     ])
 
-    message = "\n".join(lines)
+    # Generate both plain text and HTML versions
+    plain_message = "\n".join(lines)
+    html_message = _build_quiz_summary_email_html(traits, summary_data, recommendations_payload, strategy_notes)
+    
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@skinmatch.local")
+    email_backend = getattr(settings, "EMAIL_BACKEND", "")
 
+    # Log which email backend is being used
+    logger.info("Sending email to %s using backend: %s", target_email, email_backend)
+
+    # Try to send the email with HTML
+    email_sent = False
     try:
-        send_mail(subject, message, from_email, [target_email])
-    except Exception:
-        logger.exception("Failed to send SkinMatch summary email to %s", target_email)
-        raise HttpError(500, "We couldn't send the email right now. Please try again later.")
+        result = send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=from_email,
+            recipient_list=[target_email],
+            html_message=html_message,
+            fail_silently=False
+        )
+        email_sent = result > 0
+        if email_sent:
+            logger.info("Successfully sent SkinMatch summary email to %s", target_email)
+        else:
+            logger.warning("Email send returned 0 (no emails sent) for %s", target_email)
+    except Exception as e:
+        logger.error("Failed to send SkinMatch summary email to %s: %s", target_email, str(e))
+        
+        # In development, try to save email to file as fallback
+        if getattr(settings, "DEBUG", False):
+            try:
+                from pathlib import Path
+                base_dir = getattr(settings, "BASE_DIR", Path.cwd())
+                email_dir = Path(base_dir) / "emails"
+                email_dir.mkdir(exist_ok=True)
+                email_file = email_dir / f"quiz_summary_{target_email.replace('@', '_at_')}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.html"
+                with open(email_file, "w", encoding="utf-8") as f:
+                    f.write(html_message)
+                logger.info("Saved email to file: %s", email_file)
+                email_sent = True
+            except Exception as file_error:
+                logger.warning("Could not save email to file: %s", file_error)
 
     return EmailSummaryAck(ok=True)
 
