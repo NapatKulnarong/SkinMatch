@@ -402,63 +402,61 @@ SOCIALACCOUNT_PROVIDERS = {
 security_handlers = ["security_console"]
 if SECURITY_LOG_FILE:
     security_handlers.append("security_file")
+# Logging configuration (Render-safe version — no FileHandlers)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
-        'json': {
-            '()': 'core.logging_utils.JsonLogFormatter',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'security_console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'json',
+        "json": {
+            "()": "core.logging_utils.JsonLogFormatter",
         },
     },
-    'loggers': {
-        'quiz.ai': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'quiz': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'security': {
-            'handlers': security_handlers,
-            'level': SECURITY_LOG_LEVEL,
-            'propagate': False,
+        "security_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+
+    "loggers": {
+        "quiz.ai": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "quiz": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+        "security": {
+            "handlers": ["security_console"],
+            "level": SECURITY_LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
     },
 }
-
-if SECURITY_LOG_FILE:
-    LOGGING['handlers']['security_file'] = {
-        'class': 'logging.handlers.WatchedFileHandler',
-        'filename': SECURITY_LOG_FILE,
-        'formatter': 'json',
-    }
