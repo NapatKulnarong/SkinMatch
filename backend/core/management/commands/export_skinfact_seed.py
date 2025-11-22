@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from core.models import SkinFactTopic
 
-DATA_DIR = Path(settings.BASE_DIR).parent / "data"
+DATA_DIR = Path(settings.BASE_DIR) / "data"
 DEFAULT_SEED_PATH = DATA_DIR / "skin_facts_seed.json"
 DEFAULT_MEDIA_DIR = DATA_DIR / "skin_facts_media"
 

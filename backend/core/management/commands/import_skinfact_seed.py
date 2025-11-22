@@ -13,7 +13,7 @@ from django.utils.dateparse import parse_datetime, parse_date
 
 from core.models import SkinFactTopic, SkinFactContentBlock
 
-DATA_DIR = Path(settings.BASE_DIR).parent / "data"
+DATA_DIR = Path(settings.BASE_DIR) / "data"
 DEFAULT_SEED_PATH = DATA_DIR / "skin_facts_seed.json"
 DEFAULT_MEDIA_DIR = DATA_DIR / "skin_facts_media"
 
