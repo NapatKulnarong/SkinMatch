@@ -11,7 +11,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from core.api import api, api_urlpatterns
-from core.views import GoogleOAuthCallbackView
+from core.views import GoogleOAuthLoginView, GoogleOAuthCallbackView
 
 def health_check(request):
     return JsonResponse({"status": "ok"})
@@ -28,6 +28,7 @@ urlpatterns = [
         "api/",
         include((api_patterns, api_app_name), namespace=f"{api_namespace}-legacy"),
     ),
+    path("api/auth/google/login", GoogleOAuthLoginView.as_view(), name="google_oauth_login"),
     path("api/auth/google/callback", GoogleOAuthCallbackView.as_view(), name="google_oauth_callback"),
     path("healthz/", health_check),
     path("accounts/", include("allauth.urls")),

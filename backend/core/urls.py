@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GoogleOAuthCallbackView, logout_view, home
+from .views import GoogleOAuthLoginView, GoogleOAuthCallbackView, logout_view, home
 from .fact_views import (
     recommended_topics,
     popular_topics,
@@ -9,6 +9,7 @@ from .fact_views import (
 urlpatterns = [
     path("", home, name="home"),
     path("logout/", logout_view, name="logout"),
+    path("auth/google/login/", GoogleOAuthLoginView.as_view(), name="google_oauth_login"),
     path("auth/google/callback/", GoogleOAuthCallbackView.as_view(), name="google_oauth_callback"),
     
     # Facts API endpoints

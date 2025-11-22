@@ -1,4 +1,4 @@
-from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl, quote
 
 import requests
 from django.conf import settings
@@ -18,6 +18,38 @@ def home(request):
 def logout_view(request):
     logout(request)
     return redirect("/")
+
+
+class GoogleOAuthLoginView(View):
+    """Redirects to Google OAuth authorization page"""
+    
+    def get(self, request, *args, **kwargs):
+        client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
+        if not client_id:
+            # Redirect to frontend with error
+            frontend_origin = getattr(settings, "FRONTEND_ORIGIN", "http://localhost:3000")
+            login_url = getattr(settings, "FRONTEND_LOGIN_URL", f"{frontend_origin}/login")
+            error_url = f"{login_url}?error=server_not_configured&provider=google"
+            return HttpResponseRedirect(error_url)
+        
+        redirect_uri = getattr(
+            settings,
+            "GOOGLE_OAUTH_REDIRECT_URI",
+            request.build_absolute_uri("/api/auth/google/callback"),
+        )
+        
+        scope = "email profile"
+        google_auth_url = (
+            "https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={client_id}"
+            f"&redirect_uri={quote(redirect_uri)}"
+            "&response_type=code"
+            f"&scope={quote(scope)}"
+            "&access_type=offline"
+            "&prompt=consent"
+        )
+        
+        return HttpResponseRedirect(google_auth_url)
 
 
 class GoogleOAuthCallbackView(View):

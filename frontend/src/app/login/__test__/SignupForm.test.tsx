@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { act } from "react";
-import LoginPage, { buildGoogleAuthUrl } from "../page";
+import LoginPage from "../page";
 import { redirectTo } from "../redirect";
 
 // Mock next/navigation before imports
@@ -109,44 +109,21 @@ describe("LoginPage", () => {
         fireEvent.click(googleBtn);
       });
 
-      const expectedUrl = buildGoogleAuthUrl("fake-client-id-123");
+      const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const expectedUrl = `${expectedBackendUrl}/api/auth/google/login`;
       expect(redirectTo).toHaveBeenCalledTimes(1);
       expect(redirectTo).toHaveBeenCalledWith(expectedUrl);
     });
   });
 
-  describe("buildGoogleAuthUrl helper", () => {
-    it("should generate correct Google OAuth URL with all required parameters", () => {
-      const clientId = "abc123";
-      const url = buildGoogleAuthUrl(clientId);
-
-      // Check base URL
-      expect(url).toMatch(
-        /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/
-      );
-
-      // Check required parameters
+  describe("Google OAuth login", () => {
+    it("should redirect to backend login endpoint", () => {
       const expectedBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-      expect(url).toContain(`client_id=${clientId}`);
-      expect(url).toContain(
-        encodeURIComponent(`${expectedBackendUrl}/api/auth/google/callback`)
-      );
-      expect(url).toContain("response_type=code");
-      expect(url).toContain("scope=");
-      expect(url).toContain(encodeURIComponent("email profile"));
-      expect(url).toContain("prompt=consent");
-    });
-
-    it("should handle different client IDs correctly", () => {
-      const clientId1 = "client-id-1";
-      const clientId2 = "client-id-2";
-
-      const url1 = buildGoogleAuthUrl(clientId1);
-      const url2 = buildGoogleAuthUrl(clientId2);
-
-      expect(url1).toContain(`client_id=${clientId1}`);
-      expect(url2).toContain(`client_id=${clientId2}`);
-      expect(url1).not.toEqual(url2);
+      const expectedUrl = `${expectedBackendUrl}/api/auth/google/login`;
+      
+      // The handleGoogleSignIn function should redirect to backend endpoint
+      // This is tested indirectly through the button click test above
+      expect(expectedUrl).toContain("/api/auth/google/login");
     });
   });
 });

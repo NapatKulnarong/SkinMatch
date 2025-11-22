@@ -88,21 +88,6 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-export function buildGoogleAuthUrl(clientId: string) {
-  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-  const redirectUri = `${backendBase}/api/auth/google/callback`;
-  const scope = "email profile";
-
-  return (
-    "https://accounts.google.com/o/oauth2/v2/auth?" +
-    `client_id=${clientId}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&response_type=code` +
-    `&scope=${encodeURIComponent(scope)}` +
-    `&access_type=offline` +
-    `&prompt=consent`
-  );
-}
 
 export { redirectTo } from "./redirect";
 
@@ -293,12 +278,6 @@ function LoginContent() {
 
   const handleGoogleSignIn = () => {
     if (googleLoading) return;
-  
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      setGoogleError("Google Sign-In is not configured.");
-      return;
-    }
 
     console.log("Starting Google OAuth flow...");
     
@@ -309,24 +288,13 @@ function LoginContent() {
       console.log("Stored redirect parameter:", redirectParam);
     }
     
+    // Use backend login endpoint instead of creating Google OAuth URL directly
     const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-    const redirectUri =
-      process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
-      process.env.NEXT_PUBLIC_GOOGLE_CALLBACK_URL ||
-      `${backendBase}/api/auth/google/callback`;
-    const scope = 'email profile';
+    const loginUrl = `${backendBase}/api/auth/google/login`;
     
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code` +
-      `&scope=${encodeURIComponent(scope)}` +
-      `&access_type=offline` +
-      `&prompt=consent`;
-    
-    console.log("🔗 Redirecting to Google:", authUrl);
+    console.log("🔗 Redirecting to backend login endpoint:", loginUrl);
     setGoogleLoading(true);
-    redirectTo(authUrl);
+    redirectTo(loginUrl);
   };
 
   const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
