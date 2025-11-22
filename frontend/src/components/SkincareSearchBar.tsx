@@ -27,10 +27,7 @@ type SkincareSearchBarProps = {
   suggestionLabel?: string;
   showHelperHint?: boolean;
   variant?: "default" | "pill";
-<<<<<<< HEAD
-=======
   buttonBgColor?: string;
->>>>>>> origin/main
 };
 
 const SUGGESTION_LIST_ID = "skincare-search-suggestions";
@@ -46,10 +43,7 @@ export function SkincareSearchBar({
   suggestionLabel = "Suggestions",
   showHelperHint = true,
   variant = "default",
-<<<<<<< HEAD
-=======
   buttonBgColor = "#a8c8e8",
->>>>>>> origin/main
 }: SkincareSearchBarProps) {
   const isPill = variant === "pill";
   const router = useRouter();
@@ -243,11 +237,7 @@ export function SkincareSearchBar({
       <div
         className={
           isPill
-<<<<<<< HEAD
-            ? "flex items-center gap-3 rounded-full border-2 border-black bg-white pl-5 pr-3 py-2 shadow-[0_5px_0_rgba(0,0,0,0.25)] focus-within:ring-2 focus-within:ring-[#2d4a2b]"
-=======
             ? "flex items-center gap-3 rounded-full border-2 border-black bg-white pl-5 pr-3 py-1 lg:py-2 shadow-[0_5px_0_rgba(0,0,0,0.25)] focus-within:ring-2 focus-within:ring-[#2d4a2b]"
->>>>>>> origin/main
             : "flex items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 shadow-[0_4px_0_rgba(0,0,0,0.25)] focus-within:ring-2 focus-within:ring-[#2d4a2b]"
         }
       >
@@ -280,28 +270,17 @@ export function SkincareSearchBar({
         />
         <button
           type="submit"
-<<<<<<< HEAD
-          className={
-            isPill
-              ? "flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-[#1f2d26] text-white shadow-[0_4px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2d26]"
-              : "flex-none rounded-full bg-[#2d4a2b] px-4 py-1.5 text-xs sm:text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#245322] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2d4a2b]"
-=======
           style={isPill ? { backgroundColor: buttonBgColor } : undefined}
           className={
             isPill
               ? "-mr-2 lg:-mr-0 flex sm:h-10 sm:w-10 h-8 w-8 items-center justify-center rounded-full border-2 border-black text-black shadow-[0_4px_0_rgba(0,0,0,0.3)] transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1f2d26]"
               : "flex-none rounded-full bg-[#5a7a9a] px-4 py-1.5 text-xs sm:text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#4a6a8a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#5a7a9a]"
->>>>>>> origin/main
           }
         >
           {isPill ? (
             <>
               <span className="sr-only">{buttonLabel}</span>
-<<<<<<< HEAD
-              <MagnifyingGlassIcon className="h-4 w-4" />
-=======
               <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
->>>>>>> origin/main
             </>
           ) : (
             buttonLabel
