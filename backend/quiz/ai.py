@@ -73,21 +73,21 @@ def generate_strategy_notes(
 
     prompt = _build_prompt(traits=traits, summary=summary, recommendations=recommendations)
     
-    # FIXED: Use working models first
+    # Optimized: Use fastest stable models first for better speed and reliability
     configured_model = (os.getenv("GOOGLE_GEMINI_MODEL") or "").strip()
     candidate_models = [
-        "gemini-2.0-flash-exp",  # Current experimental model (most reliable)
-        "gemini-exp-1206",       # Experimental model
+        "gemini-1.5-flash-latest",  # Fastest stable model
+        "gemini-1.5-flash-002",     # Stable and fast
+        "gemini-1.5-flash",         # Stable fallback
         configured_model or None,
-        "gemini-1.5-flash-002",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
+        "gemini-2.0-flash-exp",     # Experimental (slower, use as last resort)
     ]
 
     generation_config = {
-        "temperature": 0.3,
-        "max_output_tokens": 1024,
+        "temperature": 0.2,  # Lower temperature for more consistent, higher confidence results
+        "max_output_tokens": 512,  # Reduced for faster response
         "candidate_count": 1,
+        "top_p": 0.95,  # Nucleus sampling for better quality
     }
     
     # FIXED: Always apply safety settings
@@ -101,11 +101,15 @@ def generate_strategy_notes(
             continue
         tried.add(model_name)
         try:
+            import time
+            start_time = time.time()
             logger.info(f"Attempting Gemini model: {model_name}")
+            
             model = _genai.GenerativeModel(model_name, generation_config=generation_config)
             response = model.generate_content(prompt, **generation_kwargs)
             
-            logger.info(f"Gemini model '{model_name}' responded")
+            elapsed = time.time() - start_time
+            logger.info(f"Gemini model '{model_name}' responded in {elapsed:.2f}s")
             
             ai_notes = _extract_notes(response)
             if ai_notes:
@@ -158,10 +162,11 @@ def generate_ingredient_benefit(ingredient: str) -> str | None:
 
     configured_model = (os.getenv("GOOGLE_GEMINI_MODEL") or "").strip()
     candidate_models = [
-        "gemini-2.0-flash-exp",
+        "gemini-1.5-flash-latest",  # Fastest stable model
+        "gemini-1.5-flash-002",     # Stable and fast
+        "gemini-1.5-flash",         # Stable fallback
         configured_model or None,
-        "gemini-1.5-flash-002",
-        "gemini-1.5-flash",
+        "gemini-2.0-flash-exp",     # Experimental (slower)
     ]
 
     tried: set[str] = set()
@@ -170,11 +175,16 @@ def generate_ingredient_benefit(ingredient: str) -> str | None:
             continue
         tried.add(model_name)
         try:
+            import time
+            start_time = time.time()
+            
             model = _genai.GenerativeModel(model_name, generation_config=generation_config)
             response = model.generate_content(prompt, **generation_kwargs)
             benefit = _extract_first_line(response)
+            
+            elapsed = time.time() - start_time
             if benefit:
-                logger.info("Generated Gemini benefit for ingredient '%s' using %s", name, model_name)
+                logger.info("Generated Gemini benefit for ingredient '%s' using %s in %.2fs", name, model_name, elapsed)
                 return benefit
             logger.warning("Gemini model '%s' returned no benefit for ingredient '%s'", model_name, name)
         except Exception as exc:

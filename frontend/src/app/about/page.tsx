@@ -165,6 +165,7 @@ export default function AboutPage() {
               height={240}
               className="hidden lg:block absolute -top-45 left-8 w-[240px] md:w-[300px]"
               priority
+              unoptimized
             />
             <div className="relative p-6 sm:p-10">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#3B2F4A] mb-4 sm:mb-6">

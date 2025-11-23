@@ -113,6 +113,7 @@ export default async function SkincareHubPage({ searchParams }: PageProps) {
                 width={550}
                 height={550}
                 className="w-auto h-auto max-w-[480px] object-contain"
+                unoptimized
               />
             </div>
           </div>

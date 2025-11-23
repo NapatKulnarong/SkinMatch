@@ -35,6 +35,21 @@ export function ProductScanner() {
 
   const handleFileChange = useCallback((file?: File | null) => {
     if (!file) return;
+    
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      setError("Please upload a PNG, JPG, or WebP image file.");
+      return;
+    }
+    
+    // Validate file size (10MB = 10 * 1024 * 1024 bytes)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError("Image file is too large. Maximum size is 10MB.");
+      return;
+    }
+    
     setSelectedFile(file);
     setResult(null);
     setError(null);
@@ -147,6 +162,7 @@ export function ProductScanner() {
           height={300}
           className="h-auto w-[190px] sm:w-[220px] md:w-[275px] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]"
           priority
+          unoptimized
         />
       </div>
 

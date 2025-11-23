@@ -573,6 +573,7 @@ function LoginContent() {
           width={520}
           height={520}
           priority
+          unoptimized
           className="w-48 sm:w-64 lg:w-[600px] drop-shadow-[6px_6px_0_rgba(0,0,0,0.18)] sm:drop-shadow-[12px_12px_0_rgba(0,0,0,0.18)] translate-y-2 sm:translate-y-4"
         />
       </div>

@@ -468,6 +468,7 @@ export default function HomePage() {
                 width={360}
                 height={270}
                 priority
+                unoptimized
                 className="h-auto w-37"
               />
             </div>
@@ -501,6 +502,7 @@ export default function HomePage() {
                 width={360}
                 height={270}
                 priority
+                unoptimized
                 className="h-auto w-full max-w-xs"
               />
             </div>
@@ -565,6 +567,7 @@ export default function HomePage() {
                   height={280}
                   className="max-w-[400px]"
                   priority={false}
+                  unoptimized
                 />
               </div>
               <div className="pt-0 lg:pt-5" />

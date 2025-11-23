@@ -21,8 +21,23 @@ export async function scanProductLabel(file: File): Promise<ScanLabelResult> {
   });
 
   if (!response.ok) {
-    const errorMessage = await response.text().catch(() => "");
-    throw new Error(errorMessage || "Failed to analyze the label. Please try again.");
+    // Try to parse JSON error response first (Django Ninja format: { "detail": "message" })
+    let errorMessage = "Failed to analyze the label. Please try again.";
+    try {
+      const errorJson = await response.json();
+      errorMessage = errorJson.detail || errorJson.message || errorMessage;
+    } catch {
+      // If JSON parsing fails, try text
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorMessage = errorText;
+        }
+      } catch {
+        // Fallback to default message
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
@@ -40,8 +55,23 @@ export async function scanIngredientsText(text: string): Promise<ScanLabelResult
   });
 
   if (!response.ok) {
-    const errorMessage = await response.text().catch(() => "");
-    throw new Error(errorMessage || "Failed to analyze the text. Please try again.");
+    // Try to parse JSON error response first (Django Ninja format: { "detail": "message" })
+    let errorMessage = "Failed to analyze the text. Please try again.";
+    try {
+      const errorJson = await response.json();
+      errorMessage = errorJson.detail || errorJson.message || errorMessage;
+    } catch {
+      // If JSON parsing fails, try text
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorMessage = errorText;
+        }
+      } catch {
+        // Fallback to default message
+      }
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();

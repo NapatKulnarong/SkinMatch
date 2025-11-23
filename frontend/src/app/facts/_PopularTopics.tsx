@@ -161,6 +161,7 @@ export default function PopularTopics({ sectionId }: PopularTopicsProps) {
           height={480}
           className="hidden pointer-events-none absolute -left-[288px] -bottom-22 z-30 w-[320px] sm:w-[520px] lg:block"
           priority
+          unoptimized
         />
       </div>
 

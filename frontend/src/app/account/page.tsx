@@ -264,6 +264,7 @@ function AccountContent() {
                 height={200}
                 className="w-[180px] sm:w-[300px] drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)]"
                 priority
+                unoptimized
               />
             </div>
             
@@ -281,6 +282,7 @@ function AccountContent() {
                 height={200}
                 className="w-[180px] sm:w-[300px] drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)]"
                 priority
+                unoptimized
               />
             </div>
           </div>

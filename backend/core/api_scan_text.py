@@ -230,7 +230,37 @@ def _load_pil(file: UploadedFile) -> Image.Image:
     try:
         img = Image.open(io.BytesIO(data))
         img.load()  # Force Pillow to decode now so errors bubble immediately.
-        return img.convert("RGB")
+        img = img.convert("RGB")
+        
+        # Resize large images to reduce memory usage while maintaining OCR quality
+        # OCR works best at 1500-2500px width for ingredient labels
+        # We use 2000px max to balance memory and quality
+        max_dimension = 2000
+        min_dimension = 800  # Minimum size to maintain OCR quality
+        width, height = img.size
+        max_side = max(width, height)
+        min_side = min(width, height)
+        
+        if max_side > max_dimension:
+            # Downscale large images
+            if width > height:
+                new_width = max_dimension
+                new_height = int(height * (max_dimension / width))
+            else:
+                new_height = max_dimension
+                new_width = int(width * (max_dimension / height))
+            logger.info(f"Resizing large image from {width}x{height} to {new_width}x{new_height} to reduce memory usage")
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        elif max_side < min_dimension:
+            # Upscale very small images to improve OCR accuracy
+            # Only upscale if image is too small (might be low quality photo)
+            scale_factor = min_dimension / max_side
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+            logger.info(f"Upscaling small image from {width}x{height} to {new_width}x{new_height} to improve OCR quality")
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        return img
     except (UnidentifiedImageError, OSError) as exc:
         logger.warning("Failed to open image with Pillow: %s", exc, exc_info=True)
         raise
@@ -252,15 +282,24 @@ def _ocr_text(pil_img: Image.Image) -> str:
     """Run preprocess → cv2 conversion → OCR (Thai/English)."""
     _ensure_ocr_stack_ready()
     prepared = _preprocess(pil_img)
+    # Clear original image from memory early
+    del pil_img
     np_img = cv2.cvtColor(np.array(prepared), cv2.COLOR_RGB2BGR)
+    # Clear prepared image from memory
+    del prepared
     raw_text = cv2_to_text(np_img)
+    # Clear np_img from memory
+    del np_img
     return clean_ocr_text(raw_text)
 
 def _ocr_text_from_file(file: UploadedFile) -> str:
     """Glue helper used by the API endpoint (kept separate for test patching)."""
     _ensure_ocr_stack_ready()
     pil = _load_pil(file)
-    return _ocr_text(pil)
+    text = _ocr_text(pil)
+    # Clear PIL image from memory
+    del pil
+    return text
 
 def cv2_to_text(img: np.ndarray) -> str:
     _ensure_ocr_stack_ready()

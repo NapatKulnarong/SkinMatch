@@ -47,35 +47,75 @@ def _deskew(gray: NDArray) -> NDArray:
 
 def preprocess_for_ocr(pil_img: PILImage) -> PILImage:
     _ensure_ocr_dependencies()
-    # upscale a bit
+    # Convert to OpenCV format
     img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-    img = cv2.resize(img, None, fx=1.8, fy=1.8, interpolation=cv2.INTER_CUBIC)
+    
+    # Smart scaling to balance OCR quality and memory usage
+    # OCR works best at 1200-2000px width for ingredient labels
+    height, width = img.shape[:2]
+    max_dimension = max(width, height)
+    
+    # Only upscale if image is small (< 1000px) to improve OCR accuracy
+    # Skip upscaling for medium/large images to save memory
+    if max_dimension < 1000:
+        # Upscale small images to improve OCR (but not too much to avoid memory issues)
+        scale_factor = min(1.5, 1200 / max_dimension)  # Max 1.5x or up to 1200px
+        if scale_factor > 1.1:  # Only upscale if significant
+            img = cv2.resize(img, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+    elif max_dimension > 2000:
+        # Downscale very large images to save memory (already handled in _load_pil, but double-check)
+        scale_factor = 2000 / max_dimension
+        img = cv2.resize(img, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_AREA)
 
-    # denoise + illumination smooth
-    img = cv2.bilateralFilter(img, d=7, sigmaColor=75, sigmaSpace=75)
+    # denoise + illumination smooth (use smaller kernel for memory efficiency)
+    # Reduce bilateral filter parameters for large images to save memory
+    if max_dimension > 1500:
+        img = cv2.bilateralFilter(img, d=5, sigmaColor=50, sigmaSpace=50)
+    else:
+        img = cv2.bilateralFilter(img, d=7, sigmaColor=75, sigmaSpace=75)
+    
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # Clear img from memory early
+    del img
 
     # mild closing to connect broken strokes
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     gray = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-    # deskew if needed
-    gray = _deskew(gray)
+    # deskew if needed (skip for very large images to save memory)
+    if max_dimension < 2000:
+        gray = _deskew(gray)
 
-    # CLAHE for contrast
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    # CLAHE for contrast (reduce tile size for large images)
+    if max_dimension > 1500:
+        clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(4, 4))
+    else:
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     gray = clahe.apply(gray)
 
     # Adaptive threshold (works well on curved labels)
+    # Use smaller block size for large images
+    block_size = 35 if max_dimension < 1500 else 25
     th = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 35, 11
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, block_size, 11
     )
+    
+    # Clear gray from memory
+    del gray
 
     # Light open to clear pepper noise
     th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    # Unsharp mask
-    blur = cv2.GaussianBlur(th, (0, 0), 1.0)
-    sharp = cv2.addWeighted(th, 1.5, blur, -0.5, 0)
+    # Unsharp mask (skip for very large images to save memory)
+    if max_dimension < 2000:
+        blur = cv2.GaussianBlur(th, (0, 0), 1.0)
+        sharp = cv2.addWeighted(th, 1.5, blur, -0.5, 0)
+        del blur, th
+        result = Image.fromarray(sharp)
+        del sharp
+    else:
+        result = Image.fromarray(th)
+        del th
 
-    return Image.fromarray(sharp)
+    return result
